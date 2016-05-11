@@ -42,14 +42,14 @@ void uart(void) {
 		copyToBuf("\033[H");//Move cursor to upper left corner.
 		printRun();//крутящаяся черточка
 		copyToBuf("\r\n\r\n");
-		copyToBuf(" ADC_calib = ");
+		copyToBuf(" ADC_calib = ");//=====================================
 		uint16_to_5str( (uint16_t)g.ADC_calib );
-		copyToBuf("\r\n ADC_value = ");
+		copyToBuf("\r\n ADC_value = ");//=================================
 		copyToBuf("\033[31m");//set red color
 		uint16_to_5str( (uint16_t)g.ADC_value );
 		copyToBuf("\033[0m");//reset normal (color also default)
 		copyToBuf(" adc \r\n");
-		copyToBuf(" ADC_count = ");
+		copyToBuf(" ADC_count = ");//=====================================
 		uint16_to_5str( (uint16_t)g.ADC_count );
 		copyToBuf("\r\n");
 

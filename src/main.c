@@ -34,12 +34,12 @@ int main(void)
 }
 
 void init(void) {
-	/*!< At this stage the microcontroller clock setting is already configured,
-	       this is done through SystemInit() function which is called from startup
-	       file (startup_stm32f0xx.s) before to branch to application main.
-	       To reconfigure the default setting of SystemInit() function, refer to
-	       system_stm32f0xx.c file
-	 */
+	/* At this stage the microcontroller clock setting is already configured,
+	   this is done through SystemInit() function which is called from startup
+	   file (startup_stm32f0xx.s) before to branch to application main.
+	   To reconfigure the default setting of SystemInit() function, refer to
+	   system_stm32f0xx.c file
+	*/
 
 	NVIC_InitTypeDef NVIC_InitStruct;
 
@@ -108,8 +108,6 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	//GPIO_PinAFConfig(GPIOB, GPIO_PinSource0, GPIO_AF_1);
-	//GPIO_PinAFConfig();
 	//
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
 	ADC_DeInit(ADC1);

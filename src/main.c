@@ -114,7 +114,7 @@ void init(void) {
 	ADC_InitTypeDef ADC_InitStruct;
 	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
 	ADC_InitStruct.ADC_ContinuousConvMode = DISABLE;
-	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
+	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_Rising;
 	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T2_TRGO;
 	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
 	ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
@@ -143,6 +143,7 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_WriteBit(GPIOA, GPIO_Pin_8, Bit_RESET);
 
 	//======================================================================
 	//timer for limit magnetic shwitch on ==================================

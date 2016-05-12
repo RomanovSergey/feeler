@@ -22,7 +22,7 @@ void adc(void) {
 		//while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) );
 		//g.ADC_value = ADC_GetConversionValue(ADC1);
 	} else if (tim == 1000) {
-		GPIO_SetBits(GPIOA, GPIO_Pin_8);//включаем сигнал
+		MAGNETIC_ON;//включаем сигнал
 	} else if (tim == 1500) {
 
 		//TIM_Cmd(TIM2, ENABLE);
@@ -32,7 +32,7 @@ void adc(void) {
 		//g.ADC_value = ADC_GetConversionValue(ADC1);
 	} else if (tim == 2000) {
 		tim = 1;
-		GPIO_ResetBits(GPIOA, GPIO_Pin_8);//выключаем сигнал
+		MAGNETIC_OFF;//выключаем сигнал
 	}
 }
 

@@ -46,17 +46,13 @@ void ADC1_COMP_IRQHandler(void) {
 }
 
 void TIM2_IRQHandler(void) {
-	if (SET == TIM_GetITStatus(TIM2, TIM_IT_Update) ) {
-		static int stat = 0;
-
-		if (stat == 0) {
-			GPIO_SetBits( GPIOC, GPIO_Pin_8 );
-			stat = 1;
-		} else {
-			stat = 0;
-			GPIO_ResetBits( GPIOC, GPIO_Pin_8 );
-		}
+	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_CC1) ) {
+		GPIO_SetBits( GPIOC, GPIO_Pin_8 );
+		TIM_ClearFlag(TIM2, TIM_FLAG_CC1);
+	} else if ( SET == TIM_GetITStatus(TIM2, TIM_IT_Update) ) {
+		GPIO_ResetBits( GPIOC, GPIO_Pin_8 );
 		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
+		TIM_Cmd(TIM2, DISABLE);
 	}
 }
 

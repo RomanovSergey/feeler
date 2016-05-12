@@ -113,7 +113,7 @@ void init(void) {
 	ADC_DeInit(ADC1);
 	ADC_InitTypeDef ADC_InitStruct;
 	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
-	ADC_InitStruct.ADC_ContinuousConvMode = DISABLE;
+	ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;
 	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_Rising;
 	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T2_TRGO;
 	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
@@ -158,7 +158,7 @@ void init(void) {
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;//don't care
 	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
 	//
-	TIM_SelectOnePulseMode(TIM2, TIM_OPMode_Single);
+	//TIM_SelectOnePulseMode(TIM2, TIM_OPMode_Single);
 	//
 	TIM_ClearFlag(TIM2, TIM_FLAG_Update);
 	//
@@ -168,7 +168,12 @@ void init(void) {
 	TIM_ClearFlag(TIM2, TIM_FLAG_Update);
 	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
 	//
-	TIM_Cmd(TIM2, DISABLE);//because one pulse mode
+	TIM_SetCounter(TIM2, 0);
+	TIM_Cmd(TIM2, DISABLE);
+	TIM_ClearFlag(TIM2, TIM_FLAG_CC1);
+	TIM_ITConfig(TIM2, TIM_IT_CC1, ENABLE);
+	//
+	TIM_SetCompare1(TIM2, 10);
 	//
 	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 1;

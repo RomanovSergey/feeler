@@ -28,7 +28,7 @@ int main(void)
 	{
 		adc();
 		uart();
-		leds();
+		//leds();
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
 }
@@ -114,7 +114,7 @@ void init(void) {
 	ADC_InitTypeDef ADC_InitStruct;
 	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
 	ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;
-	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_Rising;
+	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
 	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T2_TRGO;
 	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
 	ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
@@ -128,12 +128,12 @@ void init(void) {
 	//
 	ADC_ChannelConfig(ADC1, ADC_Channel_8, ADC_SampleTime_28_5Cycles);
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
-	ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
+	//ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
 	//
-	NVIC_InitStruct.NVIC_IRQChannel = ADC1_COMP_IRQn;
-	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;
-	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStruct);
+//	NVIC_InitStruct.NVIC_IRQChannel = ADC1_COMP_IRQn;
+//	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;
+//	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+//	NVIC_Init(&NVIC_InitStruct);
 
 	//======================================================================
 	//drive pin PA8 for magnetic switch ====================================
@@ -151,19 +151,16 @@ void init(void) {
 	TIM_DeInit(TIM2);
 	//
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
-	TIM_TimeBaseInitStruct.TIM_Prescaler = 480;
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 48;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = 50000 * 1;//
+	TIM_TimeBaseInitStruct.TIM_Period = 10000;//10 mks
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;//don't care
 	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
 	//
 	//TIM_SelectOnePulseMode(TIM2, TIM_OPMode_Single);
-	//
-	TIM_ClearFlag(TIM2, TIM_FLAG_Update);
-	//
-	TIM_SelectOutputTrigger(TIM2, TIM_TRGOSource_Update);
-	TIM_SelectMasterSlaveMode(TIM2, TIM_MasterSlaveMode_Enable);
+	//TIM_SelectOutputTrigger(TIM2, TIM_TRGOSource_Update);
+	//TIM_SelectMasterSlaveMode(TIM2, TIM_MasterSlaveMode_Enable);
 	//
 	TIM_ClearFlag(TIM2, TIM_FLAG_Update);
 	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
@@ -172,8 +169,11 @@ void init(void) {
 	TIM_Cmd(TIM2, DISABLE);
 	TIM_ClearFlag(TIM2, TIM_FLAG_CC1);
 	TIM_ITConfig(TIM2, TIM_IT_CC1, ENABLE);
+	TIM_ClearFlag(TIM2, TIM_FLAG_CC2);
+	//TIM_ITConfig(TIM2, TIM_IT_CC2, ENABLE);
 	//
-	TIM_SetCompare1(TIM2, 10);
+	TIM_SetCompare1(TIM2, 1);
+	TIM_SetCompare2(TIM2, 3);
 	//
 	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 1;

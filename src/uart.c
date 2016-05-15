@@ -30,32 +30,41 @@ void printRun(void);
  */
 void uart(void) {
 	static uint16_t tim = 0;
-	static uint16_t count = 0;
+	//static uint16_t count = 0;
 
 	tim++;
-	if (tim == 500) {
+	if (tim == 1000) {
 		tim = 0;
-		count++;
-		tx.ind = 0;
-		copyToBuf("\033[2J");//clear entire screen
-		copyToBuf("\033[?25l");//Hides the cursor.
-		copyToBuf("\033[H");//Move cursor to upper left corner.
-		printRun();//крутящаяся черточка
-		copyToBuf("\r\n\r\n");
-		copyToBuf(" ADC_calib = ");//=====================================
-		uint16_to_5str( (uint16_t)g.ADC_calib );
-		copyToBuf("\r\n ADC_value = ");//=================================
-		copyToBuf("\033[31m");//set red color
-		uint16_to_5str( (uint16_t)g.ADC_value );
-		copyToBuf("\033[0m");//reset normal (color also default)
-		copyToBuf(" adc \r\n");
-		copyToBuf(" ADC_count = ");//=====================================
-		uint16_to_5str( (uint16_t)g.ADC_count );
-		copyToBuf("\r\n");
+		if (g.ADC_done == 1) {
+			//tim = 0;
+			//count++;
+			tx.ind = 0;
+			copyToBuf("\033[2J");//clear entire screen
+			copyToBuf("\033[?25l");//Hides the cursor.
+			copyToBuf("\033[H");//Move cursor to upper left corner.
+			printRun();//крутящаяся черточка
+			copyToBuf("\r\n\r\n");
+			copyToBuf(" ADC_calib = ");//=====================================
+			uint16_to_5str( (uint16_t)g.ADC_calib );
+			copyToBuf("\r\n ADC_value = ");//=================================
+			copyToBuf("\033[31m");//set red color
+			uint16_to_5str( (uint16_t)(g.ADC_value / 1000) );
+			copyToBuf("\033[0m");//reset normal (color also default)
+			copyToBuf(" adc \r\n");
+			copyToBuf(" ADC_count = ");//=====================================
+			uint16_to_5str( (uint16_t)g.ADC_count );
+			copyToBuf("\r\n");
 
-		USART_SendData(USART2, tx.buf[0]);
-		tx.ind = 1;
-		USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
+			USART_SendData(USART2, tx.buf[0]);
+			tx.ind = 1;
+			USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
+
+			g.ADC_count = 0;
+			g.ADC_done  = 0;
+			g.ADC_value = 0;
+			TIM_SetCounter(TIM2, 0);
+			TIM_Cmd(TIM2, ENABLE);
+		}
 	}
 }
 

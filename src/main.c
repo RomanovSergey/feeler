@@ -27,7 +27,7 @@ int main(void)
 	while (1)
 	{
 		adc();
-		uart();
+		//uart();
 		//leds();
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
@@ -42,6 +42,11 @@ void init(void) {
 	*/
 
 	NVIC_InitTypeDef NVIC_InitStruct;
+
+	g.ADC_calib = 0;
+	g.ADC_count = 0;
+	g.ADC_done  = 0;
+	g.ADC_value = 0;
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс
@@ -126,7 +131,7 @@ void init(void) {
 	ADC_Cmd(ADC1, ENABLE);
 	while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY) );
 	//
-	ADC_ChannelConfig(ADC1, ADC_Channel_8, ADC_SampleTime_28_5Cycles);
+	ADC_ChannelConfig(ADC1, ADC_Channel_8, ADC_SampleTime_1_5Cycles);
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
 	//ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
 	//
@@ -153,7 +158,7 @@ void init(void) {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 48;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = 10000;//10 mks
+	TIM_TimeBaseInitStruct.TIM_Period = 10000;//10 ms
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;//don't care
 	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
@@ -166,17 +171,19 @@ void init(void) {
 	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
 	//
 	TIM_SetCounter(TIM2, 0);
-	TIM_Cmd(TIM2, DISABLE);
 	TIM_ClearFlag(TIM2, TIM_FLAG_CC1);
 	TIM_ITConfig(TIM2, TIM_IT_CC1, ENABLE);
 	TIM_ClearFlag(TIM2, TIM_FLAG_CC2);
+	TIM_ClearFlag(TIM2, TIM_FLAG_CC3);
 	//TIM_ITConfig(TIM2, TIM_IT_CC2, ENABLE);
 	//
-	TIM_SetCompare1(TIM2, 1);
-	TIM_SetCompare2(TIM2, 3);
+	TIM_SetCompare1(TIM2, 5);
+	TIM_SetCompare2(TIM2, 15);
+	TIM_SetCompare3(TIM2, 45);
+	TIM_Cmd(TIM2, ENABLE);
 	//
 	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;
-	NVIC_InitStruct.NVIC_IRQChannelPriority = 1;
+	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
 

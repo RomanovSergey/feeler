@@ -21,6 +21,7 @@ typedef struct {
 	uint32_t ADC_calib;
 	uint32_t ADC_value;
 	uint32_t ADC_count;
+	uint32_t ADC_done;
 } GLOBAL;
 
 extern GLOBAL g;

@@ -156,7 +156,7 @@ void init(void) {
 	TIM_DeInit(TIM2);
 	//
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
-	TIM_TimeBaseInitStruct.TIM_Prescaler = 48;
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInitStruct.TIM_Period = 10000;//10 ms
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -178,8 +178,8 @@ void init(void) {
 	//TIM_ITConfig(TIM2, TIM_IT_CC2, ENABLE);
 	//
 	TIM_SetCompare1(TIM2, 5);
-	TIM_SetCompare2(TIM2, 15);
-	TIM_SetCompare3(TIM2, 45);
+	TIM_SetCompare2(TIM2, 50);
+	TIM_SetCompare3(TIM2, 200);
 	TIM_Cmd(TIM2, ENABLE);
 	//
 	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;

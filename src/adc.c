@@ -10,13 +10,10 @@
 
 void adc(void) {
 	static uint16_t tim = 0;
-	//uint32_t count = g.ADC_count;
 
 	tim++;
 	if (tim == 1) {
 		GREEN_ON;
-		//TIM_SetCounter(TIM2, 0);
-		//TIM_Cmd(TIM2, ENABLE);
 	} else if (tim == 20) {
 		GREEN_OFF;
 	} else if (tim == 999) {

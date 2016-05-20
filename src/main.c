@@ -34,12 +34,12 @@ int main(void)
 }
 
 void init(void) {
-	/* At this stage the microcontroller clock setting is already configured,
-	   this is done through SystemInit() function which is called from startup
-	   file (startup_stm32f0xx.s) before to branch to application main.
-	   To reconfigure the default setting of SystemInit() function, refer to
-	   system_stm32f0xx.c file
-	*/
+// At this stage the microcontroller clock setting is already configured,
+// this is done through SystemInit() function which is called from startup
+// file (startup_stm32f0xx.s) before to branch to application main.
+// To reconfigure the default setting of SystemInit() function, refer to
+// system_stm32f0xx.c file
+
 
 	NVIC_InitTypeDef NVIC_InitStruct;
 
@@ -151,6 +151,16 @@ void init(void) {
 	GPIO_WriteBit(GPIOA, GPIO_Pin_8, Bit_RESET);
 
 	//======================================================================
+	//input pin PA0 B1 Button ==============================================
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_WriteBit(GPIOA, GPIO_Pin_0, Bit_RESET);
+
+	//======================================================================
 	//timer for limit magnetic shwitch on ==================================
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 	TIM_DeInit(TIM2);
@@ -158,14 +168,10 @@ void init(void) {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = 10000;//10 ms
+	TIM_TimeBaseInitStruct.TIM_Period = 10000;//not used
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;//don't care
 	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
-	//
-	//TIM_SelectOnePulseMode(TIM2, TIM_OPMode_Single);
-	//TIM_SelectOutputTrigger(TIM2, TIM_TRGOSource_Update);
-	//TIM_SelectMasterSlaveMode(TIM2, TIM_MasterSlaveMode_Enable);
 	//
 	TIM_ClearFlag(TIM2, TIM_FLAG_Update);
 	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
@@ -175,11 +181,10 @@ void init(void) {
 	TIM_ITConfig(TIM2, TIM_IT_CC1, ENABLE);
 	TIM_ClearFlag(TIM2, TIM_FLAG_CC2);
 	TIM_ClearFlag(TIM2, TIM_FLAG_CC3);
-	//TIM_ITConfig(TIM2, TIM_IT_CC2, ENABLE);
 	//
-	TIM_SetCompare1(TIM2, 5);
-	TIM_SetCompare2(TIM2, 50);
-	TIM_SetCompare3(TIM2, 200);
+	TIM_SetCompare1(TIM2, 5);//время где включится магнит
+	TIM_SetCompare2(TIM2, 50);//где запустится АЦП а затем выключится магнит
+	TIM_SetCompare3(TIM2, 200);//ожидаем спада магнитного поля
 	TIM_Cmd(TIM2, ENABLE);
 	//
 	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;

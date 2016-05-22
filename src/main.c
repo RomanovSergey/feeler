@@ -8,27 +8,24 @@
 */
 
 #include "stm32f0xx.h"
-#include "leds.h"
 #include "uart.h"
 #include "adc.h"
 #include "main.h"
+#include "../inc/buttons.h"
 
 
 GLOBAL g;
 
 void init(void);
 
-int main(void)
-{
-	g.ADC_count = 0;
+int main(void) {
 
 	init();
 
-	while (1)
-	{
+	while (1) {
 		adc();
-		//uart();
-		//leds();
+		buttons();
+		uart();
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
 }
@@ -44,7 +41,6 @@ void init(void) {
 	NVIC_InitTypeDef NVIC_InitStruct;
 
 	g.ADC_calib = 0;
-	g.ADC_count = 0;
 	g.ADC_done  = 0;
 	g.ADC_value = 0;
 
@@ -55,6 +51,7 @@ void init(void) {
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
 	GPIO_InitTypeDef  GPIO_InitStructure;
 	// Configure PC8 and PC9 in output pushpull mode
+	GPIO_DeInit(GPIOC);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9;//лампочки на discovery плате
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -107,6 +104,7 @@ void init(void) {
 	//==================================================================
 	//ADC pin config ===================================================
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+	GPIO_DeInit(GPIOB);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -124,7 +122,8 @@ void init(void) {
 	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
 	ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
 	ADC_Init(ADC1, &ADC_InitStruct);
-	ADC_JitterCmd(ADC1, ADC_JitterOff_PCLKDiv2, ENABLE);
+	//
+	ADC_JitterCmd(ADC1, ADC_JitterOff_PCLKDiv4, ENABLE);
 	//
 	g.ADC_calib = ADC_GetCalibrationFactor(ADC1);
 	//
@@ -133,12 +132,7 @@ void init(void) {
 	//
 	ADC_ChannelConfig(ADC1, ADC_Channel_8, ADC_SampleTime_1_5Cycles);
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
-	//ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
-	//
-//	NVIC_InitStruct.NVIC_IRQChannel = ADC1_COMP_IRQn;
-//	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;
-//	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-//	NVIC_Init(&NVIC_InitStruct);
+	ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);
 
 	//======================================================================
 	//drive pin PA8 for magnetic switch ====================================
@@ -158,7 +152,6 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	GPIO_WriteBit(GPIOA, GPIO_Pin_0, Bit_RESET);
 
 	//======================================================================
 	//timer for limit magnetic shwitch on ==================================
@@ -168,7 +161,7 @@ void init(void) {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = 10000;//not used
+	TIM_TimeBaseInitStruct.TIM_Period = 1000;//not used
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;//don't care
 	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
@@ -182,16 +175,12 @@ void init(void) {
 	TIM_ClearFlag(TIM2, TIM_FLAG_CC2);
 	TIM_ClearFlag(TIM2, TIM_FLAG_CC3);
 	//
-	TIM_SetCompare1(TIM2, 5);//время где включится магнит
-	TIM_SetCompare2(TIM2, 50);//где запустится АЦП а затем выключится магнит
-	TIM_SetCompare3(TIM2, 200);//ожидаем спада магнитного поля
-	TIM_Cmd(TIM2, ENABLE);
+	TIM_Cmd(TIM2, DISABLE);
 	//
 	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
-
 	//======================================================================
 }
 

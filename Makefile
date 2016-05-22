@@ -45,7 +45,7 @@ DISCOVERY    = ../../STM32F0-Discovery_FW_V1.0.0/Utilities/STM32F0-Discovery
 
 SRC  = ./src/main.c
 SRC += ./src/stm32f0xx_it.c
-SRC += ./src/leds.c
+SRC += ./src/buttons.c
 SRC += ./src/uart.c
 SRC += ./src/adc.c
 SRC += $(DEVDIR)/Source/system_stm32f0xx.c
@@ -64,7 +64,7 @@ SRC += $(STMSPSRCDDIR)/stm32f0xx_gpio.c
 #SRC += $(STMSPSRCDDIR)/stm32f0xx_syscfg.c
 #SRC += $(STMSPSRCDDIR)/stm32f0xx_i2c.c
 #SRC += $(STMSPSRCDDIR)/stm32f0xx_iwdg.c
-#SRC += $(STMSPSRCDDIR)/stm32f0xx_pwr.c
+SRC += $(STMSPSRCDDIR)/stm32f0xx_pwr.c
 SRC += $(STMSPSRCDDIR)/stm32f0xx_rcc.c
 #SRC += $(STMSPSRCDDIR)/stm32f0xx_rtc.c
 #SRC += $(STMSPSRCDDIR)/stm32f0xx_spi.c

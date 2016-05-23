@@ -31,6 +31,11 @@ void printRun(void);
  */
 void uart(void) {
 
+static uint16_t min = 0xFFFF;
+static uint16_t max = 0;
+static uint16_t cnt = 0;
+static uint32_t sum = 0;
+
 	if (g.ADC_done == 1) {
 		g.ADC_done  = 0;
 
@@ -39,9 +44,8 @@ void uart(void) {
 		copyToBuf("\033[?25l");//Hides the cursor.
 		copyToBuf("\033[H");//Move cursor to upper left corner.
 		printRun();//крутящаяся черточка
-		copyToBuf("\r\n\r\n");
-		//copyToBuf(" ADC_calib = ");//=====================================
-		//uint16_to_5str( (uint16_t)g.ADC_calib );
+		copyToBuf("\r\n");
+
 		copyToBuf("\r\n ADC_value = ");//=================================
 		copyToBuf("\033[31m");//set red color
 		uint16_to_5str( (uint16_t)(g.ADC_value) );
@@ -49,6 +53,28 @@ void uart(void) {
 		copyToBuf(" adc ");
 		uint16_to_bin( (uint16_t)g.ADC_value );
 		copyToBuf(" bin \r\n");
+
+		if ( min > g.ADC_value ) {
+			min = g.ADC_value;
+		}
+		copyToBuf(" min = ");
+		uint16_to_5str( min );
+
+		if ( max < g.ADC_value ) {
+			max = g.ADC_value;
+		}
+		copyToBuf("\r\n max = ");
+		uint16_to_5str( max );
+
+		cnt++;
+		sum += g.ADC_value;
+
+		copyToBuf("\r\n avg = ");
+		uint16_to_5str( (uint16_t)(sum / cnt) );
+
+		copyToBuf("\r\n\r\n cnt = ");
+		uint16_to_5str( cnt );
+
 
 		USART_SendData(USART2, tx.buf[0]);
 		tx.ind = 1;
@@ -92,7 +118,7 @@ void printRun(void) {
  */
 void uint16_to_bin(uint16_t n)
 {
-	for (int i = 15; i != 0; i--) {
+	for (int i = 15; i >= 0; i--) {
 		tx.buf[tx.ind++] = ( n & (1<<i) )?'1':'0';
 	}
 	tx.buf[tx.ind] = 0;

@@ -38,7 +38,11 @@ void init(void) {
 // system_stm32f0xx.c file
 
 
-	NVIC_InitTypeDef NVIC_InitStruct;
+	GPIO_InitTypeDef         GPIO_InitStructure;
+	NVIC_InitTypeDef         NVIC_InitStruct;
+	USART_InitTypeDef        USART_InitStruct;
+	ADC_InitTypeDef          ADC_InitStruct;
+	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
 
 	g.ADC_calib = 0;
 	g.ADC_done  = 0;
@@ -49,7 +53,6 @@ void init(void) {
 
 	// GPIOC Periph clock enable =======================================
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
-	GPIO_InitTypeDef  GPIO_InitStructure;
 	// Configure PC8 and PC9 in output pushpull mode
 	GPIO_DeInit(GPIOC);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9;//лампочки на discovery плате
@@ -83,7 +86,6 @@ void init(void) {
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);
 	//UART2 initialization
 	USART_DeInit(USART2);
-	USART_InitTypeDef USART_InitStruct;
 	USART_InitStruct.USART_BaudRate = 115200;
 	USART_InitStruct.USART_WordLength = USART_WordLength_8b;
 	USART_InitStruct.USART_StopBits = USART_StopBits_1;
@@ -114,8 +116,7 @@ void init(void) {
 	//
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
 	ADC_DeInit(ADC1);
-	ADC_InitTypeDef ADC_InitStruct;
-	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
+	ADC_InitStruct.ADC_Resolution = ADC_Resolution_8b;
 	ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;
 	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
 	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T2_TRGO;
@@ -158,7 +159,6 @@ void init(void) {
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 	TIM_DeInit(TIM2);
 	//
-	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInitStruct.TIM_Period = 1000;//not used

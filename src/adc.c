@@ -16,7 +16,6 @@ typedef struct {
 	uint32_t  air;//значение АЦП воздуха
 	uint8_t   fe_cc2;//время накачки для железа (more)
 	uint8_t   al_cc2;//время накачки для алюминия (less)
-	uint8_t   cc4;//
 } magnetic_t;
 
 void adc(void) {
@@ -46,38 +45,46 @@ void adc(void) {
 }
 
 void magneticShot(void) {
-	MAGNETIC_ON;//накачка магнитной энергии
-	//
-	while ( RESET == TIM_GetFlagStatus(TIM2, TIM_FLAG_CC2) );
-	TIM_ClearFlag(TIM2, TIM_FLAG_CC2);//время накачки вышло
-	//
-	ADC_StartOfConversion(ADC1);//пора мерить силу тока катушки
-	//
-	PWR_EnterSleepMode(PWR_SLEEPEntry_WFE);
-	//
-	while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_EOSMP) );
-	ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);//выборка ацп произведена
-	//
-	//PWR_EnterSleepMode(PWR_SLEEPEntry_WFE);
-	//
-	while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) );
-	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);//преобразование АЦП завершено
-	//
-	MAGNETIC_OFF;//прекращаем накачку магнитной энергии
-	//
-	while ( RESET == TIM_GetFlagStatus(TIM2, TIM_FLAG_CC3) );
-	TIM_ClearFlag(TIM2, TIM_FLAG_CC3);//магнитная энергия улетучилась в тепло
-	g.ADC_value = ADC_GetConversionValue(ADC1);//here because ADC_DR register ready latyncy
+
+		MAGNETIC_ON;//накачка магнитной энергии
+		//
+		while ( RESET == TIM_GetFlagStatus(TIM2, TIM_FLAG_CC2) );
+		TIM_ClearFlag(TIM2, TIM_FLAG_CC2);//время накачки вышло
+		//
+		ADC_StartOfConversion(ADC1);//пора мерить силу тока катушки
+		//
+		//PWR_EnterSleepMode(PWR_SLEEPEntry_WFE);
+		//
+		while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_EOSMP) );
+		ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);//выборка ацп произведена
+		//
+		//PWR_EnterSleepMode(PWR_SLEEPEntry_WFE);
+		//
+		while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) );
+		ADC_ClearFlag(ADC1, ADC_FLAG_EOC);//преобразование АЦП завершено
+		//
+		MAGNETIC_OFF;//прекращаем накачку магнитной энергии
+		//
+		while ( RESET == TIM_GetFlagStatus(TIM2, TIM_FLAG_CC3) );
+		TIM_ClearFlag(TIM2, TIM_FLAG_CC3);//магнитная энергия улетучилась в тепло
+		g.ADC_value += ADC_GetConversionValue(ADC1);//here because ADC_DR register ready latyncy
+
 }
 
 void TIM2_IRQHandler(void) {
+	static int count = 0;
 	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_CC1) ) {
 		TIM_ClearFlag(TIM2, TIM_FLAG_CC1);
 		//
 		magneticShot();//длительный процесс, но нужна временная суперточность
-		//
-		TIM_Cmd(TIM2, DISABLE);
-		g.ADC_done = 1;
+		count++;
+		if ( count > 255 ) {
+			count = 0;
+			TIM_Cmd(TIM2, DISABLE);
+			g.ADC_value = g.ADC_value / 256;
+			g.ADC_done = 1;
+		}
+		TIM_SetCounter(TIM2, 0);
 	}
 }
 

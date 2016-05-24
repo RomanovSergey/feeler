@@ -116,7 +116,7 @@ void init(void) {
 	//
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
 	ADC_DeInit(ADC1);
-	ADC_InitStruct.ADC_Resolution = ADC_Resolution_8b;
+	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
 	ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;
 	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
 	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T2_TRGO;

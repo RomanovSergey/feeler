@@ -16,9 +16,10 @@
 #define BLUE_OFF      GPIO_ResetBits(GPIOC,GPIO_Pin_8);
 
 typedef struct {
-	uint32_t ADC_calib;
-	uint32_t ADC_value;
-	uint32_t ADC_done;
+	uint32_t ADC_calib;//получили при инициализации калибровку ацп (вдруг пригодится)
+	uint32_t ADC_value;//ну типа измереное значение ацп (ну типа усредненое чтоли)
+	uint32_t ADC_deltaTime;//здесь время за какое ток нарастает от нуля до ADC_value
+	uint32_t ADC_done;//алгоритм завершен данные готовы (ADC_value, ADC_deltaTime)
 
 	uint8_t  B1_push;//событие нажатия B1 кнопки (сбрасыватся обработчиком)
 } GLOBAL;

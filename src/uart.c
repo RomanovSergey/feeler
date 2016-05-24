@@ -21,6 +21,7 @@ static struct Tsend tx;//буфер для отправки по уарт
 
 //прототипы
 int8_t copyToBuf(char *str);
+void uint32_to_str (uint32_t nmb);
 void uint16_to_5str(uint16_t n);
 void uint16_to_bin(uint16_t n);
 void printRun(void);
@@ -53,6 +54,16 @@ static uint32_t sum = 0;
 		copyToBuf(" adc ");
 		uint16_to_bin( (uint16_t)g.ADC_value );
 		copyToBuf(" bin \r\n");
+
+		copyToBuf(" ADC_deltaTime = ");
+		uint16_to_5str( (uint16_t)g.ADC_deltaTime );
+		copyToBuf("\r\n");
+
+		g.ADC_deltaTime *= 1000000;
+		uint32_t Lval = g.ADC_deltaTime / g.ADC_value;
+		copyToBuf(" Lval = ");
+		uint32_to_str( Lval );
+		copyToBuf("\r\n");
 
 		if ( min > g.ADC_value ) {
 			min = g.ADC_value;
@@ -111,6 +122,30 @@ void printRun(void) {
 	run++;
 	if ( (run + 1) > sizeof(s_run) )
 	{run = 0;}
+}
+
+/**
+ * Преобразует 32 битное число в строку с нулем на конце
+ */
+void uint32_to_str (uint32_t nmb)//, char * buf)
+{
+	char tmp_str [11] = {0,};
+	int i = 0, j;
+	if (nmb == 0){//если ноль
+		//*(buf++) = '0';
+		tx.buf[tx.ind++] = '0';
+	}else{
+		while (nmb > 0) {
+			tmp_str[i++] = (nmb % 10) + '0';
+			nmb /=10;
+		}
+		for (j = 0; j < i; ++j) {
+			//*(buf++) = tmp_str [i-j-1];//перевернем
+			tx.buf[tx.ind++] = tmp_str [i-j-1];//перевернем
+		}
+	}
+	//*buf = 0;//null terminator
+	tx.buf[tx.ind] = 0;//null terminator
 }
 
 /**

@@ -23,6 +23,7 @@ typedef struct {
 	uint16_t  cmp3;//соответсвенно регистр сравнения 3
 	uint32_t  target;//задание к чему ADC_value должен стремиться
 	uint16_t  samples;//cтепень числа 2 количества выборок для усреднения
+	uint16_t  timprot;//защита от бесконечного цикла измерения
 } ADCstruct_t;
 
 int8_t debug(char *str);
@@ -34,6 +35,7 @@ static ADCstruct_t ad = {
 	.cmp3    = CMP2START + CMPDEC,
 	.target  = TARGET,
 	.samples = 4,// 2^4 = 16 выборок
+	.timprot = 0,
 };
 
 void adc(void) {
@@ -47,6 +49,7 @@ void adc(void) {
 		ad.cmp2 = CMP2START;
 		ad.cmp3 = CMP2START + CMPDEC;
 		ad.target = TARGET;
+		ad.timprot = 0;
 
 		g.ind = 0;
 		g.buf[0] = 0;
@@ -96,12 +99,15 @@ void magneticShot(void) {
 
 void TIM2_IRQHandler(void) {
 	static int count = 0;
+
 	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_CC1) ) {
 		TIM_ClearFlag(TIM2, TIM_FLAG_CC1);
 		//
 		magneticShot();//длительный процесс, но нужна временная суперточность
 		count++;
+		ad.timprot++;
 		if ( count < (1 << ad.samples) ) {
+			TIM_SetCounter(TIM2, 0);
 			return;
 		}
 		count = 0;
@@ -109,7 +115,12 @@ void TIM2_IRQHandler(void) {
 
 		//timeRegulator ****************************************************************************
 		int32_t delta = ad.target - g.ADC_value;//если + то добавить силу поля, если - то убавить
-		if ( delta > 20 ) {
+		if ( ad.timprot > 600 ) {
+			debug("\r\ntimprot");
+			TIM_Cmd(TIM2, DISABLE);
+			TIM_SetCounter(TIM2, 0);
+			g.ADC_done = 1;
+		} else if ( delta > 20 ) {
 			debug("+");
 			g.ADC_value = 0;
 			ad.cmp2++;//добавим силу поля

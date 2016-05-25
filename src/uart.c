@@ -10,6 +10,7 @@
 
 #include "stm32f0xx.h"
 #include "main.h"
+#include "micro.h"
 
 #define TX_SIZE 256
 
@@ -20,7 +21,7 @@ struct Tsend{
 static struct Tsend tx;//буфер для отправки по уарт
 
 //прототипы
-int8_t copyToBuf(char *str);
+int8_t toPrint(char *str);
 void uint32_to_str (uint32_t nmb);
 void uint16_to_5str(uint16_t n);
 void uint16_to_bin(uint16_t n);
@@ -41,49 +42,53 @@ static uint32_t sum = 0;
 		g.ADC_done  = 0;
 
 		tx.ind = 0;
-		copyToBuf("\033[2J");//clear entire screen
-		copyToBuf("\033[?25l");//Hides the cursor.
-		copyToBuf("\033[H");//Move cursor to upper left corner.
+		toPrint("\033[2J");//clear entire screen
+		toPrint("\033[?25l");//Hides the cursor.
+		toPrint("\033[H");//Move cursor to upper left corner.
 		printRun();//крутящаяся черточка
-		copyToBuf("\r\n");
+		toPrint("\r\n");
 
-		copyToBuf("\r\n ADC_value = ");//=================================
-		copyToBuf("\033[31m");//set red color
+		toPrint("\r\n ADC_value = ");//=================================
+		toPrint("\033[31m");//set red color
 		uint16_to_5str( (uint16_t)(g.ADC_value) );
-		copyToBuf("\033[0m");//reset normal (color also default)
-		copyToBuf(" adc ");
+		toPrint("\033[0m");//reset normal (color also default)
+		toPrint(" adc ");
 		uint16_to_bin( (uint16_t)g.ADC_value );
-		copyToBuf(" bin \r\n");
+		toPrint(" bin \r\n");
 
-		copyToBuf(" ADC_deltaTime = ");
+		toPrint(" ADC_deltaTime = ");
 		uint16_to_5str( (uint16_t)g.ADC_deltaTime );
-		copyToBuf("\r\n");
+		toPrint("\r\n");
 
 		g.ADC_deltaTime *= 1000000;
 		uint32_t Lval = g.ADC_deltaTime / g.ADC_value;
-		copyToBuf(" Lval = ");
+		toPrint(" Lval   = ");
 		uint32_to_str( Lval );
-		copyToBuf("\r\n");
+		toPrint("\r\n");
+
+		toPrint(" micron = ");
+		uint16_to_5str( micro(Lval) );
+		toPrint("\r\n");
 
 		if ( min > g.ADC_value ) {
 			min = g.ADC_value;
 		}
-		copyToBuf(" min = ");
+		toPrint(" min = ");
 		uint16_to_5str( min );
 
 		if ( max < g.ADC_value ) {
 			max = g.ADC_value;
 		}
-		copyToBuf("\r\n max = ");
+		toPrint("\r\n max = ");
 		uint16_to_5str( max );
 
 		cnt++;
 		sum += g.ADC_value;
 
-		copyToBuf("\r\n avg = ");
+		toPrint("\r\n avg = ");
 		uint16_to_5str( (uint16_t)(sum / cnt) );
 
-		copyToBuf("\r\n\r\n cnt = ");
+		toPrint("\r\n\r\n cnt = ");
 		uint16_to_5str( cnt );
 
 
@@ -97,7 +102,7 @@ static uint32_t sum = 0;
  * Копирует строку str в буфер tx
  * символ конца строки - 0 (не копируется)
  */
-int8_t copyToBuf(char *str) {
+int8_t toPrint(char *str) {
 	uint16_t i = 0;
 
 	while (str[i] != 0) {
@@ -127,7 +132,7 @@ void printRun(void) {
 /**
  * Преобразует 32 битное число в строку с нулем на конце
  */
-void uint32_to_str (uint32_t nmb)//, char * buf)
+void uint32_to_str (uint32_t nmb)
 {
 	char tmp_str [11] = {0,};
 	int i = 0, j;
@@ -140,11 +145,9 @@ void uint32_to_str (uint32_t nmb)//, char * buf)
 			nmb /=10;
 		}
 		for (j = 0; j < i; ++j) {
-			//*(buf++) = tmp_str [i-j-1];//перевернем
 			tx.buf[tx.ind++] = tmp_str [i-j-1];//перевернем
 		}
 	}
-	//*buf = 0;//null terminator
 	tx.buf[tx.ind] = 0;//null terminator
 }
 
@@ -201,9 +204,21 @@ void USART2_IRQHandler(void) {
 
 	if(USART_GetITStatus(USART2, USART_IT_TXE) != RESET) {
 		if (tx.buf[tx.ind] == 0) {
-			USART_ClearITPendingBit(USART2, USART_IT_TC);
-			USART_ITConfig(USART2, USART_IT_TC, ENABLE);
-			USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+			if ( g.buf[0] == 0 ) {//в отладочном буфере нет данных
+				USART_ClearITPendingBit(USART2, USART_IT_TC);
+				USART_ITConfig(USART2, USART_IT_TC, ENABLE);
+				USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+			} else {//если в отладочном буфере есть данные
+				int i = 0;
+				do {//копируем данные из отладочного буфера в tx
+					tx.buf[i] = g.buf[i];
+					i++;
+				} while ( tx.buf[i] != 0 );
+				g.buf[0] = 0;//в отладочном буфере больше нет данных
+				g.ind = 0;
+				USART_SendData(USART2, tx.buf[0]);
+				tx.ind = 1;
+			}
 		} else if (tx.ind < TX_SIZE) {
 			USART_SendData(USART2, tx.buf[tx.ind++]);
 		} else {

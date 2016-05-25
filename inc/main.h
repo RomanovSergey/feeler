@@ -22,6 +22,10 @@ typedef struct {
 	uint32_t ADC_done;//алгоритм завершен данные готовы (ADC_value, ADC_deltaTime)
 
 	uint8_t  B1_push;//событие нажатия B1 кнопки (сбрасыватся обработчиком)
+
+	uint16_t  ind;//указывает на нулевой символ строки (для след. записи)
+	uint8_t   buf[256];//отладочный буфер (потом удалить)
+
 } GLOBAL;
 
 extern GLOBAL g;

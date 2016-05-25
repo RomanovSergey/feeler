@@ -48,6 +48,7 @@ SRC += ./src/stm32f0xx_it.c
 SRC += ./src/buttons.c
 SRC += ./src/uart.c
 SRC += ./src/adc.c
+SRC += ./src/micro.c
 SRC += $(DEVDIR)/Source/system_stm32f0xx.c
 
 ## used parts of the STM-Library

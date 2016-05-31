@@ -27,10 +27,38 @@ void uint16_to_5str(uint16_t n);
 void uint16_to_bin(uint16_t n);
 void printRun(void);
 
-
 /*
  * Периодически вызывается из main.c
  */
+void uart(void) {
+static uint16_t cnt = 0;
+
+	if (g.tim_done == 1) {
+		g.tim_done  = 0;
+
+		tx.ind = 0;
+		toPrint("\033[2J");//clear entire screen
+		toPrint("\033[?25l");//Hides the cursor.
+		toPrint("\033[H");//Move cursor to upper left corner.
+		printRun();//крутящаяся черточка
+		toPrint("\r\n");
+
+		toPrint("\r\n Tim_len = ");//=================================
+		toPrint("\033[31m");//set red color
+		uint32_to_str( g.tim_len );
+		toPrint("\033[0m");//reset normal (color also default)
+		toPrint(" y.e. \r\n");
+
+		toPrint("\r\n\r\n cnt = ");
+		uint16_to_5str( cnt++ );
+
+		USART_SendData(USART2, tx.buf[0]);
+		tx.ind = 1;
+		USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
+	}
+}
+
+/*
 void uart(void) {
 
 static uint16_t min = 0xFFFF;
@@ -97,6 +125,7 @@ static uint32_t sum = 0;
 		USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
 	}
 }
+*/
 
 /*
  * Копирует строку str в буфер tx

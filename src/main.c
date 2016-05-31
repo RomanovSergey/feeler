@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * Компилятор:
+  * Compieler:
   * https://launchpad.net/gcc-arm-embedded
-  * примерчик вроде отсюда:
+  * example may be from here (do not remember):
   * http://www.hertaville.com/stm32f0discovery-part-1-linux.html
   ******************************************************************************
 */
@@ -23,7 +23,8 @@ int main(void) {
 	init();
 
 	while (1) {
-		adc();
+		//adc();
+		magnetic();
 		buttons();
 		uart();
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
@@ -155,6 +156,70 @@ void init(void) {
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	//======================================================================
+	//input pin PA6 TIM3_CH1 input =========================================
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	//
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1);
+
+	//=============== timer is a difficult thing ===========================
+	//timer3 is 16 bit for count pulse magnetic (PA6 pin) ==================
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+	TIM_DeInit(TIM3);
+	//
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
+	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
+	TIM_TimeBaseInitStruct.TIM_Period = 0xFFFF;//not used may be
+	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
+	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
+	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStruct);
+	//
+	TIM_ETRConfig(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x04);
+	TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);//TIM3_CH1 input
+	//
+	TIM_SelectOutputTrigger(TIM3, TIM_TRGOSource_Enable);//while tim3 enable
+	TIM_SelectMasterSlaveMode(TIM3, TIM_MasterSlaveMode_Enable);
+	//
+	TIM_SetCounter(TIM3, 0);
+	TIM_Cmd(TIM3, DISABLE);
+	//
+	TIM_SetCompare1( TIM3, 0x0400 );//1024
+	TIM_ClearFlag(TIM3, TIM_FLAG_CC1);
+	TIM_ITConfig(TIM3, TIM_IT_CC1, ENABLE);
+	//
+	NVIC_InitStruct.NVIC_IRQChannel = TIM3_IRQn;
+	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;//main priority
+	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStruct);
+
+	//======================================================================
+	//timer2 is 32 bit for count time while t3 counts pulse ================
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+	TIM_DeInit(TIM2);
+	//
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
+	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
+	TIM_TimeBaseInitStruct.TIM_Period = 0xFFFFFFFF;//not used may be
+	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
+	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
+	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
+	//
+	TIM_SelectInputTrigger(TIM2, TIM_TS_ITR2);//timer3 is for count enable
+	TIM_SelectSlaveMode(TIM2, TIM_SlaveMode_Gated);
+	//
+	TIM_SetCounter(TIM2, 0);
+	TIM_Cmd(TIM2, ENABLE);
+	//
+	//======================================================================
+}
+
+
+/*
+//======================================================================
 	//timer for limit magnetic shwitch on ==================================
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 	TIM_DeInit(TIM2);
@@ -182,7 +247,7 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
 	//======================================================================
-}
+ */
 
 
 

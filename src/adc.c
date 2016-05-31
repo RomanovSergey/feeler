@@ -41,8 +41,8 @@ static ADCstruct_t ad = {
 void adc(void) {
 	static uint16_t tim = 0;
 
-	if ( g.B1_push == 1 ) {//если нажали кнопку Б1 - запустим измерительный механизм
-		g.B1_push = 0;//сбросим событие нажатия Б1
+	if ( g.b1_push == 1 ) {//если нажали кнопку Б1 - запустим измерительный механизм
+		g.b1_push = 0;//сбросим событие нажатия Б1
 
 		g.ADC_value = 0;
 		ad.cmp1 = CMP1;
@@ -96,8 +96,8 @@ void magneticShot(void) {
 		g.ADC_value += ADC_GetConversionValue(ADC1);//here because ADC_DR register ready latyncy
 
 }
-
-void TIM2_IRQHandler(void) {
+/*
+void TIM2_IRQHandler_old(void) {
 	static int count = 0;
 
 	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_CC1) ) {
@@ -148,32 +148,7 @@ void TIM2_IRQHandler(void) {
 		}
 	}
 }
-	/*switch (ad.state) {
-	case 0://уточним что мерим чтобы мерить точнее
-		if ( g.ADC_value < (ad.air - ad.deltaAir) ) {//железо рядом, замерим ещё
-			g.ADC_value = 0;
-			TIM_SetCompare1(TIM2, ad.cmp1);//время где включится магнит
-			TIM_SetCompare2(TIM2, ad.cmp2 * 2);//где запустится АЦП а затем выключится магнит
-			TIM_SetCompare3(TIM2, ad.cmp2 * 2 + 300);//где ожидаем спада магнитного поля
-			g.ADC_deltaTime = ad.cmp2 * 2 - ad.cmp1;
-			ad.state = 10;
-			TIM_SetCounter(TIM2, 0);
-		} else if ( g.ADC_value > (ad.air + ad.deltaAir) ) {//алюминий рядом
-			TIM_Cmd(TIM2, DISABLE);
-			g.ADC_done = 1;
-		} else {//рядом ничего интересного нет
-			TIM_Cmd(TIM2, DISABLE);
-			g.ADC_done = 1;
-		}
-		break;
-	case 10:
-		ad.state = 0;
-		TIM_Cmd(TIM2, DISABLE);
-		g.ADC_done = 1;
-		break;
-	}
-
-	TIM_SetCounter(TIM2, 0);*/
+*/
 
 /*
  * Копирует строку str в глобальный отладочный буфер

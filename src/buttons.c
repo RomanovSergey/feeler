@@ -2,7 +2,7 @@
  * buttons.c
  *
  *  Created on: 30 апр. 2016 г.
- *      Author: se
+ *      Author: Se
  */
 
 #include "stm32f0xx.h"
@@ -12,55 +12,58 @@
 #define ANTI_TIME   30
 
 typedef struct  {
-	uint16_t count;//кол-во выборок (антидребезг)
-	uint8_t  current;//текущее среднее состояние кнопки
-	uint8_t  prev;//предыдущее среднее состояние кнопки
-	uint8_t* ptrPush;//указ. на глобальную - событие нажатия (из нолика в единицу) сбрасывает обработчик
+	uint16_t count;//count of acquision (debounce)
+	uint8_t  current;//current middle state of Button
+	uint8_t  prev;//previes middle state of Button
+	uint8_t* ptrPush;//pointer on global - event push (will reset by handler)
 } button_t;
 
-//пока только одна кнопка
+//only one button yet
 button_t B1 = {
 	.count = 0,
 	.current = 0,
 	.prev = 0,
-	.ptrPush = &g.B1_push,
+	.ptrPush = &g.b1_push,
 };
 
-
-void debounce(button_t *b, uint8_t instance);
-
-void buttons(void) {
-
-	debounce(&B1, READ_B1);//читаем и фильтруем кнопку B1
-}
+//================================================================================
 
 /*
- * функция для антидребезга, принимает указатель
- * на структуру кнопки и мгновенное значение кнопки
+ * Local function debounce, takes pointer
+ * to the struct of the button and button instance sensor
  */
 void debounce(button_t *b, uint8_t instance) {
-	if ( instance > 0 ) {//если кнопка нажата
+	if ( instance > 0 ) {//if button is pushed
 		if ( b->count < ANTI_TIME ) {
-			b->count++;//фильтр
+			b->count++;//filter
 		} else {
 			b->current = 1;
-			if ( b->prev == 0 ) {//если смена состояния
+			if ( b->prev == 0 ) {//if state is change
 				b->prev = 1;
 				if ( b->ptrPush != NULL ) {
-					*(b->ptrPush) = 1;//то генерим глобальное событие нажатия
+					*(b->ptrPush) = 1;//to generate global push button event
 				}
 			}
 		}
-	} else {//если кнопка отпущена
+	} else {//if button is pulled
 		if ( b->count > 0 ) {
-			b->count--;//фильтр
+			b->count--;//filter
 		} else {
 			b->current = 0;
-			if ( b->prev == 1 ) {//если смена состояния
+			if ( b->prev == 1 ) {//if state is change
 				b->prev = 0;
-				//пока нет задачи генерить событие отпускания
+				//yet no task to generate global pull event
 			}
 		}
 	}
+}
+
+
+/*
+ * this function called from main loop every 1 ms
+ */
+void buttons(void) {
+
+	debounce(&B1, READ_B1);//read and filter B1
 }
 

@@ -11,7 +11,8 @@
 #include "uart.h"
 #include "adc.h"
 #include "main.h"
-#include "../inc/buttons.h"
+#include "buttons.h"
+#include "magnetic.h"
 
 
 GLOBAL g;
@@ -178,18 +179,28 @@ void init(void) {
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStruct);
 	//
-	TIM_ETRConfig(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x04);
+	TIM_ETRConfig(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x00);
 	TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);//TIM3_CH1 input
+	//
+//	TIM_OCInitTypeDef TIM_OCInitStruct;
+//	TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_Timing;
+//	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Disable;
+//	TIM_OCInitStruct.TIM_OutputNState = TIM_OutputNState_Disable;
+//	TIM_OCInitStruct.TIM_Pulse =
+//	TIM_OC1Init(TIM3, &TIM_OCInitStruct);
+//	TI1_Config(TIM3, TIM_ICPolarity_Rising, TIM_ICSelection_DirectTI, 0x00);
+	//TIM_TIxExternalClockConfig(TIM3, TIM_TIxExternalCLK1Source_TI1, TIM_ICPolarity_Rising, 0x00);
+	TIM_ETRClockMode1Config(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x00);
 	//
 	TIM_SelectOutputTrigger(TIM3, TIM_TRGOSource_Enable);//while tim3 enable
 	TIM_SelectMasterSlaveMode(TIM3, TIM_MasterSlaveMode_Enable);
 	//
-	TIM_SetCounter(TIM3, 0);
-	TIM_Cmd(TIM3, DISABLE);
-	//
-	TIM_SetCompare1( TIM3, 0x0400 );//1024
+	TIM_SetCompare1( TIM3, 0x0100 );
 	TIM_ClearFlag(TIM3, TIM_FLAG_CC1);
 	TIM_ITConfig(TIM3, TIM_IT_CC1, ENABLE);
+	//
+	TIM_SetCounter(TIM3, 0);
+	TIM_Cmd(TIM3, DISABLE);
 	//
 	NVIC_InitStruct.NVIC_IRQChannel = TIM3_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;//main priority

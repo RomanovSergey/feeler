@@ -166,7 +166,6 @@ void uint32_to_str (uint32_t nmb)
 	char tmp_str [11] = {0,};
 	int i = 0, j;
 	if (nmb == 0){//если ноль
-		//*(buf++) = '0';
 		tx.buf[tx.ind++] = '0';
 	}else{
 		while (nmb > 0) {

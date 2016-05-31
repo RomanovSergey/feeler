@@ -10,10 +10,10 @@
 
 
 #define GREEN_ON      GPIO_SetBits(GPIOC,GPIO_Pin_9)
-#define GREEN_OFF     GPIO_ResetBits(GPIOC,GPIO_Pin_9);
+#define GREEN_OFF     GPIO_ResetBits(GPIOC,GPIO_Pin_9)
 
-#define BLUE_ON       GPIO_SetBits(GPIOC,GPIO_Pin_8);
-#define BLUE_OFF      GPIO_ResetBits(GPIOC,GPIO_Pin_8);
+#define BLUE_ON       GPIO_SetBits(GPIOC,GPIO_Pin_8)
+#define BLUE_OFF      GPIO_ResetBits(GPIOC,GPIO_Pin_8)
 
 typedef struct {
 	uint32_t ADC_calib;//получили при инициализации калибровку ацп (вдруг пригодится)

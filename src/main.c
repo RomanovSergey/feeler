@@ -179,18 +179,16 @@ void init(void) {
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStruct);
 	//
-	TIM_ETRConfig(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x00);
-	TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);//TIM3_CH1 input
+	TIM_ICInitTypeDef TIM_ICInitStruct;
+	TIM_ICInitStruct.TIM_Channel = TIM_Channel_1;
+	TIM_ICInitStruct.TIM_ICPolarity = TIM_ICPolarity_Rising;
+	TIM_ICInitStruct.TIM_ICSelection = TIM_ICSelection_DirectTI;
+	TIM_ICInitStruct.TIM_ICPrescaler = TIM_ICPSC_DIV1;
+	TIM_ICInitStruct.TIM_ICFilter = 0x0;
+	TIM_ICInit(TIM3, &TIM_ICInitStruct);
 	//
-//	TIM_OCInitTypeDef TIM_OCInitStruct;
-//	TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_Timing;
-//	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Disable;
-//	TIM_OCInitStruct.TIM_OutputNState = TIM_OutputNState_Disable;
-//	TIM_OCInitStruct.TIM_Pulse =
-//	TIM_OC1Init(TIM3, &TIM_OCInitStruct);
-//	TI1_Config(TIM3, TIM_ICPolarity_Rising, TIM_ICSelection_DirectTI, 0x00);
-	//TIM_TIxExternalClockConfig(TIM3, TIM_TIxExternalCLK1Source_TI1, TIM_ICPolarity_Rising, 0x00);
-	TIM_ETRClockMode1Config(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x00);
+	TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);
+	TIM_ETRClockMode1Config(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x0);
 	//
 	TIM_SelectOutputTrigger(TIM3, TIM_TRGOSource_Enable);//while tim3 enable
 	TIM_SelectMasterSlaveMode(TIM3, TIM_MasterSlaveMode_Enable);

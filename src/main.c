@@ -45,6 +45,7 @@ void init(void) {
 	USART_InitTypeDef        USART_InitStruct;
 	ADC_InitTypeDef          ADC_InitStruct;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
+	TIM_ICInitTypeDef        TIM_ICInitStruct;
 
 	g.ADC_calib = 0;
 	g.ADC_done  = 0;
@@ -180,7 +181,6 @@ void init(void) {
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStruct);
 	//
-	TIM_ICInitTypeDef TIM_ICInitStruct;
 	TIM_ICInitStruct.TIM_Channel = TIM_Channel_1;
 	TIM_ICInitStruct.TIM_ICPolarity = TIM_ICPolarity_Rising;
 	TIM_ICInitStruct.TIM_ICSelection = TIM_ICSelection_DirectTI;
@@ -188,9 +188,12 @@ void init(void) {
 	TIM_ICInitStruct.TIM_ICFilter = 0x0;
 	TIM_ICInit(TIM3, &TIM_ICInitStruct);
 	//
-	//TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);
 	TIM_TIxExternalClockConfig(TIM3, TIM_TIxExternalCLK1Source_TI1, TIM_ICPolarity_Rising, 0x0);
-	TIM_ETRClockMode1Config(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x0);
+	//TIM_ETRClockMode1Config(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x0);
+	//TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);
+	//
+	//
+	//
 	//
 	//TIM_SelectOutputTrigger(TIM3, TIM_TRGOSource_Enable);//while tim3 enable
 	//TIM_SelectMasterSlaveMode(TIM3, TIM_MasterSlaveMode_Enable);

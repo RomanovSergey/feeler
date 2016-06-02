@@ -174,6 +174,15 @@ void init(void) {
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 	TIM_DeInit(TIM3);
 	//
+	/*
+	TIM3->CR1  = 0x00;
+	TIM3->CR2  = TIM_TRGOSource_Enable;
+	TIM3->SMCR = TIM_TS_TI1FP1 | TIM_SlaveMode_External1;
+	TIM3->DIER = TIM_IT_CC2;
+	TIM3->SR   = 0;
+	TIM3->EGR
+	 */
+
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInitStruct.TIM_Period = 0xFFFF;//not used may be
@@ -190,17 +199,17 @@ void init(void) {
 	//
 	TIM_TIxExternalClockConfig(TIM3, TIM_TIxExternalCLK1Source_TI1, TIM_ICPolarity_Rising, 0x0);
 	//TIM_ETRClockMode1Config(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x0);
-	//TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);
+	TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);
 	//
 	//
 	//
 	//
-	//TIM_SelectOutputTrigger(TIM3, TIM_TRGOSource_Enable);//while tim3 enable
-	//TIM_SelectMasterSlaveMode(TIM3, TIM_MasterSlaveMode_Enable);
+	TIM_SelectOutputTrigger(TIM3, TIM_TRGOSource_Enable);//while tim3 enable
+	TIM_SelectMasterSlaveMode(TIM3, TIM_MasterSlaveMode_Enable);
 	//
-	TIM_SetCompare1( TIM3, 0x1000 );
-	TIM_ClearFlag(TIM3, TIM_FLAG_CC1);
-	TIM_ITConfig(TIM3, TIM_IT_CC1, ENABLE);
+	TIM_SetCompare2( TIM3, 0x0020 );
+	TIM_ClearFlag(TIM3, TIM_FLAG_CC2);
+	TIM_ITConfig(TIM3, TIM_IT_CC2, ENABLE);
 	//
 	TIM_SetCounter(TIM3, 0);
 	TIM_Cmd(TIM3, DISABLE);
@@ -212,22 +221,22 @@ void init(void) {
 
 	//======================================================================
 	//timer2 is 32 bit for count time while t3 counts pulse ================
-//	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-//	TIM_DeInit(TIM2);
-//	//
-//	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
-//	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-//	TIM_TimeBaseInitStruct.TIM_Period = 0xFFFFFFFF;//not used may be
-//	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
-//	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
-//	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
-//	//
-//	TIM_SelectInputTrigger(TIM2, TIM_TS_ITR2);//timer3 is for count enable
-//	TIM_SelectSlaveMode(TIM2, TIM_SlaveMode_Gated);
-//	//
-//	TIM_SetCounter(TIM2, 0);
-//	TIM_Cmd(TIM2, ENABLE);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+	TIM_DeInit(TIM2);
 	//
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
+	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
+	TIM_TimeBaseInitStruct.TIM_Period = 0xFFFFFFFF;//not used may be
+	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
+	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
+	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
+	//
+	TIM_SelectInputTrigger(TIM2, TIM_TS_ITR2);//timer3 is for count enable
+	TIM_SelectSlaveMode(TIM2, TIM_SlaveMode_Gated);
+	//
+	TIM_SetCounter(TIM2, 0);
+	TIM_Cmd(TIM2, ENABLE);
+
 	//======================================================================
 }
 

@@ -31,14 +31,8 @@ void printRun(void);
  * Периодически вызывается из main.c
  */
 void uart(void) {
-	static uint16_t tim = 0;
 	static uint16_t cnt = 0;
 
-	tim++;
-	if (tim < 1000) {
-		return;
-	}
-	tim = 0;
 
 	if (g.tim_done == 1) {
 		g.tim_done  = 0;

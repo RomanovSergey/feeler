@@ -13,7 +13,7 @@ void magnetic(void) {
 		g.b1_push = 0;//сбросим событие нажатия Б1
 
 		GREEN_ON;
-		//TIM_SetCounter(TIM2, 0);
+		TIM_SetCounter(TIM2, 0);
 		TIM_SetCounter(TIM3, 0);
 		TIM_Cmd(TIM3, ENABLE);//measure magnetic field
 	}
@@ -24,10 +24,10 @@ void magnetic(void) {
  */
 void TIM3_IRQHandler(void) {
 
-	if ( SET == TIM_GetITStatus(TIM3, TIM_IT_CC1) ) {
-		g.tim_len = TIM_GetCounter( TIM3 );//2
+	if ( SET == TIM_GetITStatus(TIM3, TIM_IT_CC2) ) {
+		g.tim_len = TIM_GetCounter( TIM2 );//2
 		g.tim_done = 1;
-		TIM_ClearFlag(TIM3, TIM_FLAG_CC1);
+		TIM_ClearFlag(TIM3, TIM_FLAG_CC2);
 		TIM_Cmd(TIM3, DISABLE);
 		GREEN_OFF;
 	}

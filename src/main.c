@@ -43,9 +43,9 @@ void init(void) {
 	GPIO_InitTypeDef         GPIO_InitStructure;
 	NVIC_InitTypeDef         NVIC_InitStruct;
 	USART_InitTypeDef        USART_InitStruct;
-	ADC_InitTypeDef          ADC_InitStruct;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
 	TIM_ICInitTypeDef        TIM_ICInitStruct;
+	//ADC_InitTypeDef          ADC_InitStruct;
 
 	g.ADC_calib = 0;
 	g.ADC_done  = 0;
@@ -109,6 +109,7 @@ void init(void) {
 
 	//==================================================================
 	//ADC pin config ===================================================
+	/*
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
 	GPIO_DeInit(GPIOB);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
@@ -138,16 +139,17 @@ void init(void) {
 	ADC_ChannelConfig(ADC1, ADC_Channel_8, ADC_SampleTime_1_5Cycles);
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);
+    */
 
 	//======================================================================
 	//drive pin PA8 for magnetic switch ====================================
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
+	/*GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	GPIO_WriteBit(GPIOA, GPIO_Pin_8, Bit_RESET);
+	GPIO_WriteBit(GPIOA, GPIO_Pin_8, Bit_RESET);*/
 
 	//======================================================================
 	//input pin PA0 B1 Button ==============================================
@@ -198,16 +200,14 @@ void init(void) {
 	TIM_ICInit(TIM3, &TIM_ICInitStruct);
 	//
 	TIM_TIxExternalClockConfig(TIM3, TIM_TIxExternalCLK1Source_TI1, TIM_ICPolarity_Rising, 0x0);
-	//TIM_ETRClockMode1Config(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x0);
 	TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);
-	//
-	//
+	//TIM_ETRClockMode1Config(TIM3, TIM_ExtTRGPSC_OFF, TIM_ExtTRGPolarity_Inverted, 0x0);
 	//
 	//
 	TIM_SelectOutputTrigger(TIM3, TIM_TRGOSource_Enable);//while tim3 enable
 	TIM_SelectMasterSlaveMode(TIM3, TIM_MasterSlaveMode_Enable);
 	//
-	TIM_SetCompare2( TIM3, 0x0020 );
+	TIM_SetCompare2( TIM3, 0x1000 );
 	TIM_ClearFlag(TIM3, TIM_FLAG_CC2);
 	TIM_ITConfig(TIM3, TIM_IT_CC2, ENABLE);
 	//
@@ -239,38 +239,6 @@ void init(void) {
 
 	//======================================================================
 }
-
-
-/*
-//======================================================================
-	//timer for limit magnetic shwitch on ==================================
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-	TIM_DeInit(TIM2);
-	//
-	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
-	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = 1000;//not used
-	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
-	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;//don't care
-	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
-	//
-	TIM_ClearFlag(TIM2, TIM_FLAG_Update);
-	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
-	//
-	TIM_SetCounter(TIM2, 0);
-	TIM_ClearFlag(TIM2, TIM_FLAG_CC1);
-	TIM_ITConfig(TIM2, TIM_IT_CC1, ENABLE);
-	TIM_ClearFlag(TIM2, TIM_FLAG_CC2);
-	TIM_ClearFlag(TIM2, TIM_FLAG_CC3);
-	//
-	TIM_Cmd(TIM2, DISABLE);
-	//
-	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;
-	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;
-	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStruct);
-	//======================================================================
- */
 
 
 

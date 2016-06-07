@@ -8,6 +8,6 @@
 #ifndef MICROMETER_H_
 #define MICROMETER_H_
 
-uint16_t micro(uint32_t Lvalue);
+int16_t micro(int32_t Lvalue);
 
 #endif /* MICROMETER_H_ */

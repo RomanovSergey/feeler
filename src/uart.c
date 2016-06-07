@@ -32,11 +32,19 @@ void printRun(void);
  */
 void uart(void) {
 	static uint16_t cnt = 0;
+	static uint16_t tim = 0;
 
-
-	if (g.tim_done == 1) {
+	tim++;
+	if (tim < 500) {
+		return;
+	}
+tim = 0;
+	{
+	//if (g.tim_done == 1) {
+		//uint32_t val = g.tim_len >> 9;
+		static uint32_t val = 5500;
 		g.tim_done  = 0;
-
+val -= 1;
 		tx.ind = 0;
 		toPrint("\033[2J");//clear entire screen
 		toPrint("\033[?25l");//Hides the cursor.
@@ -46,9 +54,13 @@ void uart(void) {
 
 		toPrint("\r\n Tim_len = ");//=================================
 		toPrint("\033[31m");//set red color
-		uint32_to_str( g.tim_len );
+		uint32_to_str( val );
 		toPrint("\033[0m");//reset normal (color also default)
 		toPrint(" y.e. \r\n");
+
+		toPrint(" microns = ");
+		uint32_to_str( micro( val ) );
+		toPrint(" um \r\n");
 
 		toPrint("\r\n\r\n cnt = ");
 		uint16_to_5str( cnt++ );
@@ -60,45 +72,6 @@ void uart(void) {
 }
 
 /*
-void uart(void) {
-
-static uint16_t min = 0xFFFF;
-static uint16_t max = 0;
-static uint16_t cnt = 0;
-static uint32_t sum = 0;
-
-	if (g.ADC_done == 1) {
-		g.ADC_done  = 0;
-
-		tx.ind = 0;
-		toPrint("\033[2J");//clear entire screen
-		toPrint("\033[?25l");//Hides the cursor.
-		toPrint("\033[H");//Move cursor to upper left corner.
-		printRun();//крутящаяся черточка
-		toPrint("\r\n");
-
-		toPrint("\r\n ADC_value = ");//=================================
-		toPrint("\033[31m");//set red color
-		uint16_to_5str( (uint16_t)(g.ADC_value) );
-		toPrint("\033[0m");//reset normal (color also default)
-		toPrint(" adc ");
-		uint16_to_bin( (uint16_t)g.ADC_value );
-		toPrint(" bin \r\n");
-
-		toPrint(" ADC_deltaTime = ");
-		uint16_to_5str( (uint16_t)g.ADC_deltaTime );
-		toPrint("\r\n");
-
-		g.ADC_deltaTime *= 1000000;
-		uint32_t Lval = g.ADC_deltaTime / g.ADC_value;
-		toPrint(" Lval   = ");
-		uint32_to_str( Lval );
-		toPrint("\r\n");
-
-		toPrint(" micron = ");
-		uint16_to_5str( micro(Lval) );
-		toPrint("\r\n");
-
 		if ( min > g.ADC_value ) {
 			min = g.ADC_value;
 		}
@@ -110,22 +83,6 @@ static uint32_t sum = 0;
 		}
 		toPrint("\r\n max = ");
 		uint16_to_5str( max );
-
-		cnt++;
-		sum += g.ADC_value;
-
-		toPrint("\r\n avg = ");
-		uint16_to_5str( (uint16_t)(sum / cnt) );
-
-		toPrint("\r\n\r\n cnt = ");
-		uint16_to_5str( cnt );
-
-
-		USART_SendData(USART2, tx.buf[0]);
-		tx.ind = 1;
-		USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
-	}
-}
 */
 
 /*

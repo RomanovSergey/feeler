@@ -20,14 +20,23 @@ GLOBAL g;
 void init(void);
 
 int main(void) {
-
+	//static int bit = 0;
 	init();
 
 	while (1) {
 		//adc();
 		magnetic();
-		buttons();
+		//buttons();
 		uart();
+
+		/*if (bit == 1) {
+			bit = 0;
+			GPIO_SetBits(GPIOA,GPIO_Pin_6);
+		} else {
+			bit = 1;
+			GPIO_ResetBits(GPIOA,GPIO_Pin_6);
+		}*/
+
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
 }
@@ -152,16 +161,40 @@ void init(void) {
 	GPIO_WriteBit(GPIOA, GPIO_Pin_8, Bit_RESET);*/
 
 	//======================================================================
-	//input pin PA0 B1 Button ==============================================
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	//input pin PA0 B1 Button ============================================================
+//	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+//	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+//	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+//	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+//	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+//	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	//======================================================================
 	//input pin PA6 TIM3_CH1 input =========================================
+//	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+//	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+//	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+//	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+//	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+//	GPIO_Init(GPIOA, &GPIO_InitStructure);
+//	//
+//	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1);
+
+	//======================================================================
+	//COMP1 ================================================================
+	COMP_DeInit();
+	COMP_InitTypeDef COMP_InitStruct;
+	COMP_InitStruct.COMP_InvertingInput = COMP_InvertingInput_IO;
+	COMP_InitStruct.COMP_Output = COMP_Output_None;
+	COMP_InitStruct.COMP_OutputPol = COMP_OutputPol_NonInverted;
+	COMP_InitStruct.COMP_Hysteresis = COMP_Hysteresis_No;
+	COMP_InitStruct.COMP_Mode = COMP_Mode_HighSpeed;
+	COMP_Init(COMP_Selection_COMP1, &COMP_InitStruct);
+	//
+	COMP_Cmd(COMP_Selection_COMP1, ENABLE);
+
+	//======================================================================
+	//PA6 COMP1_OUT ========================================================
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -169,7 +202,25 @@ void init(void) {
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	//
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_7);
+
+	//======================================================================
+	//PA0 COMP1_INM ========================================================
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	//======================================================================
+	//PA1 COMP1_INP ========================================================
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	//======================================================================
 	//timer3 is 16 bit for count pulse magnetic (PA6 pin) ==================

@@ -32,16 +32,10 @@ void printRun(void);
  */
 void uart(void) {
 	static uint16_t cnt = 0;
-	static uint16_t tim = 0;
 
-	tim++;
-	if (tim < 500) {
-		return;
-	}
-tim = 0;
-	{
-	//if (g.tim_done == 1) {
-		//uint32_t val = g.tim_len >> 9;
+	if ( g.b1_push == 1 ) {//если нажали кнопку Б1 - запустим измерительный механизм
+		g.b1_push = 0;//сбросим событие нажатия Б1
+
 		static uint32_t val = 5500;
 		g.tim_done  = 0;
 val -= 1;

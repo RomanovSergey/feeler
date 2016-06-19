@@ -20,22 +20,13 @@ GLOBAL g;
 void init(void);
 
 int main(void) {
-	//static int bit = 0;
 	init();
 
 	while (1) {
 		//adc();
-		//magnetic();
-		//buttons();
+		magnetic();
+		buttons();
 		uart();
-
-		/*if (bit == 1) {
-			bit = 0;
-			GPIO_SetBits(GPIOA,GPIO_Pin_6);
-		} else {
-			bit = 1;
-			GPIO_ResetBits(GPIOA,GPIO_Pin_6);
-		}*/
 
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
@@ -50,15 +41,15 @@ void init(void) {
 
 
 	GPIO_InitTypeDef         GPIO_InitStructure;
-	//NVIC_InitTypeDef         NVIC_InitStruct;
-	//USART_InitTypeDef        USART_InitStruct;
-	//TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
-	//TIM_ICInitTypeDef        TIM_ICInitStruct;
+	NVIC_InitTypeDef         NVIC_InitStruct;
+	USART_InitTypeDef        USART_InitStruct;
+	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
+	TIM_ICInitTypeDef        TIM_ICInitStruct;
 	//ADC_InitTypeDef          ADC_InitStruct;
 
-	g.ADC_calib = 0;
-	g.ADC_done  = 0;
-	g.ADC_value = 0;
+	//g.ADC_calib = 0;
+	//g.ADC_done  = 0;
+	//g.ADC_value = 0;
 	g.tim_done  = 0;
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
@@ -66,7 +57,7 @@ void init(void) {
 
 	// GPIOC Periph clock enable =======================================
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
-	// Configure PC8 and PC9 in output pushpull mode
+	// Configure PC8 and PC9 in output pushpull mode (right left lamp)
 	GPIO_DeInit(GPIOC);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9;//лампочки на discovery плате
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
@@ -78,7 +69,7 @@ void init(void) {
 	//================================================================
 	//uart2 on PA2 (tx) and PA3 (rx) pins ============================
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-	/*RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 	//
 	GPIO_DeInit(GPIOA);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;//uart TX
@@ -114,50 +105,16 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannel = USART2_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStruct);*/
+	NVIC_Init(&NVIC_InitStruct);
 
-	//==================================================================
-	//ADC pin config ===================================================
-	/*
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
-	GPIO_DeInit(GPIOB);
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	//
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-	ADC_DeInit(ADC1);
-	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
-	ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;
-	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
-	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T2_TRGO;
-	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
-	ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
-	ADC_Init(ADC1, &ADC_InitStruct);
-	//
-	ADC_JitterCmd(ADC1, ADC_JitterOff_PCLKDiv4, ENABLE);
-	//
-	g.ADC_calib = ADC_GetCalibrationFactor(ADC1);
-	//
-	ADC_Cmd(ADC1, ENABLE);
-	while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY) );
-	//
-	ADC_ChannelConfig(ADC1, ADC_Channel_8, ADC_SampleTime_1_5Cycles);
-	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
-	ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);
-    */
-
-	/*//======================================================================
-	//input pin PA0 B1 Button ==============================================
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	//======================================================================
+	//input pin PA8 B1 Button ==============================================
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);*/
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	//======================================================================
 	//input pin PA6 TIM3_CH1 input =========================================
@@ -170,13 +127,13 @@ void init(void) {
 //	//
 //	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1);
 
-	//======================================================================
+	//15====================================================================
 	//COMP1 ================================================================
 	//COMP_DeInit();
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
 	COMP_InitTypeDef COMP_InitStruct;
 	COMP_InitStruct.COMP_InvertingInput = COMP_InvertingInput_IO;
-	COMP_InitStruct.COMP_Output = COMP_Output_None;
+	COMP_InitStruct.COMP_Output = COMP_Output_TIM3IC1;
 	COMP_InitStruct.COMP_OutputPol = COMP_OutputPol_NonInverted;
 	COMP_InitStruct.COMP_Hysteresis = COMP_Hysteresis_No;
 	COMP_InitStruct.COMP_Mode = COMP_Mode_MediumSpeed;
@@ -213,9 +170,9 @@ void init(void) {
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	//======================================================================
+	//17====================================================================
 	//timer3 is 16 bit for count pulse magnetic (PA6 pin) ==================
-	/*RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 	TIM_DeInit(TIM3);
 	//
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
@@ -266,7 +223,7 @@ void init(void) {
 	TIM_SelectSlaveMode(TIM2, TIM_SlaveMode_Gated);
 	//
 	TIM_SetCounter(TIM2, 0);
-	TIM_Cmd(TIM2, ENABLE);*/
+	TIM_Cmd(TIM2, ENABLE);
 
 	//======================================================================
 }
@@ -305,4 +262,38 @@ void assert_failed(uint8_t* file, uint32_t line)
 	}
 }
 #endif
+
+//==================================================================
+//ADC pin config ===================================================
+/*
+RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+GPIO_DeInit(GPIOB);
+GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
+GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+GPIO_Init(GPIOB, &GPIO_InitStructure);
+//
+RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
+ADC_DeInit(ADC1);
+ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
+ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;
+ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
+ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T2_TRGO;
+ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
+ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
+ADC_Init(ADC1, &ADC_InitStruct);
+//
+ADC_JitterCmd(ADC1, ADC_JitterOff_PCLKDiv4, ENABLE);
+//
+g.ADC_calib = ADC_GetCalibrationFactor(ADC1);
+//
+ADC_Cmd(ADC1, ENABLE);
+while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY) );
+//
+ADC_ChannelConfig(ADC1, ADC_Channel_8, ADC_SampleTime_1_5Cycles);
+ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
+ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);
+*/
 

@@ -16,10 +16,10 @@
 #define BLUE_OFF      GPIO_ResetBits(GPIOC,GPIO_Pin_8)
 
 typedef struct {
-	uint32_t ADC_calib;//получили при инициализации калибровку ацп (вдруг пригодится)
-	uint32_t ADC_value;//ну типа измереное значение ацп (ну типа усредненое чтоли)
-	uint32_t ADC_deltaTime;//здесь время за какое ток нарастает от нуля до ADC_value
-	uint32_t ADC_done;//алгоритм завершен данные готовы (ADC_value, ADC_deltaTime)
+	//uint32_t ADC_calib;//получили при инициализации калибровку ацп
+	//uint32_t ADC_value;//измереное значение ацп
+	//uint32_t ADC_deltaTime;//время за какое ток нарастает от нуля до ADC_value
+	//uint32_t ADC_done;//алгоритм завершен данные готовы (ADC_value, ADC_deltaTime)
 
 	uint32_t tim_len;//time of lenght N pulses in magnetic measures
 	uint32_t tim_done;//flag data timer is ready

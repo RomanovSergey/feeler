@@ -8,7 +8,7 @@
 #include "stm32f0xx.h"
 #include "main.h"
 
-#define READ_B1     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)
+#define READ_B1     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_8)
 #define ANTI_TIME   30
 
 typedef struct  {

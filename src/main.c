@@ -44,12 +44,9 @@ void init(void) {
 	NVIC_InitTypeDef         NVIC_InitStruct;
 	USART_InitTypeDef        USART_InitStruct;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
-	TIM_ICInitTypeDef        TIM_ICInitStruct;
+	//TIM_ICInitTypeDef        TIM_ICInitStruct;
 	//ADC_InitTypeDef          ADC_InitStruct;
 
-	//g.ADC_calib = 0;
-	//g.ADC_done  = 0;
-	//g.ADC_value = 0;
 	g.tim_done  = 0;
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
@@ -116,17 +113,6 @@ void init(void) {
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	//======================================================================
-	//input pin PA6 TIM3_CH1 input =========================================
-//	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
-//	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-//	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-//	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-//	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-//	GPIO_Init(GPIOA, &GPIO_InitStructure);
-//	//
-//	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1);
-
 	//15====================================================================
 	//COMP1 ================================================================
 	//COMP_DeInit();
@@ -182,53 +168,34 @@ void init(void) {
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStruct);
 	//
-	TIM_ICInitStruct.TIM_Channel = TIM_Channel_1;
-	TIM_ICInitStruct.TIM_ICPolarity = TIM_ICPolarity_Rising;
-	TIM_ICInitStruct.TIM_ICSelection = TIM_ICSelection_DirectTI;
-	TIM_ICInitStruct.TIM_ICPrescaler = TIM_ICPSC_DIV1;
-	TIM_ICInitStruct.TIM_ICFilter = 0x0;
-	TIM_ICInit(TIM3, &TIM_ICInitStruct);
-	//
 	TIM_TIxExternalClockConfig(TIM3, TIM_TIxExternalCLK1Source_TI1, TIM_ICPolarity_Rising, 0x0);
 	TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);
 	//
-	TIM_SelectOutputTrigger(TIM3, TIM_TRGOSource_Enable);//while tim3 enable
-	TIM_SelectMasterSlaveMode(TIM3, TIM_MasterSlaveMode_Enable);
-	//
-	TIM_SetCompare2( TIM3, 0x1000 );
-	TIM_ClearFlag(TIM3, TIM_FLAG_CC2);
-	TIM_ITConfig(TIM3, TIM_IT_CC2, ENABLE);
-	//
 	TIM_SetCounter(TIM3, 0);
-	TIM_Cmd(TIM3, DISABLE);
-	//
-	NVIC_InitStruct.NVIC_IRQChannel = TIM3_IRQn;
-	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;//main priority
-	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStruct);
+	TIM_Cmd(TIM3, ENABLE);
 
 	//======================================================================
 	//timer2 is 32 bit for count time while t3 counts pulse ================
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 	TIM_DeInit(TIM2);
 	//
-	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 0;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = 0xFFFFFFFF;//not used may be
+	TIM_TimeBaseInitStruct.TIM_Period = 48000000L;
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
 	//
-	TIM_SelectInputTrigger(TIM2, TIM_TS_ITR2);//timer3 is for count enable
-	TIM_SelectSlaveMode(TIM2, TIM_SlaveMode_Gated);
+	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
 	//
 	TIM_SetCounter(TIM2, 0);
 	TIM_Cmd(TIM2, ENABLE);
-
-	//======================================================================
+	//
+	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;
+	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;//main priority
+	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStruct);
 }
-
-
 
 #ifdef  USE_FULL_ASSERT
 
@@ -263,37 +230,4 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 #endif
 
-//==================================================================
-//ADC pin config ===================================================
-/*
-RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
-GPIO_DeInit(GPIOB);
-GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
-GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-GPIO_Init(GPIOB, &GPIO_InitStructure);
-//
-RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-ADC_DeInit(ADC1);
-ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
-ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;
-ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
-ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T2_TRGO;
-ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
-ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
-ADC_Init(ADC1, &ADC_InitStruct);
-//
-ADC_JitterCmd(ADC1, ADC_JitterOff_PCLKDiv4, ENABLE);
-//
-g.ADC_calib = ADC_GetCalibrationFactor(ADC1);
-//
-ADC_Cmd(ADC1, ENABLE);
-while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY) );
-//
-ADC_ChannelConfig(ADC1, ADC_Channel_8, ADC_SampleTime_1_5Cycles);
-ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
-ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);
-*/
 

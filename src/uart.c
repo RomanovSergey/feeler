@@ -35,9 +35,9 @@ void uart(void) {
 
 	if ( g.tim_done == 1 ) {
 
-		uint32_t val = g.tim_len >> 10;
+		uint32_t val = g.tim_len;
 		g.tim_done  = 0;
-		tx.ind = 0;
+		tx.ind = 0;//индекс буфера для отправки в порт сбрасываем в ноль
 		toPrint("\033[2J");//clear entire screen
 		toPrint("\033[?25l");//Hides the cursor.
 		toPrint("\033[H");//Move cursor to upper left corner.
@@ -182,7 +182,7 @@ void USART2_IRQHandler(void) {
 
 	if(USART_GetITStatus(USART2, USART_IT_TXE) != RESET) {
 		if (tx.buf[tx.ind] == 0) {
-			if ( g.buf[0] == 0 ) {//в отладочном буфере нет данных
+			if ( g.buf[0] == 0 ) {//в отладочном буфере нет данных (ПОТОМ УДАЛИТЬ)
 				USART_ClearITPendingBit(USART2, USART_IT_TC);
 				USART_ITConfig(USART2, USART_IT_TC, ENABLE);
 				USART_ITConfig(USART2, USART_IT_TXE, DISABLE);

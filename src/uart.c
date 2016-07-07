@@ -11,52 +11,22 @@
 #include "stm32f0xx.h"
 #include "main.h"
 #include "micro.h"
+#include "uart.h"
+#include "menu.h"
 
-#define TX_SIZE 256
+struct Tsend tx;//буфер для отправки по уарт
 
-struct Tsend{
-	uint16_t  ind;//указывает на нулевой символ строки (для след. записи)
-	uint8_t   buf[TX_SIZE];
-};
-static struct Tsend tx;//буфер для отправки по уарт
-
-//прототипы
-int8_t toPrint(char *str);
-void uint32_to_str (uint32_t nmb);
-void uint16_to_5str(uint16_t n);
-void uint16_to_bin(uint16_t n);
-void printRun(void);
+int(*ptrDispFunc)(void) = measureDisp;
 
 /*
  * Периодически вызывается из main.c
  */
 void uart(void) {
-	static uint16_t cnt = 0;
+	int res;
 
-	if ( g.tim_done == 1 ) {
+	res = ptrDispFunc();
 
-		uint32_t val = g.tim_len;
-		g.tim_done  = 0;
-		tx.ind = 0;//индекс буфера для отправки в порт сбрасываем в ноль
-		toPrint("\033[2J");//clear entire screen
-		toPrint("\033[?25l");//Hides the cursor.
-		toPrint("\033[H");//Move cursor to upper left corner.
-		printRun();//крутящаяся черточка
-		toPrint("\r\n");
-
-		toPrint("\r\n Tim_len = ");//=================================
-		toPrint("\033[31m");//set red color
-		uint32_to_str( val );
-		toPrint("\033[0m");//reset normal (color also default)
-		toPrint(" y.e. \r\n");
-
-		toPrint(" microns = ");
-		uint32_to_str( micro( val ) );
-		toPrint(" um \r\n");
-
-		toPrint("\r\n\r\n cnt = ");
-		uint16_to_5str( cnt++ );
-
+	if ( res ) {
 		USART_SendData(USART2, tx.buf[0]);
 		tx.ind = 1;
 		USART_ITConfig(USART2, USART_IT_TXE, ENABLE);

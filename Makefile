@@ -50,6 +50,7 @@ SRC += ./src/uart.c
 //SRC += ./src/adc.c
 SRC += ./src/micro.c
 SRC += ./src/magnetic.c
+SRC += ./src/menu.c
 SRC += $(DEVDIR)/Source/system_stm32f0xx.c
 
 ## used parts of the STM-Library

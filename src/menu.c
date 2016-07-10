@@ -14,9 +14,8 @@
 int measureDisp(void) {
 	static uint16_t cnt = 0;
 
-	if ( g.b1_Lpush == 1 ) {
+	if ( g.b1_Lpush == 1 ) {//если поймали глобально событие длительного нажатия кнопки
 		g.b1_Lpush = 0;
-
 		ptrDispFunc = calibrateDisp;
 	}
 
@@ -54,12 +53,11 @@ int calibrateDisp(void) {
 
 	if ( g.b1_Lpush == 1 ) {
 		g.b1_Lpush = 0;
-
 		ptrDispFunc = measureDisp;
 	}
 
 	tim++;
-	if (tim == 100) {
+	if (tim == 500) {
 		tim = 0;
 
 		tx.ind = 0;//индекс буфера для отправки в порт сбрасываем в ноль

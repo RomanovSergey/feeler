@@ -9,23 +9,22 @@
 #include "main.h"
 
 #define READ_B1     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_8)
-#define ANTI_TIME   30    //time of debounce
-#define LPUSH_TIME  1000  //time for long push button event generation
 
+//локальная структура состояния кнопки
 typedef struct  {
-	uint16_t debcount;//count of acquision (debounce)
-	uint8_t  current;//current middle state of Button
-	uint16_t debcurrent;//count of current state of pressed Button
-	uint8_t  prev;//previes middle state of Button
-	uint8_t* ptrPush; //pointer on global - event push (will reset by handler)
-	uint8_t* ptrLPush;//pointer on global - event long push (will reset by handler)
+	int16_t  debcount;//счетчик антидребезга
+	uint8_t  current;//текущее отфильтрованное состояние кнопки
+	uint8_t  prev;//предыдущее отфильтрованное состояние кнопки
+	uint16_t timPush;//время нажатия кнопки (для события длительного нажатия)
+	uint8_t* ptrPush; //указат.на глоб. - флаг события нажатия (сбрасывается обработчиком)
+	uint8_t* ptrLPush;//указат.на глоб. - флаг событ.длительного нажатия (сбрасывается обработчиком)
 } button_t;
 
 //only one button yet
 button_t B1 = {
 	.debcount = 0,
 	.current = 0,
-	.debcurrent = 0,
+	.timPush = 0,
 	.prev = 0,
 	.ptrPush = &g.b1_push,
 	.ptrLPush = &g.b1_Lpush,
@@ -34,10 +33,144 @@ button_t B1 = {
 //================================================================================
 
 /*
- * Local function debounce, takes pointer
- * to the struct of the button and button instance sensor
+ * debounce локальная функция антидребезга
+ * параметры: указатель на струкуру данных кнопки button_t *b
+ * и текущее значение кнопки uint8_t instnce
+ *
+ * результат работы функции - вычислить текущее логическое
+ * состояние кнопки, которое записывается в поле передаваемой
+ * структуры b->current
  */
 void debounce(button_t *b, uint8_t instance) {
+	static const int ANTI_TIME = 30;    //time of debounce
+	if ( instance > 0 ) {//if button is pushed *************************
+		if ( b->debcount < ANTI_TIME ) {
+			b->debcount++;//filter
+		} else {
+			b->current = 1;
+		}
+	} else {//if button is pulled **************************************
+		if ( b->debcount > 0 ) {
+			b->debcount--;//filter
+		} else {
+			if ( b->prev == 1 ) {//if state is change
+				b->current = 0;
+			}
+		}
+	}
+}
+
+/*
+ * eventPushPull локальная функция
+ * генерить событие при первом нажатии кнопки
+ */
+void eventPushPull(button_t *b) {
+	if ( b->current == 1 ) {//если кнопка нажата
+		if ( b->prev == 0 ) {//если кнопку только нажали
+			b->prev = 1;
+			if ( b->ptrPush != NULL ) {
+				*(b->ptrPush) = 1;//сгенерим глоб.событ. нажат. кнопки (сбрасывает обработчик)
+			}
+		}
+	} else {//если кнопка отпущена
+		if ( b->prev == 1 ) {//если конопку только что отпустили
+			b->prev = 0;
+			//пока нет задачи генерить событие по отпусканию кнопки
+		}
+	}
+}
+
+/*
+ * longPush локальная функция
+ * генерить событие при длительном нажатии кнопки
+ */
+void eventLongPush(button_t *b) {
+	static const int LPUSH_TIME = 2000;  //time for long push button event generation
+	if ( b->current == 1 ) {//если кнопка нажата
+		if ( b->timPush > LPUSH_TIME ) {//если время нажатия кнопки достаточное
+			if ( b->ptrLPush != NULL ) {
+				*(b->ptrLPush) = 1;//сгенерим глоб.событ. длит. нажат. кнопки (сбрасывает обработчик)
+			}
+			b->timPush = 0;//сбрасываем счетчик длительного нажатия
+		} else {
+			b->timPush++;
+		}
+	} else {//если кнопка отпущена
+		b->timPush = 0;//сбрасываем счетчик длительного нажатия
+	}
+}
+
+#define DBL_TIME 1000 //время для двойного нажатия
+/*
+ * eventDoublePush локальная функция
+ * генерить событие при двойном нажатии кнопки
+ * (двойное нажатие, это за время t успеть нажать,
+ * отпусить, нажать, отпустить кнопку)
+ */
+void eventDoublePush(button_t *b) {
+	static uint8_t  stat = 0;
+	static uint16_t dblTim = 0;
+	static uint8_t  prev = 0;
+
+	switch (stat) {
+	case 0://начальое состояние, кнопка опущена
+
+		if ( b->current == 1 ) {//если кнопка нажата
+			if ( b->prev == 0 ) {//если кнопку только нажали
+				b->prev = 1;
+				if ( b->ptrPush != NULL ) {
+					*(b->ptrPush) = 1;//сгенерим глоб.событ. нажат. кнопки (сбрасывает обработчик)
+				}
+			}
+		} else {//если кнопка отпущена
+			if ( b->prev == 1 ) {//если конопку только что отпустили
+				b->prev = 0;
+				//пока нет задачи генерить событие по отпусканию кнопки
+			}
+		}
+
+
+
+		if ( b->current == 1 ) {
+			if ( prev == 0 ) {
+				stat = 1;
+				dblTim = 0;
+			}
+		}
+		break;
+	case 1:
+		if ( b->current == 0 ) {
+			stat = 2;
+		}
+		if ( dblTim < DBL_TIME ) {
+			dblTim++;
+		}else {
+			dblTim = 0;
+		}
+		break;
+	case 2:
+
+		break;
+	}
+}
+
+/*
+ * this function called from main loop every 1 ms
+ */
+void buttons(void) {
+
+	debounce( &B1, READ_B1 );//антидребезг B1
+	eventPushPull( &B1 );//генерить событие при первом нажатии В1
+	eventLongPush( &B1 );//генерить событие при длительном нажатии на В1
+}
+
+
+
+/*
+ * Local function debounce, takes pointer
+ * to the struct of the button and button instance sensor
+ *
+void debounce_(button_t *b, uint8_t instance) {
 	if ( instance > 0 ) {//if button is pushed *************************
 		if ( b->debcount < ANTI_TIME ) {
 			b->debcount++;//filter
@@ -68,14 +201,6 @@ void debounce(button_t *b, uint8_t instance) {
 			}
 		}
 	}
-}
+}*/
 
-
-/*
- * this function called from main loop every 1 ms
- */
-void buttons(void) {
-
-	debounce(&B1, READ_B1);//read and filter B1
-}
 

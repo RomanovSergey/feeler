@@ -4,6 +4,11 @@
   * https://launchpad.net/gcc-arm-embedded
   * example may be from here (do not remember):
   * http://www.hertaville.com/stm32f0discovery-part-1-linux.html
+  *
+  * for erasing
+  * st-flash erase
+  * for programming
+  * st-flash write feeler.bin 0x8000000
   ******************************************************************************
 */
 

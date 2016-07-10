@@ -84,7 +84,7 @@ INCDIRS = $(DEVDIR)/Include \
           $(CORELIBDIR) \
           $(STMSPINCDDIR) \
           $(DISCOVERY)    \
-          ./inc     
+          ./src     
 # List the user directory to look for the libraries here
 LIBDIRS += $(LIBSDIRS)
  
@@ -114,14 +114,15 @@ MCFLAGS = -mcpu=$(MCU)
 ASFLAGS = $(MCFLAGS) -g -gdwarf-2 -mthumb  -Wa,-amhls=$(<:.s=.lst) 
 CPFLAGS = $(MCFLAGS) $(OPT) -g -gdwarf-2 -mthumb   -fomit-frame-pointer -Wall -Wstrict-prototypes -fverbose-asm -Wa,-ahlms=$(<:.c=.lst) $(DEFS)
 LDFLAGS = $(MCFLAGS) -g -gdwarf-2 -mthumb -nostartfiles -T$(LINKER_SCRIPT) -Wl,-Map=$(PROJECT).map,--cref,--no-warn-mismatch $(LIBDIR) $(LIB)
- 
+
+
 #
 # makefile rules
 #
 
 all: $(OBJS) $(PROJECT).elf  $(PROJECT).hex $(PROJECT).bin
 	$(TRGT)size $(PROJECT).elf
- 
+
 %o: %c
 	$(CC) -c $(CPFLAGS) -I . $(INCDIR) $< -o $@
 

@@ -20,7 +20,7 @@
 #include "magnetic.h"
 
 
-GLOBAL g;
+GLOBAL_T g;
 
 void init(void);
 
@@ -127,7 +127,7 @@ void init(void) {
 	COMP_InitStruct.COMP_Output = COMP_Output_TIM3IC1;
 	COMP_InitStruct.COMP_OutputPol = COMP_OutputPol_NonInverted;
 	COMP_InitStruct.COMP_Hysteresis = COMP_Hysteresis_No;
-	COMP_InitStruct.COMP_Mode = COMP_Mode_MediumSpeed;
+	COMP_InitStruct.COMP_Mode = COMP_Mode_HighSpeed;
 	COMP_Init(COMP_Selection_COMP1, &COMP_InitStruct);
 	//
 	COMP_Cmd(COMP_Selection_COMP1, ENABLE);
@@ -186,7 +186,7 @@ void init(void) {
 	//
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 0;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = 48000000L;
+	TIM_TimeBaseInitStruct.TIM_Period = 24000000L;
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);

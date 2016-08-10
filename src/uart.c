@@ -1,7 +1,7 @@
 /*
  * uart.c
  *
- *  Created on: 1 мая 2016 г.
+ *  Created on: май 2016 г.
  *      Author: se
  *
  *  Эскейп коды взял отсюда:
@@ -24,6 +24,10 @@ int(*ptrDispFunc)(void) = measureDisp;
 void uart(void) {
 	int res;
 
+	if (g.event == noEvent) {//если нет событий
+		return;
+	}
+
 	res = ptrDispFunc();
 
 	if ( res ) {
@@ -32,20 +36,6 @@ void uart(void) {
 		USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
 	}
 }
-
-/*
-		if ( min > g.ADC_value ) {
-			min = g.ADC_value;
-		}
-		toPrint(" min = ");
-		uint16_to_5str( min );
-
-		if ( max < g.ADC_value ) {
-			max = g.ADC_value;
-		}
-		toPrint("\r\n max = ");
-		uint16_to_5str( max );
-*/
 
 /*
  * Копирует строку str в буфер tx

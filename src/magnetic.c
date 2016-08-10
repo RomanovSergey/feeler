@@ -11,15 +11,6 @@
 void magnetic(void) {
 
 }
-//	if ( g.b1_push == 1 ) {//если нажали кнопку Б1 - запустим измерительный механизм
-//		g.b1_push = 0;//сбросим событие нажатия Б1
-//
-//		GREEN_ON;
-//		TIM_SetCounter(TIM2, 0);
-//		TIM_SetCounter(TIM3, 0);
-//		TIM_Cmd(TIM3, ENABLE);//measure magnetic field
-//	}
-//}
 
 /*
  * interrupt handler
@@ -36,7 +27,7 @@ void TIM2_IRQHandler(void) {
 		}
 		g.tim_len = TIM_GetCounter( TIM3 );
 		TIM_SetCounter(TIM3, 0);
-		g.tim_done = 1;
+		g.event = measure;
 
 		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
 	}

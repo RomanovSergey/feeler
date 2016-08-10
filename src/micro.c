@@ -1,7 +1,7 @@
 /*
  * micrometr.c
  *
- *  Created on: May 25, 2016
+ *  Created on: May, 2016
  *      Author: se
  */
 
@@ -16,7 +16,7 @@ typedef struct {
 #define LTOMSIZE  7
 
 //калибровочная таблица в озу
-ltom_t ltom[LTOMSIZE] = {  //init  Lvalue to micrometer in RAM 40 * ( 4 + 2 ) = 240 байт
+ltom_t ltom[LTOMSIZE] = {  //init  Lvalue to micrometer in RAM
 
 		{   4514,  5000 },  // - air
 

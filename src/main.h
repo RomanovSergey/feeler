@@ -15,19 +15,30 @@
 #define BLUE_ON       GPIO_SetBits(GPIOC,GPIO_Pin_8)
 #define BLUE_OFF      GPIO_ResetBits(GPIOC,GPIO_Pin_8)
 
+typedef enum {
+	noEvent,
+	b1Push,
+	b1LongPush,
+	measure,
+	repaint,
+} EVENT_T;
+
+
 typedef struct {
+	EVENT_T  event;//содержит код события, если 0 то событий нет
+
 	uint32_t tim_len;//time of lenght N pulses in magnetic measures
 	uint32_t tim_done;//flag data timer is ready
 
-	uint8_t  b1_push;//событие нажатия B1 кнопки (сбрасыватся обработчиком)
-	uint8_t  b1_Lpush;//событие длительного нажатия B1 кнопки (сбрасывается обработчиком)
+	//uint8_t  b1_push;//событие нажатия B1 кнопки (сбрасыватся обработчиком)
+	//uint8_t  b1_Lpush;//событие длительного нажатия B1 кнопки (сбрасывается обработчиком)
 
 	uint16_t  ind;//указывает на нулевой символ строки (для след. записи) отладочного буфера
 	uint8_t   buf[256];//отладочный буфер (потом удалить)
 
-} GLOBAL;
+} GLOBAL_T;
 
-extern GLOBAL g;
+extern GLOBAL_T g;
 
 #define NULL ((void *)0)
 

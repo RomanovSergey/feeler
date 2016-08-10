@@ -16,8 +16,8 @@ typedef struct  {
 	uint8_t  current;//текущее отфильтрованное состояние кнопки
 	uint8_t  prev;//предыдущее отфильтрованное состояние кнопки
 	uint16_t timPush;//время нажатия кнопки (для события длительного нажатия)
-	uint8_t* ptrPush; //указат.на глоб. - флаг события нажатия (сбрасывается обработчиком)
-	uint8_t* ptrLPush;//указат.на глоб. - флаг событ.длительного нажатия (сбрасывается обработчиком)
+	//uint8_t* ptrPush; //указат.на глоб. - флаг события нажатия (сбрасывается обработчиком)
+	//uint8_t* ptrLPush;//указат.на глоб. - флаг событ.длительного нажатия (сбрасывается обработчиком)
 } button_t;
 
 //only one button yet
@@ -26,8 +26,8 @@ button_t B1 = {
 	.current = 0,
 	.timPush = 0,
 	.prev = 0,
-	.ptrPush = &g.b1_push,
-	.ptrLPush = &g.b1_Lpush,
+	//.ptrPush = &g.b1_push,
+	//.ptrLPush = &g.b1_Lpush,
 };
 
 //================================================================================
@@ -68,9 +68,10 @@ void eventPushPull(button_t *b) {
 	if ( b->current == 1 ) {//если кнопка нажата
 		if ( b->prev == 0 ) {//если кнопку только нажали
 			b->prev = 1;
-			if ( b->ptrPush != NULL ) {
-				*(b->ptrPush) = 1;//сгенерим глоб.событ. нажат. кнопки (сбрасывает обработчик)
-			}
+			g.event = b1Push;//сгенерим глоб.событ. нажат. кнопки (сбрасывает обработчик)
+			//if ( b->ptrPush != NULL ) {
+			//	*(b->ptrPush) = 1;//сгенерим глоб.событ. нажат. кнопки (сбрасывает обработчик)
+			//}
 		}
 	} else {//если кнопка отпущена
 		if ( b->prev == 1 ) {//если конопку только что отпустили
@@ -88,9 +89,10 @@ void eventLongPush(button_t *b) {
 	static const int LPUSH_TIME = 2000;  //time for long push button event generation
 	if ( b->current == 1 ) {//если кнопка нажата
 		if ( b->timPush > LPUSH_TIME ) {//если время нажатия кнопки достаточное
-			if ( b->ptrLPush != NULL ) {
-				*(b->ptrLPush) = 1;//сгенерим глоб.событ. длит. нажат. кнопки (сбрасывает обработчик)
-			}
+			//if ( b->ptrLPush != NULL ) {
+			//	*(b->ptrLPush) = 1;//сгенерим глоб.событ. длит. нажат. кнопки (сбрасывает обработчик)
+			//}
+			g.event = b1LongPush;//сгенерим глоб.событ. длит. нажат. кнопки (сбрасывает обработчик)
 			b->timPush = 0;//сбрасываем счетчик длительного нажатия
 		} else {
 			b->timPush++;
@@ -100,59 +102,7 @@ void eventLongPush(button_t *b) {
 	}
 }
 
-#define DBL_TIME 1000 //время для двойного нажатия
-/*
- * eventDoublePush локальная функция
- * генерить событие при двойном нажатии кнопки
- * (двойное нажатие, это за время t успеть нажать,
- * отпусить, нажать, отпустить кнопку)
- */
-void eventDoublePush(button_t *b) {
-	static uint8_t  stat = 0;
-	static uint16_t dblTim = 0;
-	static uint8_t  prev = 0;
 
-	switch (stat) {
-	case 0://начальое состояние, кнопка опущена
-
-		if ( b->current == 1 ) {//если кнопка нажата
-			if ( b->prev == 0 ) {//если кнопку только нажали
-				b->prev = 1;
-				if ( b->ptrPush != NULL ) {
-					*(b->ptrPush) = 1;//сгенерим глоб.событ. нажат. кнопки (сбрасывает обработчик)
-				}
-			}
-		} else {//если кнопка отпущена
-			if ( b->prev == 1 ) {//если конопку только что отпустили
-				b->prev = 0;
-				//пока нет задачи генерить событие по отпусканию кнопки
-			}
-		}
-
-
-
-		if ( b->current == 1 ) {
-			if ( prev == 0 ) {
-				stat = 1;
-				dblTim = 0;
-			}
-		}
-		break;
-	case 1:
-		if ( b->current == 0 ) {
-			stat = 2;
-		}
-		if ( dblTim < DBL_TIME ) {
-			dblTim++;
-		}else {
-			dblTim = 0;
-		}
-		break;
-	case 2:
-
-		break;
-	}
-}
 
 /*
  * this function called from main loop every 1 ms

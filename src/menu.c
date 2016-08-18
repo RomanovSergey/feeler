@@ -59,7 +59,7 @@ int calibrateDisp(void) {
 	}
 	if ( g.event == measure || g.event == repaint ) {
 		clrscr();
-		toPrint("Put feeler on the air and then push button \r\n");
+		toPrint("Измерте показание на воздухе, нажмите кнопку \r\n");
 		g.event = noEvent;
 		return 1;
 	}

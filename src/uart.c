@@ -30,6 +30,17 @@ void uart(void) {
 
 	res = ptrDispFunc();
 
+//	do {
+//		repaint = false;
+//		(this->*pmenu)();
+//		//i++;
+//		sym = 0xff;// (as NULL)
+//		if ( pmenuPrev != pmenu ) {
+//			pmenuPrev = pmenu;
+//			repaint = true;
+//		}
+//	} while ( repaint == true );
+
 	if ( res ) {
 		USART_SendData(USART2, tx.buf[0]);
 		tx.ind = 1;

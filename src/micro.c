@@ -13,12 +13,20 @@ typedef struct {
 	int16_t  micro; //соответствующее значение в микрометрах (D)
 } ltom_t;// Lvalue to micrometer
 
-#define LTOMSIZE  7
+/*
+ * LTOMSIZE - количество точек для замеров и калибровки
+ * сначало в массиве располагаются замеры для алюминия
+ * в середине замер для воздуха
+ * потом идут замеры для железа
+ * Таким образом в массиве измеренная величина Lval должна
+ * располагатся в порядке возрастания
+ */
+#define LTOMSIZE  21
 
 //калибровочная таблица в озу
-ltom_t ltom[LTOMSIZE] = {  //init  Lvalue to micrometer in RAM
+ltom_t ltom[LTOMSIZE] = { {0,0} };  //init  Lvalue to micrometer in RAM
 
-		{   4514,  5000 },  // - air
+/*		{   4514,  5000 },  // - air
 
 		{   5097,    400 },  //      Ferrum
 		{   5181,    320 },  //
@@ -26,7 +34,7 @@ ltom_t ltom[LTOMSIZE] = {  //init  Lvalue to micrometer in RAM
 		{   5393,    160 },  //
 		{   5466,     80 },  //
 		{   5500,      0 },  //
-};
+};*/
 
 /*
  * Перобразует величину L (пропорциональна индуктивности)
@@ -56,3 +64,38 @@ int16_t micro(int32_t L) {
 	}
 	return 10000;
 }
+
+/*
+ * Функция используется во время калибровки
+ * параметры
+ *   lval  - измеренная величина
+ *   micro - известный зазор между датчиком и металлом
+ *
+ * return:
+ *   1 - успех
+ *   0 - ошибка
+ */
+int addCalibPoint(int32_t lval, int16_t micro) {
+	switch (micro) {
+	case 0://показание на воздухе
+		ltom[0].Lval  = lval;
+		ltom[0].micro = micro;
+		return 1;//успех
+	case 100:
+		ltom[1].Lval  = lval;
+		ltom[1].micro = micro;
+		return 1;//успех
+	case 200:
+		break;
+	case 300:
+		break;
+	case 400:
+		break;
+	case 600:
+		break;
+	}
+	return 0;//ошибка
+}
+
+
+

@@ -8,10 +8,10 @@
 #ifndef SRC_MENU_H_
 #define SRC_MENU_H_
 
-int measureDisp(void);
-int calibrateDisp(void);
-int calib100(void);
-int calib200(void);
-int calib300(void);
+int measureM(void);
+int calibrateM(void);
+int calib100M(void);
+int calib200M(void);
+int calib300M(void);
 
 #endif /* SRC_MENU_H_ */

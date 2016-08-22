@@ -20,118 +20,84 @@ inline void clrscr(void) {
 	toPrint("\r\n");
 }
 
-int measureDisp(void) {
+int measureM(void) {
 	static uint16_t cnt = 0;
 
 	if ( g.event == b1LongPush ) {//если поймали глобально событие длительного нажатия кнопки
-		ptrDispFunc = calibrateDisp;
-		g.event = repaint;
+		pmenu = calibrateM;
 		return 0;//перерисовывать не надо
 	}
 
-	if ( g.event == measure || g.event == repaint ) {
-		uint32_t val = g.tim_len;
-		clrscr();
-		toPrint("\r\n Tim_len = ");//=================================
-		toPrint("\033[31m");//set red color
-		uint32_to_str( val );
-		toPrint("\033[0m");//reset normal (color also default)
-		toPrint(" y.e. \r\n");
+	uint32_t val = g.tim_len;
+	clrscr();
+	toPrint("\r\n Tim_len = ");//=================================
+	toPrint("\033[31m");//set red color
+	uint32_to_str( val );
+	toPrint("\033[0m");//reset normal (color also default)
+	toPrint(" y.e. \r\n");
 
-		toPrint(" microns = ");
-		uint32_to_str( micro( val ) );
-		toPrint(" um \r\n");
+	toPrint(" microns = ");
+	uint32_to_str( micro( val ) );
+	toPrint(" um \r\n");
 
-		toPrint("\r\n cnt = ");
-		uint16_to_5str( cnt++ );
-		g.event = noEvent;
-		return 1;
-	}
-	g.event = noEvent;//сбросим прочие не интересные события
-	return 0;
+	toPrint("\r\n cnt = ");
+	uint16_to_5str( cnt++ );
+	return 1;//надо перерисовать
 }
 
-int calibrateDisp(void) {
+int calibrateM(void) {
 	if ( g.event == b1LongPush ) {
-		ptrDispFunc = measureDisp;
-		g.event = repaint;
+		pmenu = measureM;
 		return 0;//перерисовывать не надо
 	}
-	if ( g.event == measure || g.event == repaint ) {
-		clrscr();
-		toPrint("Измерте показание на воздухе, нажмите кнопку \r\n");
-		g.event = noEvent;
-		return 1;
-	}
 	if ( g.event == b1Push ) {
-		ptrDispFunc = calib100;
-		g.event = repaint;
+		pmenu = calib100M;
 		return 0;
 	}
-	g.event = noEvent;
-	return 0;
+	clrscr();
+	toPrint("Измерте показание на воздухе, нажмите кнопку \r\n");
+	return 1;
 }
 
-int calib100(void) {
+int calib100M(void) {
 	if ( g.event == b1LongPush ) {
-		ptrDispFunc = measureDisp;
-		g.event = repaint;
+		pmenu = measureM;
 		return 0;//перерисовывать не надо
 	}
-	if ( g.event == measure || g.event == repaint ) {
-		clrscr();
-		toPrint("Put feeler on 100 um and push button \r\n");
-		g.event = noEvent;
-		return 1;
-	}
 	if ( g.event == b1Push ) {
-		ptrDispFunc = calib200;
-		g.event = repaint;
+		pmenu = calib200M;
 		return 0;
 	}
-	g.event = noEvent;
-	return 0;
+	clrscr();
+	toPrint("Put feeler on 100 um and push button \r\n");
+	return 1;
 }
 
-int calib200(void) {
+int calib200M(void) {
 	if ( g.event == b1LongPush ) {
-		ptrDispFunc = measureDisp;
-		g.event = repaint;
+		pmenu = measureM;
 		return 0;//перерисовывать не надо
 	}
-	if ( g.event == measure || g.event == repaint ) {
-		clrscr();
-		toPrint("Put feeler on 200 um and push button \r\n");
-		g.event = noEvent;
-		return 1;
-	}
 	if ( g.event == b1Push ) {
-		ptrDispFunc = calib300;
-		g.event = repaint;
+		pmenu = calib300M;
 		return 0;
 	}
-	g.event = noEvent;
-	return 0;
+	clrscr();
+	toPrint("Put feeler on 200 um and push button \r\n");
+	return 1;
 }
 
-int calib300(void) {
+int calib300M(void) {
 	if ( g.event == b1LongPush ) {
-		ptrDispFunc = measureDisp;
-		g.event = repaint;
+		pmenu = measureM;
 		return 0;//перерисовывать не надо
 	}
-	if ( g.event == measure || g.event == repaint ) {
-		clrscr();
-		toPrint("Put feeler on 300 um and push button \r\n");
-		g.event = noEvent;
-		return 1;
-	}
 	if ( g.event == b1Push ) {
-		ptrDispFunc = measureDisp;
-		g.event = repaint;
+		pmenu = measureM;
 		return 0;
 	}
-	g.event = noEvent;
-	return 0;
+	clrscr();
+	toPrint("Put feeler on 300 um and push button \r\n");
+	return 1;
 }
 

@@ -16,32 +16,31 @@
 
 struct Tsend tx;//буфер для отправки по уарт
 
-int(*ptrDispFunc)(void) = measureDisp;
+int (*pmenu)(void) = measureM;//указатель на функцию меню
 
 /*
  * Периодически вызывается из main.c
  */
 void uart(void) {
+	static int (*pmold)(void) = measureM;//указатель на предыдущую функцию меню
+	int repaint = 0;//true or false
 	int res;
 
 	if (g.event == noEvent) {//если нет событий
-		return;
+		return;//то и нечего рисовать
 	}
 
-	res = ptrDispFunc();
+	do {
+		repaint = 0;
+		res = pmenu();//отобразим функцию меню на экране
+		g.event = noEvent;//меню событие уже отработало
+		if ( pmold != pmenu ) {
+			pmold = pmenu;
+			repaint = 1;//меню поменялось, надо перерисовать
+		}
+	} while ( repaint == 1 );
 
-//	do {
-//		repaint = false;
-//		(this->*pmenu)();
-//		//i++;
-//		sym = 0xff;// (as NULL)
-//		if ( pmenuPrev != pmenu ) {
-//			pmenuPrev = pmenu;
-//			repaint = true;
-//		}
-//	} while ( repaint == true );
-
-	if ( res ) {
+	if ( res ) {//если есть данные для отрисовки
 		USART_SendData(USART2, tx.buf[0]);
 		tx.ind = 1;
 		USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
@@ -70,7 +69,7 @@ int8_t toPrint(char *str) {
 
 //крутящаяся черточка
 void printRun(void) {
-	static const uint8_t s_run[]={'\\','|','/','|'};
+	static const uint8_t s_run[]={'\\','|','/','-'};
 	static uint8_t run = 0;
 	tx.buf[tx.ind++] = s_run[run];//напечатать меняющийся символ
 	tx.buf[tx.ind] = 0;
@@ -152,31 +151,20 @@ void USART2_IRQHandler(void) {
 	}
 
 	if(USART_GetITStatus(USART2, USART_IT_TXE) != RESET) {
-		if (tx.buf[tx.ind] == 0) {
-			if ( g.buf[0] == 0 ) {//в отладочном буфере нет данных (ПОТОМ УДАЛИТЬ)
+		if (tx.buf[tx.ind] == 0) {//нулевой символ? (конец данных)
 				USART_ClearITPendingBit(USART2, USART_IT_TC);
 				USART_ITConfig(USART2, USART_IT_TC, ENABLE);
 				USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
-			} else {//если в отладочном буфере есть данные
-				int i = 0;
-				do {//копируем данные из отладочного буфера в tx
-					tx.buf[i] = g.buf[i];
-					i++;
-				} while ( tx.buf[i] != 0 );
-				g.buf[0] = 0;//в отладочном буфере больше нет данных
-				g.ind = 0;
-				USART_SendData(USART2, tx.buf[0]);
-				tx.ind = 1;
-			}
-		} else if (tx.ind < TX_SIZE) {
-			USART_SendData(USART2, tx.buf[tx.ind++]);
-		} else {
+		} else if (tx.ind < TX_SIZE) {//не дошли до конца буфера? и не поймали нулевой символ
+			USART_SendData(USART2, tx.buf[tx.ind++]);//отправим символ в порт
+		} else {//значит уже дошли до конца буфера
 			USART_ClearITPendingBit(USART2, USART_IT_TC);
 			USART_ITConfig(USART2, USART_IT_TC, ENABLE);
 			USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
 		}
 	}
-	if(USART_GetITStatus(USART2, USART_IT_TC) != RESET) {
+
+	if(USART_GetITStatus(USART2, USART_IT_TC) != RESET) {//последний символ отправлен
 		USART_ClearFlag(USART2, USART_FLAG_TC);
 		USART_ITConfig(USART2, USART_IT_TC, DISABLE);
 	}

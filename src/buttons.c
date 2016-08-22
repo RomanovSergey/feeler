@@ -16,8 +16,6 @@ typedef struct  {
 	uint8_t  current;//текущее отфильтрованное состояние кнопки
 	uint8_t  prev;//предыдущее отфильтрованное состояние кнопки
 	uint16_t timPush;//время нажатия кнопки (для события длительного нажатия)
-	//uint8_t* ptrPush; //указат.на глоб. - флаг события нажатия (сбрасывается обработчиком)
-	//uint8_t* ptrLPush;//указат.на глоб. - флаг событ.длительного нажатия (сбрасывается обработчиком)
 } button_t;
 
 //only one button yet
@@ -26,8 +24,6 @@ button_t B1 = {
 	.current = 0,
 	.timPush = 0,
 	.prev = 0,
-	//.ptrPush = &g.b1_push,
-	//.ptrLPush = &g.b1_Lpush,
 };
 
 //================================================================================
@@ -69,9 +65,6 @@ void eventPushPull(button_t *b) {
 		if ( b->prev == 0 ) {//если кнопку только нажали
 			b->prev = 1;
 			g.event = b1Push;//сгенерим глоб.событ. нажат. кнопки (сбрасывает обработчик)
-			//if ( b->ptrPush != NULL ) {
-			//	*(b->ptrPush) = 1;//сгенерим глоб.событ. нажат. кнопки (сбрасывает обработчик)
-			//}
 		}
 	} else {//если кнопка отпущена
 		if ( b->prev == 1 ) {//если конопку только что отпустили
@@ -89,9 +82,6 @@ void eventLongPush(button_t *b) {
 	static const int LPUSH_TIME = 2000;  //time for long push button event generation
 	if ( b->current == 1 ) {//если кнопка нажата
 		if ( b->timPush > LPUSH_TIME ) {//если время нажатия кнопки достаточное
-			//if ( b->ptrLPush != NULL ) {
-			//	*(b->ptrLPush) = 1;//сгенерим глоб.событ. длит. нажат. кнопки (сбрасывает обработчик)
-			//}
 			g.event = b1LongPush;//сгенерим глоб.событ. длит. нажат. кнопки (сбрасывает обработчик)
 			b->timPush = 0;//сбрасываем счетчик длительного нажатия
 		} else {
@@ -101,8 +91,6 @@ void eventLongPush(button_t *b) {
 		b->timPush = 0;//сбрасываем счетчик длительного нажатия
 	}
 }
-
-
 
 /*
  * this function called from main loop every 1 ms
@@ -114,43 +102,5 @@ void buttons(void) {
 	eventLongPush( &B1 );//генерить событие при длительном нажатии на В1
 }
 
-
-
-/*
- * Local function debounce, takes pointer
- * to the struct of the button and button instance sensor
- *
-void debounce_(button_t *b, uint8_t instance) {
-	if ( instance > 0 ) {//if button is pushed *************************
-		if ( b->debcount < ANTI_TIME ) {
-			b->debcount++;//filter
-		} else {
-			if ( b->prev == 0 ) {//if state is change
-				b->current = 1;
-				b->debcurrent = 0;
-				b->prev = 1;
-				if ( b->ptrPush != NULL ) {
-					*(b->ptrPush) = 1;//to generate global push button event
-				}
-			} else if ( b->debcurrent > LPUSH_TIME ) {//if time of push exceed long time
-				if ( b->ptrLPush != NULL ) {
-					*(b->ptrLPush) = 1;//to generate global long push button event
-				}
-			} else {
-				b->debcurrent++;
-			}
-		}
-	} else {//if button is pulled **************************************
-		if ( b->debcount > 0 ) {
-			b->debcount--;//filter
-		} else {
-			if ( b->prev == 1 ) {//if state is change
-				b->current = 0;
-				b->prev = 0;
-				//yet no task to generate global pull event
-			}
-		}
-	}
-}*/
 
 

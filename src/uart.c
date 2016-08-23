@@ -26,6 +26,8 @@ void uart(void) {
 	int repaint = 0;//true or false
 	int res;
 
+
+
 	if (g.event == noEvent) {//если нет событий
 		return;//то и нечего рисовать
 	}

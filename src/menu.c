@@ -1,7 +1,7 @@
 /*
  * menu.c
  *
- *  Created on: июль 2016 г.
+ *  Created on: июль 2016 г.до н.э.
  *      Author: se
  */
 
@@ -20,20 +20,27 @@ inline void clrscr(void) {
 	toPrint("\r\n");
 }
 
+/*
+ * Первая функция меню - отображает измеренное значение толщины
+ * по мере поступления новых данных
+ */
 int measureM(void) {
 	static uint16_t cnt = 0;
 
-	if ( g.event == b1LongPush ) {//если поймали глобально событие длительного нажатия кнопки
-		pmenu = calibrateM;
+	if ( g.event == b1LongPush ) {//если поступило событие длительного нажатия кнопки
+		pmenu = calibAirM;//указатель на процедурку калибровки
 		return 0;//перерисовывать не надо
+	}
+	if ( g.event == b1Push ) {//событие нажания кнопки
+		return 0;//ниче не делаем
 	}
 
 	uint32_t val = g.tim_len;
 	clrscr();
 	toPrint("\r\n Tim_len = ");//=================================
-	toPrint("\033[31m");//set red color
+	//toPrint("\033[31m");//set red color
 	uint32_to_str( val );
-	toPrint("\033[0m");//reset normal (color also default)
+	//toPrint("\033[0m");//reset normal (color also default)
 	toPrint(" y.e. \r\n");
 
 	toPrint(" microns = ");
@@ -45,17 +52,38 @@ int measureM(void) {
 	return 1;//надо перерисовать
 }
 
-int calibrateM(void) {
+/*
+ * Функция для вывода временных сообщений
+ */
+int timMessageM(void) {
+
+	return 0;//not done yet
+}
+
+/*
+ * Начальное меню процедуры калибровки, начиная с замера воздуха
+ */
+int calibAirM(void) {
 	if ( g.event == b1LongPush ) {
 		pmenu = measureM;
 		return 0;//перерисовывать не надо
 	}
 	if ( g.event == b1Push ) {
+		int res = addCalibPoint(g.tim_len, 0xFFFF);
+		if ( res == 0 ) {
+			toPrint("\r\n");
+			toPrint("Error \r\n");//переделать вывод об ошибках
+			pmenu = measureM;
+			return 1;
+		}
 		pmenu = calib100M;
 		return 0;
 	}
 	clrscr();
 	toPrint("Измерте показание на воздухе, нажмите кнопку \r\n");
+	uint32_t val = g.tim_len;
+	uint32_to_str( val );
+	toPrint(" y.e. \r\n");
 	return 1;
 }
 
@@ -70,6 +98,9 @@ int calib100M(void) {
 	}
 	clrscr();
 	toPrint("Put feeler on 100 um and push button \r\n");
+	uint32_t val = g.tim_len;
+	uint32_to_str( val );
+	toPrint(" y.e. \r\n");
 	return 1;
 }
 

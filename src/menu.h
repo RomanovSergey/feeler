@@ -9,7 +9,8 @@
 #define SRC_MENU_H_
 
 int measureM(void);
-int calibrateM(void);
+int timMessageM(void);
+int calibAirM(void);
 int calib100M(void);
 int calib200M(void);
 int calib300M(void);

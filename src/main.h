@@ -20,7 +20,7 @@ typedef enum {
 	b1Push,
 	b1LongPush,
 	measure,
-	repaint,
+	//repaint,
 } EVENT_T;
 
 

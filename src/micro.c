@@ -75,9 +75,9 @@ int16_t micro(int32_t L) {
  *   1 - успех
  *   0 - ошибка
  */
-int addCalibPoint(int32_t lval, int16_t micro) {
+int addCalibPoint(uint32_t lval, uint16_t micro) {
 	switch (micro) {
-	case 0://показание на воздухе
+	case 0xFFFF://показание на воздухе
 		ltom[0].Lval  = lval;
 		ltom[0].micro = micro;
 		return 1;//успех

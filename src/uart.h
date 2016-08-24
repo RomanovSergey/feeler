@@ -21,7 +21,7 @@ extern int(*pmenu)(void);
 
 void uart(void);
 
-int8_t toPrint(char *str);
+int8_t toPrint(const char *str);
 void uint32_to_str (uint32_t nmb);
 void uint16_to_5str(uint16_t n);
 void uint16_to_bin(uint16_t n);

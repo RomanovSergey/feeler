@@ -11,6 +11,8 @@
 #include "uart.h"
 #include "micro.h"
 
+MESSAGE_T mes;
+
 inline void clrscr(void) {
 	tx.ind = 0;//индекс буфера для отправки в порт сбрасываем в ноль
 	toPrint("\033[2J");//clear entire screen
@@ -55,9 +57,10 @@ int measureM(void) {
 /*
  * Функция для вывода временных сообщений
  */
-int timMessageM(void) {
-
-	return 0;//not done yet
+int MessageM(void) {
+	clrscr();
+	toPrint(mes.message);
+	return 1;
 }
 
 /*
@@ -70,9 +73,13 @@ int calibAirM(void) {
 	}
 	if ( g.event == b1Push ) {
 		int res = addCalibPoint(g.tim_len, 0xFFFF);
-		if ( res == 0 ) {
-			toPrint("\r\n");
-			toPrint("Error \r\n");//переделать вывод об ошибках
+		if ( res == 0 ) {//если получили ошибку калибровки
+			mes.tim = 1000;//время отображения в мс
+			mes.retM = measureM;//меню куда возвратиться
+			mes.message = "\r\n"
+					"Error\r\n"
+					"Ошибка во время калибровки\r\n";
+
 			pmenu = measureM;
 			return 1;
 		}

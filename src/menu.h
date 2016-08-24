@@ -8,8 +8,14 @@
 #ifndef SRC_MENU_H_
 #define SRC_MENU_H_
 
+typedef struct {
+	uint32_t  tim;//время отображения сообщения
+	int (*retM)(void);//в какую функцию перейдет меню после отображения сообщения
+	const char *message;//нуль терминальная строка - само сообщение
+} MESSAGE_T;
+
 int measureM(void);
-int timMessageM(void);
+int MessageM(void);
 int calibAirM(void);
 int calib100M(void);
 int calib200M(void);

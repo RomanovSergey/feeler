@@ -15,8 +15,8 @@
 #include "menu.h"
 
 struct Tsend tx;//буфер для отправки по уарт
-
 int (*pmenu)(void) = measureM;//указатель на функцию меню
+extern MESSAGE_T mes;
 
 /*
  * Периодически вызывается из main.c
@@ -26,7 +26,14 @@ void uart(void) {
 	int repaint = 0;//true or false
 	int res;
 
-
+	if ( pmenu == MessageM ) {//если идет отображение временного сообщения
+		if ( mes.tim == 0 ) {//если время отображения истекло
+			pmenu = mes.retM;//указатель на новую функцию меню
+			g.event = repaint;//перерисовать новое меню
+		} else {
+			mes.tim--;
+		}
+	}
 
 	if (g.event == noEvent) {//если нет событий
 		return;//то и нечего рисовать
@@ -34,7 +41,7 @@ void uart(void) {
 
 	do {
 		repaint = 0;
-		res = pmenu();//отобразим функцию меню на экране
+		res = pmenu();//отобразим функцию меню на экране (единственное место отображения)
 		g.event = noEvent;//меню событие уже отработало
 		if ( pmold != pmenu ) {
 			pmold = pmenu;
@@ -53,7 +60,7 @@ void uart(void) {
  * Копирует строку str в буфер tx
  * символ конца строки - 0 (не копируется)
  */
-int8_t toPrint(char *str) {
+int8_t toPrint(const char *str) {
 	uint16_t i = 0;
 
 	while (str[i] != 0) {

@@ -20,7 +20,7 @@ typedef enum {
 	b1Push,
 	b1LongPush,
 	measure,
-	//repaint,
+	repaint,
 } EVENT_T;
 
 
@@ -29,10 +29,6 @@ typedef struct {
 
 	uint32_t tim_len;//time of lenght N pulses in magnetic measures
 	uint32_t tim_done;//flag data timer is ready
-
-	//uint16_t  ind;//указывает на нулевой символ строки (для след. записи) отладочного буфера
-	//uint8_t   buf[256];//отладочный буфер (потом удалить)
-
 } GLOBAL_T;
 
 extern GLOBAL_T g;

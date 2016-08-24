@@ -74,13 +74,13 @@ int calibAirM(void) {
 	if ( g.event == b1Push ) {
 		int res = addCalibPoint(g.tim_len, 0xFFFF);
 		if ( res == 0 ) {//если получили ошибку калибровки
-			mes.tim = 1000;//время отображения в мс
+			mes.tim = 3000;//время отображения в мс
 			mes.retM = measureM;//меню куда возвратиться
 			mes.message = "\r\n"
 					"Error\r\n"
 					"Ошибка во время калибровки\r\n";
 
-			pmenu = measureM;
+			pmenu = MessageM;
 			return 1;
 		}
 		pmenu = calib100M;

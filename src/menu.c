@@ -26,14 +26,16 @@ inline void clrscr(void) {
  * Первая функция меню - отображает измеренное значение толщины
  * по мере поступления новых данных
  */
-int measureM(void) {
+int mainM(void) {
 	static uint16_t cnt = 0;
 
-	if ( g.event == b1LongPush ) {//если поступило событие длительного нажатия кнопки
+	if (g.ev.b1Long == 1) {//если поступило событие длительного нажатия кнопки
+		g.ev.b1Long = 0;
 		pmenu = calibAirM;//указатель на процедурку калибровки
 		return 0;//перерисовывать не надо
 	}
-	if ( g.event == b1Push ) {//событие нажания кнопки
+	if (g.ev.b1Click == 1) {//событие нажания кнопки
+		g.ev.b1Click = 0;
 		return 0;//ниче не делаем
 	}
 
@@ -67,15 +69,17 @@ int MessageM(void) {
  * Начальное меню процедуры калибровки, начиная с замера воздуха
  */
 int calibAirM(void) {
-	if ( g.event == b1LongPush ) {
-		pmenu = measureM;
+	if (g.ev.b1Long == 1) {
+		g.ev.b1Long = 0;
+		pmenu = mainM;
 		return 0;//перерисовывать не надо
 	}
-	if ( g.event == b1Push ) {
+	if (g.ev.b1Click == 1) {
+		g.ev.b1Click = 0;
 		int res = addCalibPoint(g.tim_len, 0xFFFF);
 		if ( res == 0 ) {//если получили ошибку калибровки
 			mes.tim = 3000;//время отображения в мс
-			mes.retM = measureM;//меню куда возвратиться
+			mes.retM = mainM;//меню куда возвратиться
 			mes.message = "\r\n"
 					"Error\r\n"
 					"Ошибка во время калибровки\r\n";
@@ -95,11 +99,13 @@ int calibAirM(void) {
 }
 
 int calib100M(void) {
-	if ( g.event == b1LongPush ) {
-		pmenu = measureM;
+	if (g.ev.b1Long == 1) {
+		g.ev.b1Long = 0;
+		pmenu = mainM;
 		return 0;//перерисовывать не надо
 	}
-	if ( g.event == b1Push ) {
+	if (g.ev.b1Click == 1) {
+		g.ev.b1Click = 0;
 		pmenu = calib200M;
 		return 0;
 	}
@@ -112,11 +118,13 @@ int calib100M(void) {
 }
 
 int calib200M(void) {
-	if ( g.event == b1LongPush ) {
-		pmenu = measureM;
+	if (g.ev.b1Long == 1) {
+		g.ev.b1Long = 0;
+		pmenu = mainM;
 		return 0;//перерисовывать не надо
 	}
-	if ( g.event == b1Push ) {
+	if (g.ev.b1Click == 1) {
+		g.ev.b1Click = 0;
 		pmenu = calib300M;
 		return 0;
 	}
@@ -126,12 +134,14 @@ int calib200M(void) {
 }
 
 int calib300M(void) {
-	if ( g.event == b1LongPush ) {
-		pmenu = measureM;
+	if (g.ev.b1Long == 1) {
+		g.ev.b1Long = 0;
+		pmenu = mainM;
 		return 0;//перерисовывать не надо
 	}
-	if ( g.event == b1Push ) {
-		pmenu = measureM;
+	if (g.ev.b1Click == 1) {
+		g.ev.b1Click = 0;
+		pmenu = mainM;
 		return 0;
 	}
 	clrscr();

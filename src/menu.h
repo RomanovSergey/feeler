@@ -14,7 +14,7 @@ typedef struct {
 	const char *message;//нуль терминальная строка - само сообщение
 } MESSAGE_T;
 
-int measureM(void);
+int mainM(void);
 int MessageM(void);
 int calibAirM(void);
 int calib100M(void);

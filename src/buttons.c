@@ -1,7 +1,7 @@
 /*
  * buttons.c
  *
- *  Created on: 30 апр. 2016 г.
+ *  Created on: апр. 2016 г.
  *      Author: Se
  */
 
@@ -64,7 +64,7 @@ void eventPushPull(button_t *b) {
 	if ( b->current == 1 ) {//если кнопка нажата
 		if ( b->prev == 0 ) {//если кнопку только нажали
 			b->prev = 1;
-			g.event = b1Push;//сгенерим глоб.событ. нажат. кнопки (сбрасывает обработчик)
+			g.ev.b1Click = 1;//событие нажат. кнопки (сбрасывает обработчик)
 		}
 	} else {//если кнопка отпущена
 		if ( b->prev == 1 ) {//если конопку только что отпустили
@@ -82,7 +82,8 @@ void eventLongPush(button_t *b) {
 	static const int LPUSH_TIME = 2000;  //time for long push button event generation
 	if ( b->current == 1 ) {//если кнопка нажата
 		if ( b->timPush > LPUSH_TIME ) {//если время нажатия кнопки достаточное
-			g.event = b1LongPush;//сгенерим глоб.событ. длит. нажат. кнопки (сбрасывает обработчик)
+			//g.event = b1LongPush;//сгенерим глоб.событ. длит. нажат. кнопки (сбрасывает обработчик)
+			g.ev.b1Long = 1;//событие длительного нажатия
 			b->timPush = 0;//сбрасываем счетчик длительного нажатия
 		} else {
 			b->timPush++;

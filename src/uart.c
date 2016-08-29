@@ -15,34 +15,34 @@
 #include "menu.h"
 
 struct Tsend tx;//буфер для отправки по уарт
-int (*pmenu)(void) = measureM;//указатель на функцию меню
+int (*pmenu)(void) = mainM;//указатель на функцию меню
 extern MESSAGE_T mes;
 
 /*
  * Периодически вызывается из main.c
  */
 void uart(void) {
-	static int (*pmold)(void) = measureM;//указатель на предыдущую функцию меню
+	static int (*pmold)(void) = mainM;//указатель на предыдущую функцию меню
 	int repaint = 0;//true or false
 	int res;
 
 	if ( pmenu == MessageM ) {//если идет отображение временного сообщения
 		if ( mes.tim == 0 ) {//если время отображения истекло
 			pmenu = mes.retM;//указатель на новую функцию меню
-			g.event = repaint;//перерисовать новое меню
+			g.ev.repaint = 1;//перерисовать
 		} else {
 			mes.tim--;
 		}
 	}
 
-	if (g.event == noEvent) {//если нет событий
-		return;//то и нечего рисовать
+	if (g.ev.val == 0) {
+		return;//нет событий - не рисуем
 	}
 
 	do {
 		repaint = 0;
 		res = pmenu();//отобразим функцию меню на экране (единственное место отображения)
-		g.event = noEvent;//меню событие уже отработало
+		//g.ev.val = 0;
 		if ( pmold != pmenu ) {
 			pmold = pmenu;
 			repaint = 1;//меню поменялось, надо перерисовать

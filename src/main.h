@@ -15,17 +15,20 @@
 #define BLUE_ON       GPIO_SetBits(GPIOC,GPIO_Pin_8)
 #define BLUE_OFF      GPIO_ResetBits(GPIOC,GPIO_Pin_8)
 
-typedef enum {
-	noEvent,
-	b1Push,
-	b1LongPush,
-	measure,
-	repaint,
-} EVENT_T;
+
+typedef union {
+	uint32_t val;
+	struct {
+		unsigned b1Click : 1;
+		unsigned b1Long  : 1;
+		unsigned measure : 1;
+		unsigned repaint : 1;
+	};
+}EV_BITF_T;//битовые поля событий
 
 
 typedef struct {
-	EVENT_T  event;//содержит код события, если 0 то событий нет
+	EV_BITF_T  ev;//битовые поля событий
 
 	uint32_t tim_len;//time of lenght N pulses in magnetic measures
 	uint32_t tim_done;//flag data timer is ready

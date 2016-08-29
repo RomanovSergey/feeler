@@ -27,7 +27,7 @@ void TIM2_IRQHandler(void) {
 		}
 		g.tim_len = TIM_GetCounter( TIM3 );
 		TIM_SetCounter(TIM3, 0);
-		g.event = measure;
+		g.ev.measure = 1;//событие - данные измерения готовы
 
 		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
 	}

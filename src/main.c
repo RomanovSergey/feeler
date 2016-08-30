@@ -18,7 +18,6 @@
 #include "buttons.h"
 #include "magnetic.h"
 
-
 GLOBAL_T g;
 
 void init(void);
@@ -50,7 +49,6 @@ void init(void) {
 	//ADC_InitTypeDef          ADC_InitStruct;
 
 	g.tim_done  = 0;
-	g.ev.val = 0;
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс
@@ -233,4 +231,50 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 #endif
 
+
+
+//для кругового буфера событий
+#define LEN_BITS   3
+#define LEN_BUF    (1<<LEN_BITS) // 8 или 2^3 или (1<<3)
+#define LEN_MASK   (LEN_BUF-1)   // bits: 0000 0111
+static uint8_t bufEv[LEN_BUF] = {0};
+static uint8_t tail = 0;
+static uint8_t head = 0;
+
+/*
+ * возвращает 1 если в кольцевом буфере есть свободное место для элемента, иначе 0
+ */
+static int has_free(void) {
+	if ( ((tail + 1) & LEN_MASK) == head ) {
+		return 0;//свободного места нет
+	}
+	return 1;//есть свободное место
+}
+
+/*
+ * помещает событие в круговой буфер
+ * return 1 - успешно; 0 - нет места в буфере
+ */
+int put_event(uint8_t event) {
+	if (has_free()) {
+		bufEv[head] = event;
+		head = (1 + head) & LEN_MASK;//инкремент кругового индекса
+		return 1;
+	} else {
+		return 0;//нет места в буфере
+	}
+}
+
+/*
+ *  извлекает событие из кругового буфера
+ *  если 0 - нет событий
+ */
+uint8_t get_event(void) {
+	uint8_t event = 0;
+	if (head != tail) {//если в буфере есть данные
+		event = bufEv[tail];
+		tail = (1 + tail) & LEN_MASK;//инкремент кругового индекса
+	}
+	return event;
+}
 

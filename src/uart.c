@@ -15,39 +15,34 @@
 #include "menu.h"
 
 struct Tsend tx;//буфер для отправки по уарт
-int (*pmenu)(void) = mainM;//указатель на функцию меню
+int (*pmenu)(uint8_t) = mainM;//указатель на функцию меню
 extern MESSAGE_T mes;
 
 /*
  * Периодически вызывается из main.c
  */
 void uart(void) {
-	static int (*pmold)(void) = mainM;//указатель на предыдущую функцию меню
-	int repaint = 0;//true or false
-	int res;
+	uint8_t event;
+	static int (*pmold)(uint8_t) = mainM;//указатель на предыдущую функцию меню
+	int res = 0;
 
 	if ( pmenu == MessageM ) {//если идет отображение временного сообщения
 		if ( mes.tim == 0 ) {//если время отображения истекло
-			pmenu = mes.retM;//указатель на новую функцию меню
-			g.ev.repaint = 1;//перерисовать
+			pmenu = mes.retM;//указатель на функцию меню возврата
+			put_event( Erepaint );//перерисовать
 		} else {
 			mes.tim--;
 		}
 	}
-
-	if (g.ev.val == 0) {
-		return;//нет событий - не рисуем
-	}
-
-	do {
-		repaint = 0;
-		res = pmenu();//отобразим функцию меню на экране (единственное место отображения)
-		//g.ev.val = 0;
+	event = get_event();
+	while ( event != 0 ) {
+		res = pmenu(event);//отобразим функцию меню на экране (единственное место отображения)
 		if ( pmold != pmenu ) {
 			pmold = pmenu;
-			repaint = 1;//меню поменялось, надо перерисовать
+			put_event( Erepaint );//меню поменялось, надо перерисовать
 		}
-	} while ( repaint == 1 );
+		event = get_event();
+	}
 
 	if ( res ) {//если есть данные для отрисовки
 		USART_SendData(USART2, tx.buf[0]);

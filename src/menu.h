@@ -10,15 +10,15 @@
 
 typedef struct {
 	uint32_t  tim;//время отображения сообщения
-	int (*retM)(void);//в какую функцию перейдет меню после отображения сообщения
+	int (*retM)(uint8_t);//в какую функцию перейдет меню после отображения сообщения
 	const char *message;//нуль терминальная строка - само сообщение
 } MESSAGE_T;
 
-int mainM(void);
-int MessageM(void);
-int calibAirM(void);
-int calib100M(void);
-int calib200M(void);
-int calib300M(void);
+int mainM(uint8_t);
+int MessageM(uint8_t);
+int calibAirM(uint8_t);
+int calib100M(uint8_t);
+int calib200M(uint8_t);
+int calib300M(uint8_t);
 
 #endif /* SRC_MENU_H_ */

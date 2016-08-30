@@ -8,8 +8,13 @@
 #include "stm32f0xx.h"
 #include "main.h"
 
-void magnetic(void) {
+static int measureDone = 0;
 
+void magnetic(void) {
+	if (measureDone == 1) {//для синхронизации с прерыванием
+		measureDone = 0;
+		put_event( Emeasure );//событие - данные измерения готовы
+	}
 }
 
 /*
@@ -27,7 +32,7 @@ void TIM2_IRQHandler(void) {
 		}
 		g.tim_len = TIM_GetCounter( TIM3 );
 		TIM_SetCounter(TIM3, 0);
-		g.ev.measure = 1;//событие - данные измерения готовы
+		measureDone = 1;//флаг - данные измерения готовы
 
 		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
 	}

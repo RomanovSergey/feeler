@@ -26,16 +26,14 @@ inline void clrscr(void) {
  * Первая функция меню - отображает измеренное значение толщины
  * по мере поступления новых данных
  */
-int mainM(void) {
+int mainM(uint8_t ev) {
 	static uint16_t cnt = 0;
 
-	if (g.ev.b1Long == 1) {//если поступило событие длительного нажатия кнопки
-		g.ev.b1Long = 0;
+	if ( ev == Eb1Long ) {//если поступило событие длительного нажатия кнопки
 		pmenu = calibAirM;//указатель на процедурку калибровки
 		return 0;//перерисовывать не надо
 	}
-	if (g.ev.b1Click == 1) {//событие нажания кнопки
-		g.ev.b1Click = 0;
+	if ( ev == Eb1Click ) {//событие нажания кнопки
 		return 0;//ниче не делаем
 	}
 
@@ -59,7 +57,7 @@ int mainM(void) {
 /*
  * Функция для вывода временных сообщений
  */
-int MessageM(void) {
+int MessageM(uint8_t ev) {
 	clrscr();
 	toPrint(mes.message);
 	return 1;
@@ -68,14 +66,12 @@ int MessageM(void) {
 /*
  * Начальное меню процедуры калибровки, начиная с замера воздуха
  */
-int calibAirM(void) {
-	if (g.ev.b1Long == 1) {
-		g.ev.b1Long = 0;
+int calibAirM(uint8_t ev) {
+	if ( ev == Eb1Long ) {
 		pmenu = mainM;
 		return 0;//перерисовывать не надо
 	}
-	if (g.ev.b1Click == 1) {
-		g.ev.b1Click = 0;
+	if ( ev == Eb1Click ) {
 		int res = addCalibPoint(g.tim_len, 0xFFFF);
 		if ( res == 0 ) {//если получили ошибку калибровки
 			mes.tim = 3000;//время отображения в мс
@@ -98,14 +94,12 @@ int calibAirM(void) {
 	return 1;
 }
 
-int calib100M(void) {
-	if (g.ev.b1Long == 1) {
-		g.ev.b1Long = 0;
+int calib100M(uint8_t ev) {
+	if ( ev == Eb1Long ) {
 		pmenu = mainM;
 		return 0;//перерисовывать не надо
 	}
-	if (g.ev.b1Click == 1) {
-		g.ev.b1Click = 0;
+	if ( ev == Eb1Click ) {
 		pmenu = calib200M;
 		return 0;
 	}
@@ -117,14 +111,12 @@ int calib100M(void) {
 	return 1;
 }
 
-int calib200M(void) {
-	if (g.ev.b1Long == 1) {
-		g.ev.b1Long = 0;
+int calib200M(uint8_t ev) {
+	if ( ev == Eb1Long ) {
 		pmenu = mainM;
 		return 0;//перерисовывать не надо
 	}
-	if (g.ev.b1Click == 1) {
-		g.ev.b1Click = 0;
+	if ( ev == Eb1Click ) {
 		pmenu = calib300M;
 		return 0;
 	}
@@ -133,14 +125,12 @@ int calib200M(void) {
 	return 1;
 }
 
-int calib300M(void) {
-	if (g.ev.b1Long == 1) {
-		g.ev.b1Long = 0;
+int calib300M(uint8_t ev) {
+	if ( ev == Eb1Long ) {
 		pmenu = mainM;
 		return 0;//перерисовывать не надо
 	}
-	if (g.ev.b1Click == 1) {
-		g.ev.b1Click = 0;
+	if ( ev == Eb1Click ) {
 		pmenu = mainM;
 		return 0;
 	}

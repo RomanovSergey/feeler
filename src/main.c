@@ -26,6 +26,12 @@ int main(void) {
 	init();
 
 	while (1) {
+		if ( g.alarm != 0 ) {
+			g.alarm--;
+			if ( g.alarm == 0 ) {
+				put_event( Ealarm );
+			}
+		}
 		magnetic();
 		buttons();
 		uart();
@@ -49,6 +55,7 @@ void init(void) {
 	//ADC_InitTypeDef          ADC_InitStruct;
 
 	g.tim_done  = 0;
+	g.alarm = 0;
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс

@@ -55,11 +55,19 @@ int mainM(uint8_t ev) {
 }
 
 /*
- * Функция для вывода временных сообщений
+ * Функция для вывода временного сообщения 1
  */
-int MessageM(uint8_t ev) {
+int message_1_M(uint8_t ev) {
+	if ( ev == Ealarm ) {
+		pmenu = mainM;
+		return 0;
+	}
+	if ( ev == Emeasure ) {
+		return 0;
+	}
 	clrscr();
-	toPrint(mes.message);
+	toPrint("Error error error!!!\r\n");
+	toPrint("Вы сделали что то не хорошее\r\n");
 	return 1;
 }
 
@@ -72,16 +80,11 @@ int calibAirM(uint8_t ev) {
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
-		int res = addCalibPoint(g.tim_len, 0xFFFF);
+		int res = 0;// addCalibPoint(g.tim_len, 0xFFFF);
 		if ( res == 0 ) {//если получили ошибку калибровки
-			mes.tim = 3000;//время отображения в мс
-			mes.retM = mainM;//меню куда возвратиться
-			mes.message = "\r\n"
-					"Error\r\n"
-					"Ошибка во время калибровки\r\n";
-
-			pmenu = MessageM;
-			return 1;
+			g.alarm = 3000;//заведем время отображения временного сообщения в мс
+			pmenu = message_1_M;
+			return 0;
 		}
 		pmenu = calib100M;
 		return 0;

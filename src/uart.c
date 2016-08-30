@@ -26,14 +26,6 @@ void uart(void) {
 	static int (*pmold)(uint8_t) = mainM;//указатель на предыдущую функцию меню
 	int res = 0;
 
-	if ( pmenu == MessageM ) {//если идет отображение временного сообщения
-		if ( mes.tim == 0 ) {//если время отображения истекло
-			pmenu = mes.retM;//указатель на функцию меню возврата
-			put_event( Erepaint );//перерисовать
-		} else {
-			mes.tim--;
-		}
-	}
 	event = get_event();
 	while ( event != 0 ) {
 		res = pmenu(event);//отобразим функцию меню на экране (единственное место отображения)

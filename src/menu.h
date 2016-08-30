@@ -15,7 +15,7 @@ typedef struct {
 } MESSAGE_T;
 
 int mainM(uint8_t);
-int MessageM(uint8_t);
+int message_1_M(uint8_t);
 int calibAirM(uint8_t);
 int calib100M(uint8_t);
 int calib200M(uint8_t);

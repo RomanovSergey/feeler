@@ -15,26 +15,12 @@ typedef struct {
 
 /*
  * LTOMSIZE - количество точек для замеров и калибровки
- * сначало в массиве располагаются замеры для алюминия
- * в середине замер для воздуха
- * потом идут замеры для железа
- * Таким образом в массиве измеренная величина Lval должна
- * располагатся в порядке возрастания
  */
-#define LTOMSIZE  21
+#define LTOMSIZE  7
 
 //калибровочная таблица в озу
 ltom_t ltom[LTOMSIZE] = { {0,0} };  //init  Lvalue to micrometer in RAM
 
-/*		{   4514,  5000 },  // - air
-
-		{   5097,    400 },  //      Ferrum
-		{   5181,    320 },  //
-		{   5269,    240 },  //
-		{   5393,    160 },  //
-		{   5466,     80 },  //
-		{   5500,      0 },  //
-};*/
 
 /*
  * Перобразует величину L (пропорциональна индуктивности)
@@ -62,7 +48,7 @@ int16_t micro(int32_t L) {
 			return D;//нашли 2 ближайшие точки на прямой
 		}
 	}
-	return 10000;
+	return 0xFFFF;
 }
 
 /*
@@ -77,22 +63,34 @@ int16_t micro(int32_t L) {
  */
 int addCalibPoint(uint32_t lval, uint16_t micro) {
 	switch (micro) {
-	case 0xFFFF://показание на воздухе
+	case 0://показание на железе
 		ltom[0].Lval  = lval;
 		ltom[0].micro = micro;
-		return 1;//успех
+		return 1;
 	case 100:
 		ltom[1].Lval  = lval;
 		ltom[1].micro = micro;
-		return 1;//успех
+		return (lval > ltom[0].Lval)? 1 : 0;
 	case 200:
-		break;
+		ltom[2].Lval  = lval;
+		ltom[2].micro = micro;
+		return (lval > ltom[1].Lval)? 1 : 0;
 	case 300:
-		break;
+		ltom[3].Lval  = lval;
+		ltom[3].micro = micro;
+		return (lval > ltom[2].Lval)? 1 : 0;
 	case 400:
-		break;
+		ltom[4].Lval  = lval;
+		ltom[4].micro = micro;
+		return (lval > ltom[3].Lval)? 1 : 0;
 	case 600:
-		break;
+		ltom[5].Lval  = lval;
+		ltom[5].micro = micro;
+		return (lval > ltom[4].Lval)? 1 : 0;
+	case 0xFFFF://показание на воздухе
+		ltom[6].Lval  = lval;
+		ltom[6].micro = micro;
+		return 1;
 	}
 	return 0;//ошибка
 }

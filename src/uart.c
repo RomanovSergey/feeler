@@ -16,7 +16,6 @@
 
 struct Tsend tx;//буфер для отправки по уарт
 int (*pmenu)(uint8_t) = mainM;//указатель на функцию меню
-extern MESSAGE_T mes;
 
 /*
  * Периодически вызывается из main.c

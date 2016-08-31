@@ -11,7 +11,6 @@
 #include "uart.h"
 #include "micro.h"
 
-MESSAGE_T mes;
 
 inline void clrscr(void) {
 	tx.ind = 0;//индекс буфера для отправки в порт сбрасываем в ноль
@@ -80,9 +79,32 @@ int calibAirM(uint8_t ev) {
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
-		int res = 0;// addCalibPoint(g.tim_len, 0xFFFF);
+		int res = addCalibPoint(g.tim_len, 0xFFFF);
 		if ( res == 0 ) {//если получили ошибку калибровки
-			g.alarm = 3000;//заведем время отображения временного сообщения в мс
+			g.alarm = 5000;//заведем время отображения временного сообщения в мс
+			pmenu = message_1_M;
+			return 0;
+		}
+		pmenu = calib__0M;
+		return 0;
+	}
+	clrscr();
+	toPrint("Измерте показание на воздухе, нажмите кнопку \r\n");
+	uint32_t val = g.tim_len;
+	uint32_to_str( val );
+	toPrint(" y.e. \r\n");
+	return 1;
+}
+
+int calib__0M(uint8_t ev) {
+	if ( ev == Eb1Long ) {
+		pmenu = mainM;
+		return 0;//перерисовывать не надо
+	}
+	if ( ev == Eb1Click ) {
+		int res = addCalibPoint(g.tim_len, 0);
+		if ( res == 0 ) {//если получили ошибку калибровки
+			g.alarm = 5000;//заведем время отображения временного сообщения в мс
 			pmenu = message_1_M;
 			return 0;
 		}
@@ -90,7 +112,7 @@ int calibAirM(uint8_t ev) {
 		return 0;
 	}
 	clrscr();
-	toPrint("Измерте показание на воздухе, нажмите кнопку \r\n");
+	toPrint("Измерте показание на образце без зазора и нажмите кнопку \r\n");
 	uint32_t val = g.tim_len;
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");
@@ -103,11 +125,17 @@ int calib100M(uint8_t ev) {
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
+		int res = addCalibPoint(g.tim_len, 100);
+		if ( res == 0 ) {//если получили ошибку калибровки
+			g.alarm = 5000;//заведем время отображения временного сообщения в мс
+			pmenu = message_1_M;
+			return 0;
+		}
 		pmenu = calib200M;
 		return 0;
 	}
 	clrscr();
-	toPrint("Put feeler on 100 um and push button \r\n");
+	toPrint("Измерте на пластине 100 мкм и нажмите кнопку \r\n");
 	uint32_t val = g.tim_len;
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");
@@ -120,11 +148,20 @@ int calib200M(uint8_t ev) {
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
+		int res = addCalibPoint(g.tim_len, 200);
+		if ( res == 0 ) {//если получили ошибку калибровки
+			g.alarm = 5000;//заведем время отображения временного сообщения в мс
+			pmenu = message_1_M;
+			return 0;
+		}
 		pmenu = calib300M;
 		return 0;
 	}
 	clrscr();
-	toPrint("Put feeler on 200 um and push button \r\n");
+	toPrint("Измерте на пластине 200 мкм и нажмите кнопку \r\n");
+	uint32_t val = g.tim_len;
+	uint32_to_str( val );
+	toPrint(" y.e. \r\n");
 	return 1;
 }
 
@@ -134,11 +171,81 @@ int calib300M(uint8_t ev) {
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
-		pmenu = mainM;
+		int res = addCalibPoint(g.tim_len, 300);
+		if ( res == 0 ) {//если получили ошибку калибровки
+			g.alarm = 5000;//заведем время отображения временного сообщения в мс
+			pmenu = message_1_M;
+			return 0;
+		}
+		pmenu = calib400M;
 		return 0;
 	}
 	clrscr();
-	toPrint("Put feeler on 300 um and push button \r\n");
+	toPrint("Измерте на пластине 300 мкм и нажмите кнопку \r\n");
+	uint32_t val = g.tim_len;
+	uint32_to_str( val );
+	toPrint(" y.e. \r\n");
+	return 1;
+}
+
+int calib400M(uint8_t ev) {
+	if ( ev == Eb1Long ) {
+		pmenu = mainM;
+		return 0;//перерисовывать не надо
+	}
+	if ( ev == Eb1Click ) {
+		int res = addCalibPoint(g.tim_len, 400);
+		if ( res == 0 ) {//если получили ошибку калибровки
+			g.alarm = 5000;//заведем время отображения временного сообщения в мс
+			pmenu = message_1_M;
+			return 0;
+		}
+		pmenu = calib600M;
+		return 0;
+	}
+	clrscr();
+	toPrint("Измерте на пластине 400 мкм и нажмите кнопку \r\n");
+	uint32_t val = g.tim_len;
+	uint32_to_str( val );
+	toPrint(" y.e. \r\n");
+	return 1;
+}
+
+int calib600M(uint8_t ev) {
+	if ( ev == Eb1Long ) {
+		pmenu = mainM;
+		return 0;//перерисовывать не надо
+	}
+	if ( ev == Eb1Click ) {
+		int res = addCalibPoint(g.tim_len, 600);
+		if ( res == 0 ) {//если получили ошибку калибровки
+			g.alarm = 5000;//заведем время отображения временного сообщения в мс
+			pmenu = message_1_M;
+			return 0;
+		}
+		g.alarm = 5000;
+		pmenu = calibDoneM;
+		return 0;
+	}
+	clrscr();
+	toPrint("Измерте на пластине 600 мкм и нажмите кнопку \r\n");
+	uint32_t val = g.tim_len;
+	uint32_to_str( val );
+	toPrint(" y.e. \r\n");
+	return 1;
+}
+
+int calibDoneM(uint8_t ev) {
+	if ( ev == Ealarm ) {
+		pmenu = mainM;
+		return 0;
+	}
+	if ( ev == Emeasure ) {
+		return 0;
+	}
+	clrscr();
+	toPrint("Поздравляю! \r\n");
+	toPrint("Процесс калибровки завершен \r\n");
 	return 1;
 }
 

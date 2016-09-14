@@ -1,0 +1,21 @@
+
+Power On -> MeasureAir and click button1 (for termocompensation)
+Working Screen (long push - fix measure, double click - enter to menu)
+  Language / Язык (click - move cursor, double click - enter to submenu, long push - to menu up)
+    Русский
+    English
+    Чувашла калащать нах
+  Select Work Calib
+    Factory
+    User1
+    User2
+  User Calibrate
+    User1 Al
+    User1 Fe
+    User2 Al
+    User2 Fe
+  Advanced
+    See Air value
+    See Factory table
+    See User1 table
+    See User2 table

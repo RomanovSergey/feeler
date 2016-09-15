@@ -1,11 +1,7 @@
 
 Power On -> MeasureAir and click button1 (for termocompensation)
 Working Screen (long push - fix measure, double click - enter to menu)
-  Language / Язык (click - move cursor, double click - enter to submenu, long push - to menu up)
-    Русский
-    English
-    Чувашла калащать нах
-  Select Work Calib
+  Select Work Calib (click - move cursor, double click - enter to submenu, long push - to menu up)
     Factory
     User1
     User2

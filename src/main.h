@@ -17,10 +17,11 @@
 
 //коды событий (здесь нельзя использовать событие с кодом 0)
 #define Eb1Click  1
-#define Eb1Long   2
-#define Emeasure  3
-#define Erepaint  4
-#define Ealarm    5
+#define Eb1Double 2
+#define Eb1Long   3
+#define Emeasure  4
+#define Erepaint  5
+#define Ealarm    6
 
 typedef struct {
 	uint32_t tim_len;//time of lenght N pulses in magnetic measures

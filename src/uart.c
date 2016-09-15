@@ -15,7 +15,7 @@
 #include "menu.h"
 
 struct Tsend tx;//буфер для отправки по уарт
-int (*pmenu)(uint8_t) = mainM;//указатель на функцию меню
+int (*pmenu)(uint8_t) = showEventM;//указатель на функцию меню
 
 /*
  * Периодически вызывается из main.c
@@ -26,14 +26,14 @@ void uart(void) {
 	int res = 0;
 
 	event = get_event();
-	while ( event != 0 ) {
+	//while ( event != 0 ) {
 		res = pmenu(event);//отобразим функцию меню на экране (единственное место отображения)
 		if ( pmold != pmenu ) {
 			pmold = pmenu;
 			put_event( Erepaint );//меню поменялось, надо перерисовать
 		}
-		event = get_event();
-	}
+		//event = get_event();
+	//}
 
 	if ( res ) {//если есть данные для отрисовки
 		USART_SendData(USART2, tx.buf[0]);
@@ -147,15 +147,15 @@ void USART2_IRQHandler(void) {
 
 	if(USART_GetITStatus(USART2, USART_IT_TXE) != RESET) {
 		if (tx.buf[tx.ind] == 0) {//нулевой символ? (конец данных)
-				USART_ClearITPendingBit(USART2, USART_IT_TC);
-				USART_ITConfig(USART2, USART_IT_TC, ENABLE);
-				USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+			USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+			USART_ClearITPendingBit(USART2, USART_IT_TC);
+			USART_ITConfig(USART2, USART_IT_TC, ENABLE);
 		} else if (tx.ind < TX_SIZE) {//не дошли до конца буфера? и не поймали нулевой символ
 			USART_SendData(USART2, tx.buf[tx.ind++]);//отправим символ в порт
 		} else {//значит уже дошли до конца буфера
+			USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
 			USART_ClearITPendingBit(USART2, USART_IT_TC);
 			USART_ITConfig(USART2, USART_IT_TC, ENABLE);
-			USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
 		}
 	}
 

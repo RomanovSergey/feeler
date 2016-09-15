@@ -25,4 +25,6 @@ int calib400M(uint8_t );
 int calib600M(uint8_t );
 int calibDoneM(uint8_t );
 
+int showEventM(uint8_t ev);
+
 #endif /* SRC_MENU_H_ */

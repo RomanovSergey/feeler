@@ -14,11 +14,45 @@
 
 inline void clrscr(void) {
 	tx.ind = 0;//индекс буфера для отправки в порт сбрасываем в ноль
-	toPrint("\033[2J");//clear entire screen
-	toPrint("\033[?25l");//Hides the cursor.
-	toPrint("\033[H");//Move cursor to upper left corner.
-	printRun();//крутящаяся черточка
-	toPrint("\r\n");
+//	toPrint("\033[2J");//clear entire screen
+//	toPrint("\033[?25l");//Hides the cursor.
+//	toPrint("\033[H");//Move cursor to upper left corner.
+//	printRun();//крутящаяся черточка
+//	toPrint("\r\n");
+}
+
+int showEventM(uint8_t ev) {
+	if ( ev == Eb1Click ) {
+		clrscr();
+		toPrint(" Click \r\n");
+		return 1;
+	}
+	if ( ev == Eb1Double ) {
+		clrscr();
+		toPrint(" Double \r\n");
+		return 1;
+	}
+	if ( ev == Eb1Long ) {
+		clrscr();
+		toPrint(" Long Push \r\n");
+		return 1;
+	}
+//	if ( ev == Emeasure ) {
+//		//clrscr();
+//		toPrint(" Measure \r\n");
+//		return 1;
+//	}
+	if ( ev == Erepaint ) {
+		clrscr();
+		toPrint(" Repaint \r\n");
+		return 1;
+	}
+	if ( ev == Ealarm ) {
+		clrscr();
+		toPrint(" Alarm \r\n");
+		return 1;
+	}
+	return 0;
 }
 
 /*

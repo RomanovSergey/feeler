@@ -43,7 +43,7 @@ button_t B1 = {
  * структуры b->current
  */
 void debounce(button_t *b, uint8_t instance) {
-	static const int ANTI_TIME = 30;    //time of debounce
+	static const int ANTI_TIME = 20;    //time of debounce
 	if ( instance > 0 ) {//if button is pushed *************************
 		if ( b->debcount < ANTI_TIME ) {
 			b->debcount++;//filter
@@ -54,9 +54,7 @@ void debounce(button_t *b, uint8_t instance) {
 		if ( b->debcount > 0 ) {
 			b->debcount--;//filter
 		} else {
-			if ( b->prev == 1 ) {//if state is change
-				b->current = 0;
-			}
+			b->current = 0;
 		}
 	}
 }

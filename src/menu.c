@@ -14,11 +14,11 @@
 
 inline void clrscr(void) {
 	tx.ind = 0;//индекс буфера для отправки в порт сбрасываем в ноль
-//	toPrint("\033[2J");//clear entire screen
-//	toPrint("\033[?25l");//Hides the cursor.
-//	toPrint("\033[H");//Move cursor to upper left corner.
-//	printRun();//крутящаяся черточка
-//	toPrint("\r\n");
+	toPrint("\033[2J");//clear entire screen
+	toPrint("\033[?25l");//Hides the cursor.
+	toPrint("\033[H");//Move cursor to upper left corner.
+	printRun();//крутящаяся черточка
+	toPrint("\r\n");
 }
 
 int showEventM(uint8_t ev) {
@@ -35,6 +35,16 @@ int showEventM(uint8_t ev) {
 	if ( ev == Eb1Long ) {
 		clrscr();
 		toPrint(" Long Push \r\n");
+		return 1;
+	}
+	if ( ev == Eb1Push ) {
+		clrscr();
+		toPrint(" Push button \r\n");
+		return 1;
+	}
+	if ( ev == Eb1Pull ) {
+		clrscr();
+		toPrint(" Pull button \r\n");
 		return 1;
 	}
 //	if ( ev == Emeasure ) {
@@ -55,35 +65,58 @@ int showEventM(uint8_t ev) {
 	return 0;
 }
 
-/*
- * Первая функция меню - отображает измеренное значение толщины
- * по мере поступления новых данных
- */
-int mainM(uint8_t ev) {
-	static uint16_t cnt = 0;
-
-	if ( ev == Eb1Long ) {//если поступило событие длительного нажатия кнопки
-		pmenu = calibAirM;//указатель на процедурку калибровки
-		return 0;//перерисовывать не надо
-	}
-	if ( ev == Eb1Click ) {//событие нажания кнопки
-		return 0;//ниче не делаем
-	}
-
-	uint32_t val = g.tim_len;
+void showVal(uint32_t val) {
+	//static uint16_t cnt = 0;
 	clrscr();
 	toPrint("\r\n Tim_len = ");//=================================
 	//toPrint("\033[31m");//set red color
 	uint32_to_str( val );
 	//toPrint("\033[0m");//reset normal (color also default)
 	toPrint(" y.e. \r\n");
-
 	toPrint(" microns = ");
 	uint32_to_str( micro( val ) );
 	toPrint(" um \r\n");
+	//toPrint("\r\n cnt = ");
+	//uint16_to_5str( cnt++ );
+}
 
-	toPrint("\r\n cnt = ");
-	uint16_to_5str( cnt++ );
+/*
+ * Первая функция меню - отображает измеренное значение толщины
+ * по мере поступления новых данных
+ */
+int mainM(uint8_t ev) {
+	if ( ev == Eb1Click || ev == Eb1Long ) {//событие нажания кнопки
+		return 0;//ниче не делаем
+	}
+	if ( ev == Eb1Double ) {//если поступило событие длительного нажатия кнопки
+		pmenu = calibAirM;//указатель на процедурку калибровки
+		return 0;//перерисовывать не надо
+	}
+	if ( ev == Eb1Push ) {
+		pmenu = keepValM;
+		return 0;
+	}
+	showVal( g.tim_len );
+	return 1;//надо перерисовать
+}
+
+/*
+ * Фикирует измеренное значение, пока нажата кнопка
+ */
+int keepValM(uint8_t ev) {
+	static uint32_t keepVal = 0;
+	if ( ev == Eb1Pull ) {
+		pmenu = mainM;
+		keepVal = 0;
+		return 0;
+	}
+	if ( ev == Eb1Long ) {
+		return 0;//ниче не делаем
+	}
+	if ( ev == Erepaint ) {
+		keepVal = g.tim_len;
+	}
+	showVal( keepVal );
 	return 1;//надо перерисовать
 }
 

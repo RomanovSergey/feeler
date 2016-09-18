@@ -14,7 +14,10 @@ typedef struct {
 	const char *message;//нуль терминальная строка - само сообщение
 } MESSAGE_T;
 
+int showEventM(uint8_t ev);
+
 int mainM(uint8_t);
+int keepValM(uint8_t ev);
 int message_1_M(uint8_t);
 int calibAirM(uint8_t );
 int calib__0M(uint8_t );
@@ -25,6 +28,5 @@ int calib400M(uint8_t );
 int calib600M(uint8_t );
 int calibDoneM(uint8_t );
 
-int showEventM(uint8_t ev);
 
 #endif /* SRC_MENU_H_ */

@@ -19,9 +19,11 @@
 #define Eb1Click  1
 #define Eb1Double 2
 #define Eb1Long   3
-#define Emeasure  4
-#define Erepaint  5
-#define Ealarm    6
+#define Eb1Push   4
+#define Eb1Pull   5
+#define Emeasure  6
+#define Erepaint  7
+#define Ealarm    8
 
 typedef struct {
 	uint32_t tim_len;//time of lenght N pulses in magnetic measures

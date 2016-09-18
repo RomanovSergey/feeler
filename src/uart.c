@@ -15,7 +15,7 @@
 #include "menu.h"
 
 struct Tsend tx;//буфер для отправки по уарт
-int (*pmenu)(uint8_t) = showEventM;//указатель на функцию меню
+int (*pmenu)(uint8_t) = mainM;//showEventM;//указатель на функцию меню
 
 /*
  * Периодически вызывается из main.c
@@ -26,14 +26,14 @@ void uart(void) {
 	int res = 0;
 
 	event = get_event();
-	//while ( event != 0 ) {
+	if ( event != 0 ) {
 		res = pmenu(event);//отобразим функцию меню на экране (единственное место отображения)
 		if ( pmold != pmenu ) {
 			pmold = pmenu;
 			put_event( Erepaint );//меню поменялось, надо перерисовать
 		}
 		//event = get_event();
-	//}
+	}
 
 	if ( res ) {//если есть данные для отрисовки
 		USART_SendData(USART2, tx.buf[0]);

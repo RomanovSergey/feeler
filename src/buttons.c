@@ -101,7 +101,7 @@ void eventLongPush(button_t *b) {
  * генерить событие клика при одном кратком нажатии кнопки
  */
 void click(button_t *b) {
-	static const uint16_t clickLimit = 200;
+	static const uint16_t clickLimit = 180;
 	static const int longPush = 2000;
 
 	b->tim++;
@@ -119,6 +119,7 @@ void click(button_t *b) {
 		}
 		if ( b->tim == clickLimit ) {
 			b->state = 100;
+			b->tim = 0;
 		}
 		break;
 	case 2:
@@ -166,10 +167,29 @@ void click(button_t *b) {
 			b->tim = 0;
 			b->state = 0;
 		}
+		if ( b->tim == clickLimit ) {
+			b->state = 101;
+			b->tim = 0;
+			put_event( Eb1Push );
+		}
+		break;
+	case 101:
+		if ( b->current == 0 ) {
+			b->state = 0;
+			b->tim = 0;
+			put_event( Eb1Pull );
+		}
 		if ( b->tim == longPush ) {
 			b->tim = 0;
-			b->state = 10;
+			b->state = 102;
 			put_event( Eb1Long );
+		}
+		break;
+	case 102:
+		if ( b->current == 0 ) {
+			b->state = 0;
+			b->tim = 0;
+			put_event( Eb1Pull );
 		}
 		break;
 	default:

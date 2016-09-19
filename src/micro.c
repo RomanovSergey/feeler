@@ -9,87 +9,87 @@
 #include "micro.h"
 
 typedef struct {
-	int32_t  Lval;  //измеренное значение индуктивности (L)
-	int16_t  micro; //соответствующее значение в микрометрах (D)
-} ltom_t;// Lvalue to micrometer
+	int32_t  F;  //измеренное значение индуктивности
+	int16_t  micro; //соответствующее значение в микрометрах
+} ftom_t;// F to micrometer
 
 /*
- * LTOMSIZE - количество точек для замеров и калибровки
+ * FTOMSIZE - количество точек для замеров и калибровки
  */
-#define LTOMSIZE  7
+#define FTOMSIZE  7
 
 //калибровочная таблица в озу
-ltom_t ltom[LTOMSIZE] = { {0,0} };  //init  Lvalue to micrometer in RAM
+ftom_t ftom[FTOMSIZE] = { {0,0} };  //init F to micrometer in RAM
 
 
 /*
- * Перобразует величину L (пропорциональна индуктивности)
- * в выходное значение в микрометрах D
+ * Перобразует величину F (пропорциональна индуктивности)
+ * в выходное значение в микрометрах M
  *
  * Используется уравнение прямой по двум точкам:
- * (D-D1)/(D2-D1) = (L-L1)/(L2-L1);
- * тогда искомая величина D равна:
- * D = (L-L1)*(D2-D1)/(L2-L1) + D1;
+ * (M-M1)/(M2-M1) = (F-F1)/(F2-F1);
+ * тогда искомая величина M равна:
+ * M = (F-F1)*(M2-M1)/(F2-F1) + M1;
  */
-int16_t micro(int32_t L) {
-	int32_t D, D1, D2, L1, L2;
+int16_t micro(int32_t F) {
+	int32_t M, M1, M2, F1, F2;
 	uint16_t i;
 
-	if ( L == 0 ) {
-		return 0xFFFF;//ну это же ошибка будет
+	if ( F <= ftom[0].F ) {
+		return 0;
 	}
-	for ( i = 1; i < LTOMSIZE; i++ ) {//найдем ближайшие точки
-		if ( (L > ltom[i-1].Lval)&&(L <= ltom[i].Lval) ) {
-			L2 = ltom[i].Lval;
-			D2 = ltom[i].micro;
-			L1 = ltom[i-1].Lval;
-			D1 = ltom[i-1].micro;
-			D = (L-L1)*(D2-D1)/(L2-L1) + D1;
-			return D;//нашли 2 ближайшие точки на прямой
+	for ( i = 1; i < FTOMSIZE; i++ ) {//найдем ближайшие точки
+		if ( (F > ftom[i-1].F)&&(F <= ftom[i].F) ) {
+			F2 = ftom[i].F;
+			M2 = ftom[i].micro;
+			F1 = ftom[i-1].F;
+			M1 = ftom[i-1].micro;
+			M = (F-F1)*(M2-M1)/(F2-F1) + M1;
+			return M;//нашли 2 ближайшие точки на прямой
 		}
 	}
-	return 0xFFFF;
+	return 0;//пока
 }
 
 /*
  * Функция используется во время калибровки
  * параметры
- *   lval  - измеренная величина
+ *   F  - измеренная величина
  *   micro - известный зазор между датчиком и металлом
  *
  * return:
  *   1 - успех
  *   0 - ошибка
  */
-int addCalibPoint(uint32_t lval, uint16_t micro) {
+int addCalibPoint(uint32_t F, uint16_t micro) {
 	switch (micro) {
 	case 0://показание на железе
-		ltom[0].Lval  = lval;
-		ltom[0].micro = micro;
+		ftom[0].F  = F;
+		ftom[0].micro = micro;
 		return 1;
 	case 100:
-		ltom[1].Lval  = lval;
-		ltom[1].micro = micro;
-		return (lval > ltom[0].Lval)? 1 : 0;
+		ftom[1].F  = F;
+		ftom[1].micro = micro;
+		return (F > ftom[0].F)? 1 : 0;
 	case 200:
-		ltom[2].Lval  = lval;
-		ltom[2].micro = micro;
-		return (lval > ltom[1].Lval)? 1 : 0;
+		ftom[2].F  = F;
+		ftom[2].micro = micro;
+		return (F > ftom[1].F)? 1 : 0;
 	case 300:
-		ltom[3].Lval  = lval;
-		ltom[3].micro = micro;
-		return (lval > ltom[2].Lval)? 1 : 0;
+		ftom[3].F  = F;
+		ftom[3].micro = micro;
+		return (F > ftom[2].F)? 1 : 0;
 	case 400:
-		ltom[4].Lval  = lval;
-		ltom[4].micro = micro;
-		return (lval > ltom[3].Lval)? 1 : 0;
+		ftom[4].F  = F;
+		ftom[4].micro = micro;
+		return (F > ftom[3].F)? 1 : 0;
 	case 600:
-		ltom[5].Lval  = lval;
-		ltom[5].micro = micro;
-		return (lval > ltom[4].Lval)? 1 : 0;
+		ftom[5].F  = F;
+		ftom[5].micro = micro;
+		return (F > ftom[4].F)? 1 : 0;
 	case 0xFFFF://показание на воздухе
-		ltom[6].Lval  = lval;
-		ltom[6].micro = micro;
+		ftom[6].F  = F;
+		ftom[6].micro = 5000;
 		return 1;
 	}
 	return 0;//ошибка

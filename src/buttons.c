@@ -60,47 +60,11 @@ void debounce(button_t *b, uint8_t instance) {
 }
 
 /*
- * eventPushPull локальная функция
- * генерить событие при первом нажатии кнопки
+ * buttonEvent локальная функция
+ * генерить событие клика, двойной клик, нажатие и отпускание,
+ * длительное нажатие
  */
-void eventPushPull(button_t *b) {
-	if ( b->current == 1 ) {//если кнопка нажата
-		if ( b->prev == 0 ) {//если кнопку только нажали
-			b->prev = 1;
-			put_event(Eb1Click);//событие нажат. кнопки (сбрасывает обработчик)
-		}
-	} else {//если кнопка отпущена
-		if ( b->prev == 1 ) {//если конопку только что отпустили
-			b->prev = 0;
-			//пока нет задачи генерить событие по отпусканию кнопки
-		}
-	}
-}
-
-/*
- * longPush локальная функция
- * генерить событие при длительном нажатии кнопки
- */
-void eventLongPush(button_t *b) {
-	static const int LPUSH_TIME = 2000;  //time for long push button event generation
-	if ( b->current == 1 ) {//если кнопка нажата
-		if ( b->timPush > LPUSH_TIME ) {//если время нажатия кнопки достаточное
-			//g.event = b1LongPush;//сгенерим глоб.событ. длит. нажат. кнопки (сбрасывает обработчик)
-			put_event(Eb1Long);//событие длительного нажатия
-			b->timPush = 0;//сбрасываем счетчик длительного нажатия
-		} else {
-			b->timPush++;
-		}
-	} else {//если кнопка отпущена
-		b->timPush = 0;//сбрасываем счетчик длительного нажатия
-	}
-}
-
-/*
- * click локальная функция
- * генерить событие клика при одном кратком нажатии кнопки
- */
-void click(button_t *b) {
+void buttonEvent(button_t *b) {
 	static const uint16_t clickLimit = 180;
 	static const int longPush = 2000;
 
@@ -204,12 +168,7 @@ void click(button_t *b) {
 void buttons(void) {
 
 	debounce( &B1, READ_B1 );//антидребезг B1
-	click( &B1 );//генерить событие при первом нажатии В1
-	//eventLongPush( &B1 );//генерить событие при длительном нажатии на В1
+	buttonEvent( &B1 );//генерить событие при первом нажатии В1
 }
-//надо сделать
-//click( &B1 );
-//doubleClick( &B1 );
-//longPush( &B1 );
 
 

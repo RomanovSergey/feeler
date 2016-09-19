@@ -8,7 +8,7 @@
 #ifndef MICROMETER_H_
 #define MICROMETER_H_
 
-int16_t micro(int32_t Lvalue);
-int addCalibPoint(uint32_t lval, uint16_t micro);
+int16_t micro(int32_t );
+int addCalibPoint(uint32_t , uint16_t );
 
 #endif /* MICROMETER_H_ */

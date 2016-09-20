@@ -263,6 +263,9 @@ static int has_free(void) {
  * return 1 - успешно; 0 - нет места в буфере
  */
 int put_event(uint8_t event) {
+	if (event == 0) {
+		return 1;//событие с нулевым кодом пусть не будет для удобства
+	}
 	if (has_free()) {
 		bufEv[head] = event;
 		head = (1 + head) & LEN_MASK;//инкремент кругового индекса

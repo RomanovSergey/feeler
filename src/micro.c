@@ -45,10 +45,10 @@ int16_t micro(int32_t F) {
 			F1 = ftom[i-1].F;
 			M1 = ftom[i-1].micro;
 			M = (F-F1)*(M2-M1)/(F2-F1) + M1;
-			return M;//нашли 2 ближайшие точки на прямой
+			return M;
 		}
 	}
-	return 0;//пока
+	return 0xFFFF;//Air
 }
 
 /*
@@ -87,9 +87,9 @@ int addCalibPoint(uint32_t F, uint16_t micro) {
 		ftom[5].F  = F;
 		ftom[5].micro = micro;
 		return (F > ftom[4].F)? 1 : 0;
-	case 0xFFFF://показание на воздухе
+	case 5000://показание на максимуме (дальше отображаем воздух)
 		ftom[6].F  = F;
-		ftom[6].micro = 5000;
+		ftom[6].micro = micro;
 		return 1;
 	}
 	return 0;//ошибка

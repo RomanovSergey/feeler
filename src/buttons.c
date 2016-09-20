@@ -14,21 +14,16 @@
 typedef struct  {
 	int16_t  debcount;//счетчик антидребезга
 	uint8_t  current;//текущее отфильтрованное состояние кнопки
-	uint8_t  prev;//предыдущее отфильтрованное состояние кнопки
 	uint8_t  state;//машинное состояние (для отличия клика от дабле клика и лонг пуша)
 	uint16_t tim;//временная метка клика(ов)
-	uint16_t timPush;//время нажатия кнопки (для события длительного нажатия)
 } button_t;
 
 //only one button yet
 button_t B1 = {
 	.debcount = 0,
 	.current = 0,
-	.prev = 0,
 	.state = 0,
 	.tim = 0,
-	.timPush = 0,
-	.prev = 0,
 };
 
 //================================================================================
@@ -64,7 +59,9 @@ void debounce(button_t *b, uint8_t instance) {
  * генерить событие клика, двойной клик, нажатие и отпускание,
  * длительное нажатие
  */
-void buttonEvent(button_t *b) {
+void buttonEvent(button_t *b, uint8_t Eclick, uint8_t Edouble,
+		uint8_t Elong, uint8_t Epush, uint8_t Epull)
+{
 	static const uint16_t clickLimit = 180;
 	static const int longPush = 2000;
 
@@ -90,7 +87,7 @@ void buttonEvent(button_t *b) {
 		if ( b->tim == clickLimit ) {//если кнопку отпустили на слишком долго
 			b->state = 0;
 			b->tim = 0;
-			put_event( Eb1Click );
+			put_event( Eclick );//click event
 		}
 		if ( b->current == 1 ) {//пока клонит к двойному щелчку
 			b->tim = 0;
@@ -115,7 +112,7 @@ void buttonEvent(button_t *b) {
 		if ( b->tim == clickLimit ) {
 			b->state = 0;
 			b->tim = 0;
-			put_event( Eb1Double );//событие двойного нажатия
+			put_event( Edouble );//double click event
 		}
 		break;
 
@@ -134,26 +131,26 @@ void buttonEvent(button_t *b) {
 		if ( b->tim == clickLimit ) {
 			b->state = 101;
 			b->tim = 0;
-			put_event( Eb1Push );
+			put_event( Epush );//push event
 		}
 		break;
 	case 101:
 		if ( b->current == 0 ) {
 			b->state = 0;
 			b->tim = 0;
-			put_event( Eb1Pull );
+			put_event( Epull );//pull event
 		}
 		if ( b->tim == longPush ) {
 			b->tim = 0;
 			b->state = 102;
-			put_event( Eb1Long );
+			put_event( Elong );//long push event
 		}
 		break;
 	case 102:
 		if ( b->current == 0 ) {
 			b->state = 0;
 			b->tim = 0;
-			put_event( Eb1Pull );
+			put_event( Epull );//pull event
 		}
 		break;
 	default:
@@ -168,7 +165,8 @@ void buttonEvent(button_t *b) {
 void buttons(void) {
 
 	debounce( &B1, READ_B1 );//антидребезг B1
-	buttonEvent( &B1 );//генерить событие при первом нажатии В1
+	buttonEvent( &B1, Eb1Click, Eb1Double,
+			Eb1Long, Eb1Push, Eb1Pull );//generate different events on B1 button
 }
 
 

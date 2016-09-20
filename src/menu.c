@@ -74,8 +74,13 @@ void showVal(uint32_t val) {
 	//toPrint("\033[0m");//reset normal (color also default)
 	toPrint(" y.e. \r\n");
 	toPrint(" microns = ");
-	uint32_to_str( micro( val ) );
-	toPrint(" um \r\n");
+	uint16_t microValue = micro( val );
+	if ( microValue == 0xFFFF ) {
+		toPrint("Air \r\n");
+	} else {
+		uint32_to_str( microValue );
+		toPrint(" um \r\n");
+	}
 	//toPrint("\r\n cnt = ");
 	//uint16_to_5str( cnt++ );
 }
@@ -89,7 +94,7 @@ int mainM(uint8_t ev) {
 		return 0;//ниче не делаем
 	}
 	if ( ev == Eb1Double ) {//если поступило событие длительного нажатия кнопки
-		pmenu = calibAirM;//указатель на процедурку калибровки
+		pmenu = calib__0M;//указатель на процедурку калибровки
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Push ) {
@@ -290,12 +295,35 @@ int calib600M(uint8_t ev) {
 			pmenu = message_1_M;
 			return 0;
 		}
+		pmenu = calibMaxM;
+		return 0;
+	}
+	clrscr();
+	toPrint("Измерте на пластине 600 мкм и нажмите кнопку \r\n");
+	uint32_t val = g.tim_len;
+	uint32_to_str( val );
+	toPrint(" y.e. \r\n");
+	return 1;
+}
+
+int calibMaxM(uint8_t ev) {
+	if ( ev == Eb1Long ) {
+		pmenu = mainM;
+		return 0;//перерисовывать не надо
+	}
+	if ( ev == Eb1Click ) {
+		int res = addCalibPoint(g.tim_len, 5000);
+		if ( res == 0 ) {//если получили ошибку калибровки
+			g.alarm = 5000;//заведем время отображения временного сообщения в мс
+			pmenu = message_1_M;
+			return 0;
+		}
 		g.alarm = 5000;
 		pmenu = calibDoneM;
 		return 0;
 	}
 	clrscr();
-	toPrint("Измерте на пластине 600 мкм и нажмите кнопку \r\n");
+	toPrint("Измерте на пластине 5000 мкм и нажмите кнопку \r\n");
 	uint32_t val = g.tim_len;
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");

@@ -26,6 +26,7 @@ int calib200M(uint8_t );
 int calib300M(uint8_t );
 int calib400M(uint8_t );
 int calib600M(uint8_t );
+int calibMaxM(uint8_t );
 int calibDoneM(uint8_t );
 
 

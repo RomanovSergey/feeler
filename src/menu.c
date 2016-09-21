@@ -86,15 +86,15 @@ void showVal(uint32_t val) {
 }
 
 /*
- * Первая функция меню - отображает измеренное значение толщины
+ * Рабочий - отображает измеренное значение толщины
  * по мере поступления новых данных
  */
-int mainM(uint8_t ev) {
+int workScreenM(uint8_t ev) {
 	if ( ev == Eb1Click || ev == Eb1Long ) {//событие нажания кнопки
 		return 0;//ниче не делаем
 	}
 	if ( ev == Eb1Double ) {//если поступило событие длительного нажатия кнопки
-		pmenu = calib__0M;//указатель на процедурку калибровки
+		pmenu = mainM;//указатель на процедурку калибровки
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Push ) {
@@ -111,7 +111,7 @@ int mainM(uint8_t ev) {
 int keepValM(uint8_t ev) {
 	static uint32_t keepVal = 0;
 	if ( ev == Eb1Pull ) {
-		pmenu = mainM;
+		pmenu = workScreenM;
 		keepVal = 0;
 		return 0;
 	}
@@ -126,11 +126,31 @@ int keepValM(uint8_t ev) {
 }
 
 /*
+ * Главное меню
+ */
+int mainM(uint8_t ev) {
+	if ( ev == Eb1Long ) {
+		pmenu = workScreenM;
+		return 0;
+	}
+	if ( ev == Eb1Double ) {//если поступило событие длительного нажатия кнопки
+		pmenu = calib__0M;//указатель на процедурку калибровки
+		return 0;//перерисовывать не надо
+	}
+	clrscr();
+	toPrint("Главное меню\r\n");
+	toPrint(" Выбор рабочей калибровки\r\n");
+	toPrint(" Пользовательская калибровка\r\n");
+	toPrint(" Просмотр таблиц\r\n");
+	return 1;
+}
+
+/*
  * Функция для вывода временного сообщения 1
  */
 int message_1_M(uint8_t ev) {
 	if ( ev == Ealarm ) {
-		pmenu = mainM;
+		pmenu = workScreenM;
 		return 0;
 	}
 	if ( ev == Emeasure ) {
@@ -142,35 +162,9 @@ int message_1_M(uint8_t ev) {
 	return 1;
 }
 
-/*
- * Начальное меню процедуры калибровки, начиная с замера воздуха
- */
-int calibAirM(uint8_t ev) {
-	if ( ev == Eb1Long ) {
-		pmenu = mainM;
-		return 0;//перерисовывать не надо
-	}
-	if ( ev == Eb1Click ) {
-		int res = addCalibPoint(g.tim_len, 0xFFFF);
-		if ( res == 0 ) {//если получили ошибку калибровки
-			g.alarm = 5000;//заведем время отображения временного сообщения в мс
-			pmenu = message_1_M;
-			return 0;
-		}
-		pmenu = calib__0M;
-		return 0;
-	}
-	clrscr();
-	toPrint("Измерте показание на воздухе, нажмите кнопку \r\n");
-	uint32_t val = g.tim_len;
-	uint32_to_str( val );
-	toPrint(" y.e. \r\n");
-	return 1;
-}
-
 int calib__0M(uint8_t ev) {
 	if ( ev == Eb1Long ) {
-		pmenu = mainM;
+		pmenu = workScreenM;
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
@@ -193,7 +187,7 @@ int calib__0M(uint8_t ev) {
 
 int calib100M(uint8_t ev) {
 	if ( ev == Eb1Long ) {
-		pmenu = mainM;
+		pmenu = workScreenM;
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
@@ -216,7 +210,7 @@ int calib100M(uint8_t ev) {
 
 int calib200M(uint8_t ev) {
 	if ( ev == Eb1Long ) {
-		pmenu = mainM;
+		pmenu = workScreenM;
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
@@ -239,7 +233,7 @@ int calib200M(uint8_t ev) {
 
 int calib300M(uint8_t ev) {
 	if ( ev == Eb1Long ) {
-		pmenu = mainM;
+		pmenu = workScreenM;
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
@@ -262,7 +256,7 @@ int calib300M(uint8_t ev) {
 
 int calib400M(uint8_t ev) {
 	if ( ev == Eb1Long ) {
-		pmenu = mainM;
+		pmenu = workScreenM;
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
@@ -285,7 +279,7 @@ int calib400M(uint8_t ev) {
 
 int calib600M(uint8_t ev) {
 	if ( ev == Eb1Long ) {
-		pmenu = mainM;
+		pmenu = workScreenM;
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
@@ -308,7 +302,7 @@ int calib600M(uint8_t ev) {
 
 int calibMaxM(uint8_t ev) {
 	if ( ev == Eb1Long ) {
-		pmenu = mainM;
+		pmenu = workScreenM;
 		return 0;//перерисовывать не надо
 	}
 	if ( ev == Eb1Click ) {
@@ -332,7 +326,7 @@ int calibMaxM(uint8_t ev) {
 
 int calibDoneM(uint8_t ev) {
 	if ( ev == Ealarm ) {
-		pmenu = mainM;
+		pmenu = workScreenM;
 		return 0;
 	}
 	if ( ev == Emeasure ) {

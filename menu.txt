@@ -15,8 +15,3 @@ Working Screen (long push - fix measure, double click - enter to menu)
     See Factory table
     See User1 table
     See User2 table
-
-ToDo:
-1) ping pong measure 0<->0xFFFF
-2) define Al Fe in calib
-3) measure more than 600 um

@@ -17,6 +17,7 @@
 #include "main.h"
 #include "buttons.h"
 #include "magnetic.h"
+#include "micro.h"
 
 GLOBAL_T g;
 
@@ -56,6 +57,9 @@ void init(void) {
 
 	g.tim_done  = 0;
 	g.alarm = 0;
+	g.calibTable = 0;
+
+	initCalib();
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс

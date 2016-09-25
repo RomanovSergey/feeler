@@ -299,7 +299,7 @@ int calibMaxM(uint8_t ev) {
 int calibDoneM(uint8_t ev) {
 	switch (ev) {
 	case Erepaint:
-		g.alarm = 5000;//заведем время отображения данного сообщения в мс
+		g.alarm = 3000;//заведем время отображения данного сообщения в мс
 		break;
 	case Ealarm:
 		pmenu = workScreenM;

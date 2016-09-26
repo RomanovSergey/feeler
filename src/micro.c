@@ -12,25 +12,27 @@
 typedef struct {
 	uint32_t  F;  //измеренное значение индуктивности
 	uint16_t  micro; //соответствующее значение в микрометрах
-} ftom_t;// F to micrometer
+} ftoM_t;// F to micrometer
 
-/*
- * FTOMSIZE - количество точек для замеров и калибровки
- */
+
+//FTOMSIZE - количество точек для замеров и калибровки
 #define FTOMSIZE  20
 
 //калибровочная таблица в озу
-ftom_t calib[FTOMSIZE];// = { {0,0} };  //init F to micrometer in RAM
+ftoM_t table[FTOMSIZE];
 
+/*
+ * Начальная инициализация калибровочной таблицы в озу
+ */
 void initCalib(void) {
 	for (int i = 0; i < FTOMSIZE; i++) {
-		calib[i].F = 0;
-		calib[i].micro = 0xFFFF;
+		table[i].F = 0;
+		table[i].micro = 0xFFFF;//означает воздух (infinity)
 	}
 }
 
 /*
- * Перобразует величину F (пропорциональна индуктивности)
+ * Перобразует частоту F (обр. пропорциональна индуктивности)
  * в выходное значение в микрометрах M
  *
  * Используется уравнение прямой по двум точкам:
@@ -41,13 +43,6 @@ void initCalib(void) {
 int16_t micro(int32_t F) {
 	int32_t M, M1, M2, F1, F2;
 	uint16_t i=1;
-	ftom_t *table = 0;
-
-	if ( g.calibTable == 0 ) {//выбор калибровочной таблицы
-		table = calib;
-	} else {
-		return 0xFFFF;
-	}
 
 	if ( F <= table[0].F ) {
 		return 0;//величина без зазора - 0 мкм
@@ -67,6 +62,31 @@ int16_t micro(int32_t F) {
 }
 
 /*
+ * int addFerrum(uint32_t Freq, uint16_t micro)
+ * Функция используется во время калибровки железа
+ * параметры
+ *   Freq  - измеренная величина
+ *   micro - известный зазор между датчиком и металлом
+ * return:
+ *   1 - успех
+ *   0 - ошибка
+ */
+int addFerrum(uint32_t Freq, uint16_t micro) {
+	int i = 0;
+
+	while ( table[i].F != 0 ) {//ищем первую свободную ячейку для записи в таблицу
+		i++;
+		if ( i == (FTOMSIZE - 1) ) {//если дошли до предела
+			return 0;//error add point
+		}
+	}
+	table[i].F  = Freq;
+	table[i].micro = micro;
+
+	return 1;//good
+}
+
+/*
  * Функция используется во время калибровки
  * параметры
  *   F  - измеренная величина
@@ -77,13 +97,6 @@ int16_t micro(int32_t F) {
  *   0 - ошибка
  */
 int addCalibPoint(uint32_t F, uint16_t micro) {
-	ftom_t *table = 0;
-
-	if ( g.calibTable == 0 ) {
-		table = calib;
-	} else {
-		return 0;
-	}
 
 	switch (micro) {
 	case 0://показание на железе

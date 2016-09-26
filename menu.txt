@@ -1,17 +1,18 @@
 
 Power On -> MeasureAir and click button1 (for termocompensation)
-Working Screen (long push - fix measure, double click - enter to menu)
+Working Screen (long push - fix measure, double click - enter to main menu)
   Select Work Calib (click - move cursor, double click - enter to submenu, long push - to menu up)
     Factory
     User1
-    User2
   User Calibrate
-    User1 Al
-    User1 Fe
-    User2 Al
-    User2 Fe
+    User Al
+    User Fe
   Advanced
     See Air value
-    See Factory table
-    See User1 table
-    See User2 table
+    See Factory Fe
+    See Factory Al
+    See User Fe
+    See User Al
+
+ToDo:
+  synhronize g.tim_len

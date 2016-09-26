@@ -19,6 +19,7 @@ int showEventM(uint8_t ev);
 int keepValM(uint8_t ev);
 int messageError1M(uint8_t);
 
+int powerOn(uint8_t );
 int workScreenM(uint8_t);
 int mainM(uint8_t);
 

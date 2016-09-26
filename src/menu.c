@@ -21,13 +21,35 @@ inline void clrscr(void) {
 	toPrint("\r\n");
 }
 
-void showVal(uint32_t val) {
-	//static uint16_t cnt = 0;
+/*
+ * Отображается при включении питания
+ * просит замерить частоту на воздухе
+ */
+int powerOn(uint8_t ev) {
+	switch (ev) {
+	case Eb1Double:
+	case Eb1Long:
+	case Eb1Push:
+	case Eb1Pull:
+		return 0;//do not paint
+	case Eb1Click:
+		g.air = g.tim_len;
+		pmenu = workScreenM;
+		return 0;
+	}
 	clrscr();
-	toPrint("\r\n Tim_len = ");//=================================
-	//toPrint("\033[31m");//set red color
+	toPrint("Замерте показание на воздухе\r\n");
+	toPrint(" и кликните на кнопку.\r\n");
+	toPrint("\r\n Freq = ");
+	uint32_to_str( g.tim_len );
+	toPrint(" y.e. \r\n");
+	return 1;
+}
+
+void showVal(uint32_t val) {
+	clrscr();
+	toPrint("\r\n Freq = ");
 	uint32_to_str( val );
-	//toPrint("\033[0m");//reset normal (color also default)
 	toPrint(" y.e. \r\n");
 	toPrint(" microns = ");
 	uint16_t microValue = micro( val );
@@ -37,8 +59,6 @@ void showVal(uint32_t val) {
 		uint32_to_str( microValue );
 		toPrint(" um \r\n");
 	}
-	//toPrint("\r\n cnt = ");
-	//uint16_to_5str( cnt++ );
 }
 
 /*

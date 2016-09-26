@@ -57,9 +57,9 @@ void init(void) {
 
 	g.tim_done  = 0;
 	g.alarm = 0;
-	g.calibTable = 0;
-
 	initCalib();
+	put_event( Erepaint );
+
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс

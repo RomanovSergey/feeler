@@ -15,14 +15,14 @@
 #include "menu.h"
 
 struct Tsend tx;//буфер для отправки по уарт
-int (*pmenu)(uint8_t) = workScreenM;//showEventM;//указатель на функцию меню
+int (*pmenu)(uint8_t) = powerOn;//указатель на функцию меню
 
 /*
  * Периодически вызывается из main.c
  */
 void uart(void) {
 	uint8_t event;
-	static int (*pmold)(uint8_t) = workScreenM;//указатель на предыдущую функцию меню
+	static int (*pmold)(uint8_t) = powerOn;//указатель на предыдущую функцию меню
 	int res = 0;
 
 	event = get_event();

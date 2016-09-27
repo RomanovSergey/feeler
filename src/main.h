@@ -26,10 +26,7 @@
 #define Ealarm    8
 
 typedef struct {
-	uint32_t tim_len;//time of lenght N pulses in magnetic measures
-	uint32_t tim_done;//flag data timer is ready
 	uint32_t air;//air's frequency on power on
-
 	uint32_t alarm;//будильник для отсчета времени отображения временного меню
 } GLOBAL_T;
 

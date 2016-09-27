@@ -10,7 +10,7 @@
 #include "menu.h"
 #include "uart.h"
 #include "micro.h"
-
+#include "magnetic.h"
 
 inline void clrscr(void) {
 	tx.ind = 0;//индекс буфера для отправки в порт сбрасываем в ноль
@@ -27,13 +27,13 @@ inline void clrscr(void) {
  */
 int powerOn(uint8_t ev) {
 	switch (ev) {
-	case Eb1Double:
 	case Eb1Long:
-	case Eb1Push:
 	case Eb1Pull:
 		return 0;//do not paint
+	case Eb1Double:
+	case Eb1Push:
 	case Eb1Click:
-		g.air = g.tim_len;
+		g.air = getFreq();
 		pmenu = workScreenM;
 		return 0;
 	}
@@ -41,7 +41,7 @@ int powerOn(uint8_t ev) {
 	toPrint("Замерте показание на воздухе\r\n");
 	toPrint(" и кликните на кнопку.\r\n");
 	toPrint("\r\n Freq = ");
-	uint32_to_str( g.tim_len );
+	uint32_to_str( getFreq() );
 	toPrint(" y.e. \r\n");
 	return 1;
 }
@@ -78,7 +78,7 @@ int workScreenM(uint8_t ev) {
 		return 0;
 	}
 
-	showVal( g.tim_len );
+	showVal( getFreq() );
 	return 1;//надо перерисовать
 }
 
@@ -95,7 +95,7 @@ int keepValM(uint8_t ev) {
 	case Eb1Long:
 		return 0;
 	case Erepaint:
-		keepVal = g.tim_len;
+		keepVal = getFreq();
 		break;
 	}
 
@@ -116,7 +116,7 @@ int mainM(uint8_t ev) {
 		if ( curs == 1 ) {
 			pmenu = notDoneM;
 		} else if ( curs == 2 ) {
-			pmenu = calib__0M;//указатель на процедурку калибровки
+			pmenu = calibFeM;//указатель на процедурку калибровки
 		} else if ( curs == 3 ) {
 			pmenu = notDoneM;
 		} else {
@@ -147,13 +147,13 @@ int mainM(uint8_t ev) {
  */
 int messageError1M(uint8_t ev) {
 	switch (ev) {
-	case Ealarm:
+	case Ealarm://сработал будильник
 		pmenu = workScreenM;
 		return 0;
 	case Emeasure:
 		return 0;
 	case Erepaint:
-		g.alarm = 4000;//заведем время отображения данного сообщения в мс
+		g.alarm = 4000;//заведем будильник в мс
 		break;
 	}
 	clrscr();
@@ -162,13 +162,51 @@ int messageError1M(uint8_t ev) {
 	return 1;
 }
 
-int calib__0M(uint8_t ev) {
+/*
+ * Калибровка по железу
+ */
+int calibFeM(uint8_t ev) {
+	static const uint16_t thickness[] = {0,100,200,300,400,500,800,1000,2000,3000,5000};
+	static int index = 0;
+	int res = 0;
+	switch (ev) {
+	case Eb1Long:
+		pmenu = workScreenM;
+		return 0;
+	case Erepaint:
+		index = 0;
+		break;
+	case Eb1Click:
+		res = addFerrum( getFreq(), thickness[index] );
+		if ( res == 0 ) {//если получили ошибку калибровки
+			pmenu = messageError1M;
+			return 0;
+		}
+		index++;
+		if ( index == sizeof(thickness)/sizeof(uint16_t) ) {
+			index = 0;
+			pmenu = calibDoneM;
+			return 0;
+		}
+		break;
+	}
+	clrscr();
+	toPrint("Измерте на железе с зазором ");
+	uint32_to_str( thickness[index] );
+	toPrint(" мкм, кликните.\r\n");
+	uint32_t val = getFreq();
+	uint32_to_str( val );
+	toPrint(" y.e. \r\n");
+	return 1;
+}
+
+/*int calib__0M(uint8_t ev) {
 	switch (ev) {
 	case Eb1Long:
 		pmenu = workScreenM;
 		return 0;
 	case Eb1Click: {
-		int res = addCalibPoint(g.tim_len, 0);
+		int res = addFerrum( getFreq(), 0 );
 		if ( res == 0 ) {//если получили ошибку калибровки
 			pmenu = messageError1M;
 			return 0;
@@ -178,7 +216,7 @@ int calib__0M(uint8_t ev) {
 	}
 	clrscr();
 	toPrint("Измерте показание на образце без зазора и нажмите кнопку \r\n");
-	uint32_t val = g.tim_len;
+	uint32_t val = getFreq();
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");
 	return 1;
@@ -190,7 +228,7 @@ int calib100M(uint8_t ev) {
 		pmenu = workScreenM;
 		return 0;
 	case Eb1Click: {
-		int res = addCalibPoint(g.tim_len, 100);
+		int res = addFerrum( getFreq(), 100 );
 		if ( res == 0 ) {//если получили ошибку калибровки
 			pmenu = messageError1M;
 			return 0;
@@ -200,7 +238,7 @@ int calib100M(uint8_t ev) {
 	}
 	clrscr();
 	toPrint("Измерте на пластине 100 мкм и нажмите кнопку \r\n");
-	uint32_t val = g.tim_len;
+	uint32_t val = getFreq();
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");
 	return 1;
@@ -212,7 +250,7 @@ int calib200M(uint8_t ev) {
 		pmenu = workScreenM;
 		return 0;
 	case Eb1Click: {
-		int res = addCalibPoint(g.tim_len, 200);
+		int res = addFerrum( getFreq(), 200 );
 		if ( res == 0 ) {//если получили ошибку калибровки
 			pmenu = messageError1M;
 			return 0;
@@ -222,7 +260,7 @@ int calib200M(uint8_t ev) {
 	}
 	clrscr();
 	toPrint("Измерте на пластине 200 мкм и нажмите кнопку \r\n");
-	uint32_t val = g.tim_len;
+	uint32_t val = getFreq();
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");
 	return 1;
@@ -234,7 +272,7 @@ int calib300M(uint8_t ev) {
 		pmenu = workScreenM;
 		return 0;
 	case Eb1Click: {
-		int res = addCalibPoint(g.tim_len, 300);
+		int res = addFerrum( getFreq(), 300 );
 		if ( res == 0 ) {//если получили ошибку калибровки
 			pmenu = messageError1M;
 			return 0;
@@ -244,7 +282,7 @@ int calib300M(uint8_t ev) {
 	}
 	clrscr();
 	toPrint("Измерте на пластине 300 мкм и нажмите кнопку \r\n");
-	uint32_t val = g.tim_len;
+	uint32_t val = getFreq();
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");
 	return 1;
@@ -256,7 +294,7 @@ int calib400M(uint8_t ev) {
 		pmenu = workScreenM;
 		return 0;
 	case Eb1Click: {
-		int res = addCalibPoint(g.tim_len, 400);
+		int res = addFerrum( getFreq(), 400 );
 		if ( res == 0 ) {//если получили ошибку калибровки
 			pmenu = messageError1M;
 			return 0;
@@ -266,7 +304,7 @@ int calib400M(uint8_t ev) {
 	}
 	clrscr();
 	toPrint("Измерте на пластине 400 мкм и нажмите кнопку \r\n");
-	uint32_t val = g.tim_len;
+	uint32_t val = getFreq();
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");
 	return 1;
@@ -278,7 +316,7 @@ int calib600M(uint8_t ev) {
 		pmenu = workScreenM;
 		return 0;
 	case Eb1Click: {
-		int res = addCalibPoint(g.tim_len, 600);
+		int res = addFerrum( getFreq(), 600 );
 		if ( res == 0 ) {//если получили ошибку калибровки
 			pmenu = messageError1M;
 			return 0;
@@ -288,7 +326,7 @@ int calib600M(uint8_t ev) {
 	}
 	clrscr();
 	toPrint("Измерте на пластине 600 мкм и нажмите кнопку \r\n");
-	uint32_t val = g.tim_len;
+	uint32_t val = getFreq();
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");
 	return 1;
@@ -300,7 +338,7 @@ int calibMaxM(uint8_t ev) {
 		pmenu = workScreenM;
 		return 0;
 	case Eb1Click: {
-		int res = addCalibPoint(g.tim_len, 5000);
+		int res = addFerrum( getFreq(), 5000 );
 		if ( res == 0 ) {//если получили ошибку калибровки
 			pmenu = messageError1M;
 			return 0;
@@ -310,11 +348,11 @@ int calibMaxM(uint8_t ev) {
 	}
 	clrscr();
 	toPrint("Измерте на пластине 5000 мкм и нажмите кнопку \r\n");
-	uint32_t val = g.tim_len;
+	uint32_t val = getFreq();
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");
 	return 1;
-}
+}*/
 
 int calibDoneM(uint8_t ev) {
 	switch (ev) {

@@ -9,5 +9,6 @@
 #define MAGNETIC_H_
 
 void magnetic(void);
+uint32_t getFreq(void);
 
 #endif /* MAGNETIC_H_ */

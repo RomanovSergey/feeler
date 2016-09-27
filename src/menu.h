@@ -23,13 +23,14 @@ int powerOn(uint8_t );
 int workScreenM(uint8_t);
 int mainM(uint8_t);
 
-int calib__0M(uint8_t );
-int calib100M(uint8_t );
-int calib200M(uint8_t );
-int calib300M(uint8_t );
-int calib400M(uint8_t );
-int calib600M(uint8_t );
-int calibMaxM(uint8_t );
+int calibFeM(uint8_t );
+//int calib__0M(uint8_t );
+//int calib100M(uint8_t );
+//int calib200M(uint8_t );
+//int calib300M(uint8_t );
+//int calib400M(uint8_t );
+//int calib600M(uint8_t );
+//int calibMaxM(uint8_t );
 
 int calibDoneM(uint8_t );
 int notDoneM(uint8_t );

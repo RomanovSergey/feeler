@@ -14,5 +14,3 @@ Working Screen (long push - fix measure, double click - enter to main menu)
     See User Fe
     See User Al
 
-ToDo:
-  synhronize g.tim_len

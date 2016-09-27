@@ -55,7 +55,6 @@ void init(void) {
 	//TIM_ICInitTypeDef        TIM_ICInitStruct;
 	//ADC_InitTypeDef          ADC_InitStruct;
 
-	g.tim_done  = 0;
 	g.alarm = 0;
 	initCalib();
 	put_event( Erepaint );

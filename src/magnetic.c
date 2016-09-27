@@ -9,12 +9,28 @@
 #include "main.h"
 
 static int measureDone = 0;
+static uint32_t irq_freq = 0;
+static uint32_t freq = 0;
 
+/*
+ * Вызывается из main()
+ * для синхронизации переменных (частоты и генерации события)
+ * т.к. программа однопоточная, а measureDone устанавливается
+ * гораздо реже основного цикла программы
+ */
 void magnetic(void) {
 	if (measureDone == 1) {//для синхронизации с прерыванием
 		measureDone = 0;
+		freq = irq_freq;
 		put_event( Emeasure );//событие - данные измерения готовы
 	}
+}
+
+/*
+ * выдает текущую частоту
+ */
+uint32_t getFreq(void) {
+	return freq;
 }
 
 /*
@@ -30,7 +46,7 @@ void TIM2_IRQHandler(void) {
 			ledstat = 1;
 			GREEN_OFF;
 		}
-		g.tim_len = TIM_GetCounter( TIM3 );
+		irq_freq = TIM_GetCounter( TIM3 );
 		TIM_SetCounter(TIM3, 0);
 		measureDone = 1;//флаг - данные измерения готовы
 

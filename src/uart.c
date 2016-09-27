@@ -32,7 +32,6 @@ void uart(void) {
 			pmold = pmenu;
 			put_event( Erepaint );//меню поменялось, надо перерисовать
 		}
-		//event = get_event();
 	}
 
 	if ( res ) {//если есть данные для отрисовки

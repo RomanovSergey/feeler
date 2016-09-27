@@ -96,7 +96,7 @@ int addFerrum(uint32_t Freq, uint16_t micro) {
  *   1 - успех
  *   0 - ошибка
  */
-int addCalibPoint(uint32_t F, uint16_t micro) {
+/*int addCalibPoint(uint32_t F, uint16_t micro) {
 
 	switch (micro) {
 	case 0://показание на железе
@@ -130,7 +130,7 @@ int addCalibPoint(uint32_t F, uint16_t micro) {
 		return 1;
 	}
 	return 0;//ошибка
-}
+}*/
 
 
 

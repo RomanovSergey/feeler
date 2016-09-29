@@ -9,8 +9,7 @@
 #define MICROMETER_H_
 
 int16_t micro(int32_t );
-int addFe(uint32_t , uint16_t );
-int addAl(uint32_t , uint16_t );
 void initCalib(void);
+int addCalibPoint(uint32_t Freq, uint16_t micro, int metall);
 
 #endif /* MICROMETER_H_ */

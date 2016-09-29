@@ -69,10 +69,10 @@ int workScreenM(uint8_t ev) {
 	switch (ev) {
 	case Eb1Click:
 	case Eb1Long:
-		return 0;//ignore
+		return 0;
 	case Eb1Double:
-		pmenu = mainM;//указатель на процедурку калибровки
-		return 0;//перерисовывать не надо
+		pmenu = mainM;//на главное меню
+		return 0;
 	case Eb1Push:
 		pmenu = keepValM;
 		return 0;
@@ -111,12 +111,13 @@ int mainM(uint8_t ev) {
 	switch (ev) {
 	case Eb1Long:
 		pmenu = workScreenM;
+		curs = 1;
 		return 0;
 	case Eb1Double:
 		if ( curs == 1 ) {
 			pmenu = notDoneM;
 		} else if ( curs == 2 ) {
-			pmenu = calibFeM;//указатель на процедурку калибровки
+			pmenu = userCalibM;
 		} else if ( curs == 3 ) {
 			pmenu = notDoneM;
 		} else {
@@ -128,9 +129,6 @@ int mainM(uint8_t ev) {
 		if ( curs == 4 ) {
 			curs = 1;
 		}
-		break;
-	case Erepaint:
-		curs = 1;
 		break;
 	}
 
@@ -163,21 +161,60 @@ int messageError1M(uint8_t ev) {
 }
 
 /*
- * Калибровка по железу
+ * Пользовательская калибровка
  */
-int calibFeM(uint8_t ev) {
-	static const uint16_t thickness[] = {0,100,200,300,400,500,800,1000,2000,3000,5000};
-	static int index = 0;
-	int res = 0;
+int userCalibM(uint8_t ev) {
+	static uint8_t curs = 1;
 	switch (ev) {
 	case Eb1Long:
-		pmenu = workScreenM;
+		pmenu = mainM;
+		curs = 1;
+		return 0;
+	case Eb1Click:
+		curs++;
+		if ( curs > 2 ) {
+			curs = 1;
+		}
+		break;
+	case Eb1Double:
+		if ( curs == 1 ) {
+			pmenu = calibFeM;
+		} else if ( curs == 2 ) {
+			pmenu = calibAlM;
+		} else {
+			pmenu = messageError1M;
+			curs = 1;
+		}
+		return 0;
+	}
+	clrscr();
+	toPrint("Пользовательская клаибровка\r\n");
+	curs==1 ? toPrint(">") : toPrint(" ") ; toPrint("Железо\r\n");
+	curs==2 ? toPrint(">") : toPrint(" ") ; toPrint("Алюминий\r\n");
+	return 1;
+}
+
+int calib(uint8_t ev, int metall) {
+	static const uint16_t thickness[2][11] = {
+			{0,100,200,300,400,500,700,1000,2000,3000,5000},//Fe
+			{5000,3000,2000,1000,700,500,400,300,200,100,0},//Al
+	};
+	static int index = 0;
+	int res = 0;
+
+	if ( metall != 0 || metall != 1 ) {
+		pmenu = messageError1M;
+		return 0;
+	}
+	switch (ev) {
+	case Eb1Long:
+		pmenu = userCalibM;
 		return 0;
 	case Erepaint:
 		index = 0;
 		break;
 	case Eb1Click:
-		res = addFe( getFreq(), thickness[index] );
+		res = addCalibPoint( getFreq(), thickness[metall][index], metall );
 		if ( res == 0 ) {//если получили ошибку калибровки
 			pmenu = messageError1M;
 			return 0;
@@ -191,13 +228,32 @@ int calibFeM(uint8_t ev) {
 		break;
 	}
 	clrscr();
-	toPrint("Измерте на железе с зазором ");
-	uint32_to_str( thickness[index] );
+	if ( metall == 0 ) {
+		toPrint("Калибровка по железу\r\n");
+	} else {
+		toPrint("Калибровка по алюминию\r\n");
+	}
+	toPrint("Измерте зазор ");
+	uint32_to_str( thickness[metall][index] );
 	toPrint(" мкм, кликните.\r\n");
 	uint32_t val = getFreq();
 	uint32_to_str( val );
 	toPrint(" y.e. \r\n");
 	return 1;
+}
+
+/*
+ * Калибровка по железу
+ */
+int calibFeM(uint8_t ev) {
+	return calib(ev, 0);
+}
+
+/*
+ * Калибровка по алюминию
+ */
+int calibAlM(uint8_t ev) {
+	return calib(ev, 1);
 }
 
 int calibDoneM(uint8_t ev) {

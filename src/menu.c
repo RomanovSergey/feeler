@@ -116,12 +116,14 @@ int mainM(uint8_t ev) {
 	case Eb1Double:
 		if ( curs == 1 ) {
 			pmenu = notDoneM;
+			curs = 1;
 		} else if ( curs == 2 ) {
 			pmenu = userCalibM;
 		} else if ( curs == 3 ) {
 			pmenu = notDoneM;
+			curs = 1;
 		} else {
-			pmenu = messageError1M;
+			curs = 1;
 		}
 		return 0;
 	case Eb1Click:
@@ -151,7 +153,7 @@ int messageError1M(uint8_t ev) {
 	case Emeasure:
 		return 0;
 	case Erepaint:
-		g.alarm = 4000;//заведем будильник в мс
+		g.alarm = 3000;//заведем будильник в мс
 		break;
 	}
 	clrscr();
@@ -195,14 +197,14 @@ int userCalibM(uint8_t ev) {
 }
 
 int calib(uint8_t ev, int metall) {
-	static const uint16_t thickness[2][11] = {
-			{0,100,200,300,400,500,700,1000,2000,3000,5000},//Fe
-			{5000,3000,2000,1000,700,500,400,300,200,100,0},//Al
+	static const uint16_t thickness[2][8] = {
+			{0,100,200,300,500,1000,2000,3000},//Fe
+			{3000,2000,1000,500,300,200,100,0},//Al
 	};
 	static int index = 0;
 	int res = 0;
 
-	if ( metall != 0 || metall != 1 ) {
+	if ( metall != 0 && metall != 1 ) {
 		pmenu = messageError1M;
 		return 0;
 	}
@@ -220,7 +222,7 @@ int calib(uint8_t ev, int metall) {
 			return 0;
 		}
 		index++;
-		if ( index == sizeof(thickness)/sizeof(uint16_t) ) {
+		if ( index == sizeof(thickness)/(2*sizeof(uint16_t)) ) {
 			index = 0;
 			pmenu = calibDoneM;
 			return 0;
@@ -262,7 +264,7 @@ int calibDoneM(uint8_t ev) {
 		g.alarm = 3000;//заведем время отображения данного сообщения в мс
 		break;
 	case Ealarm:
-		pmenu = workScreenM;
+		pmenu = userCalibM;
 		return 0;
 	case Emeasure:
 		return 0;

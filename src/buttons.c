@@ -63,7 +63,7 @@ void buttonEvent(button_t *b, uint8_t Eclick, uint8_t Edouble,
 		uint8_t Elong, uint8_t Epush, uint8_t Epull)
 {
 	static const uint16_t clickLimit = 180;
-	static const int longPush = 2000;
+	static const int longPush = 1500;
 
 	b->tim++;
 	switch ( b->state ) {

@@ -19,20 +19,18 @@ typedef struct {
 #define FTOMSIZE  20
 
 //калибровочная таблица в озу
-ftoM_t tableFe[FTOMSIZE];//железо
-ftoM_t tableAl[FTOMSIZE];//Aluminumum
+//индекс 0 - железо; индекс 1 - алюминий
+ftoM_t table[2][FTOMSIZE];
 
 /*
  * Начальная инициализация калибровочной таблицы в озу
  */
 void initCalib(void) {
-	for (int i = 0; i < FTOMSIZE; i++) {
-		tableFe[i].F = 0;
-		tableFe[i].micro = 0xFFFF;//означает воздух (infinity)
-	}
-	for (int i = 0; i < FTOMSIZE; i++) {
-		tableAl[i].F = 0;
-		tableAl[i].micro = 0xFFFF;//означает воздух (infinity)
+	for (int m = 0; m < 2; m++) {
+		for (int i = 0; i < FTOMSIZE; i++) {
+			table[m][i].F = 0;
+			table[m][i].micro = 0xFFFF;//означает воздух (infinity)
+		}
 	}
 }
 
@@ -49,33 +47,33 @@ int16_t micro(int32_t F) {
 	int32_t M, M1, M2, F1, F2;
 	uint16_t i=1;
 
-	if ( tableFe[0].micro != 0xFFFF ) {//если железная таблица не пустая
-		if ( F <= tableFe[0].F ) {
+	if ( table[0][0].micro != 0xFFFF ) {//если железная таблица не пустая
+		if ( F <= table[0][0].F ) {
 			return 0;//величина без зазора - 0 мкм
 		}
-		while ( tableFe[i].micro != 0xFFFF ) {
-			if ( (F > tableFe[i-1].F)&&(F <= tableFe[i].F) ) {
-				F2 = tableFe[i].F;
-				M2 = tableFe[i].micro;
-				F1 = tableFe[i-1].F;
-				M1 = tableFe[i-1].micro;
+		while ( table[0][i].micro != 0xFFFF ) {
+			if ( (F > table[0][i-1].F)&&(F <= table[0][i].F) ) {
+				F2 = table[0][i].F;
+				M2 = table[0][i].micro;
+				F1 = table[0][i-1].F;
+				M1 = table[0][i-1].micro;
 				M = (F-F1)*(M2-M1)/(F2-F1) + M1;
 				return M;
 			}
 			i++;
 		}
 	}
-	if ( tableAl[0].micro != 0xFFFF ) {//если алюминиевая таблица не пустая
-		if ( F <= tableAl[0].F ) {
+	if ( table[1][0].micro != 0xFFFF ) {//если алюминиевая таблица не пустая
+		if ( F <= table[1][0].F ) {
 			return 0xFFFF;//air
 		}
 		i = 1;
-		while ( tableAl[i].micro != 0xFFFF ) {
-			if ( (F > tableAl[i-1].F)&&(F <= tableAl[i].F) ) {
-				F2 = tableAl[i].F;
-				M2 = tableAl[i].micro;
-				F1 = tableAl[i-1].F;
-				M1 = tableAl[i-1].micro;
+		while ( table[1][i].micro != 0xFFFF ) {
+			if ( (F > table[1][i-1].F)&&(F <= table[1][i].F) ) {
+				F2 = table[1][i].F;
+				M2 = table[1][i].micro;
+				F1 = table[1][i-1].F;
+				M1 = table[1][i-1].micro;
 				M = (F-F1)*(M2-M1)/(F2-F1) + M1;
 				return M;
 			}
@@ -100,20 +98,14 @@ int16_t micro(int32_t F) {
 int addCalibPoint(uint32_t Freq, uint16_t micro, int metall) {
 	int i = 0;
 
-	while ( tableFe[i].F != 0 ) {//ищем первую свободную ячейку для записи в таблицу
+	while ( table[metall][i].F != 0 ) {//ищем первую свободную ячейку для записи в таблицу
 		i++;
 		if ( i == (FTOMSIZE - 1) ) {//если дошли до предела
 			return 0;//error add point (последний элемент дожен быть 0 и 0xFFFF)
 		}
 	}
-	if ( metall == 0 ) {
-		tableFe[i].F  = Freq;
-		tableFe[i].micro = micro;
-	} else {
-		tableAl[i].F  = Freq;
-		tableAl[i].micro = micro;
-	}
-
+	table[metall][i].F  = Freq;
+	table[metall][i].micro = micro;
 	return 1;//good
 }
 

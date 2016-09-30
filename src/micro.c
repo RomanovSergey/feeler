@@ -51,8 +51,8 @@ int16_t micro(int32_t F) {
 		if ( F <= table[0][0].F ) {
 			return 0;//величина без зазора - 0 мкм
 		}
-		while ( table[0][i].micro != 0xFFFF ) {
-			if ( (F > table[0][i-1].F)&&(F <= table[0][i].F) ) {
+		while ( table[0][i].micro != 0xFFFF ) {//пока таблица не закончилась
+			if ( F <= table[0][i].F ) {// (F > table[0][i-1].F)&&(F <= table[0][i].F) ) {
 				F2 = table[0][i].F;
 				M2 = table[0][i].micro;
 				F1 = table[0][i-1].F;
@@ -63,7 +63,29 @@ int16_t micro(int32_t F) {
 			i++;
 		}
 	}
+
 	if ( table[1][0].micro != 0xFFFF ) {//если алюминиевая таблица не пустая
+		if ( F >= table[1][0].F ) {
+			return 0;//величина без зазора - 0 мкм
+		}
+		i = 1;
+		while ( table[1][i].micro != 0xFFFF ) {//пока таблица не закончилась
+			if ( F >= table[1][i].F ) {
+				F2 = table[1][i].F;
+				M2 = table[1][i].micro;
+				F1 = table[1][i-1].F;
+				M1 = table[1][i-1].micro;
+				M = (F-F1)*(M2-M1)/(F2-F1) + M1;
+				return M;
+			}
+			i++;
+		}
+	}
+	return 0xFFFF;//air
+}
+
+
+/*	if ( table[1][0].micro != 0xFFFF ) {//если алюминиевая таблица не пустая
 		if ( F <= table[1][0].F ) {
 			return 0xFFFF;//air
 		}
@@ -82,7 +104,7 @@ int16_t micro(int32_t F) {
 		return 0;
 	}
 	return 0xFFFF;//air
-}
+}*/
 
 /*
  * int addCalibPoint(uint32_t Freq, uint16_t micro, int metall)

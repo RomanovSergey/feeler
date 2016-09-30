@@ -197,10 +197,7 @@ int userCalibM(uint8_t ev) {
 }
 
 int calib(uint8_t ev, int metall) {
-	static const uint16_t thickness[2][8] = {
-			{0,100,200,300,500,1000,2000,3000},//Fe
-			{3000,2000,1000,500,300,200,100,0},//Al
-	};
+	static const uint16_t thickness[] = {0,100,200,300,500,1000,2000,3000};
 	static int index = 0;
 	int res = 0;
 
@@ -216,13 +213,13 @@ int calib(uint8_t ev, int metall) {
 		index = 0;
 		break;
 	case Eb1Click:
-		res = addCalibPoint( getFreq(), thickness[metall][index], metall );
+		res = addCalibPoint( getFreq(), thickness[index], metall );
 		if ( res == 0 ) {//если получили ошибку калибровки
 			pmenu = messageError1M;
 			return 0;
 		}
 		index++;
-		if ( index == sizeof(thickness)/(2*sizeof(uint16_t)) ) {
+		if ( index == sizeof(thickness)/(sizeof(uint16_t)) ) {
 			index = 0;
 			pmenu = calibDoneM;
 			return 0;
@@ -236,7 +233,7 @@ int calib(uint8_t ev, int metall) {
 		toPrint("Калибровка по алюминию\r\n");
 	}
 	toPrint("Измерте зазор ");
-	uint32_to_str( thickness[metall][index] );
+	uint32_to_str( thickness[index] );
 	toPrint(" мкм, кликните.\r\n");
 	uint32_t val = getFreq();
 	uint32_to_str( val );

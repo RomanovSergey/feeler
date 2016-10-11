@@ -14,3 +14,10 @@ Working Screen (long push - fix measure, double click - enter to main menu)
     See User Fe
     See User Al
 
+Display
+  PB10 - RST
+  PB11 - DC
+  PB12 - CE
+  PB13 - CLK
+  PB15 - DIN
+

@@ -52,7 +52,7 @@ void init(void) {
 	NVIC_InitTypeDef         NVIC_InitStruct;
 	USART_InitTypeDef        USART_InitStruct;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
-	//TIM_ICInitTypeDef        TIM_ICInitStruct;
+	SPI_InitTypeDef          SPI_InitStruct;
 	//ADC_InitTypeDef          ADC_InitStruct;
 
 	g.alarm = 0;
@@ -73,6 +73,13 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+	//================================================================
+	// SPI2 init for graphic display =================================
+	SPI_InitStruct.SPI_Direction = SPI_Direction_1Line_Tx;
+	SPI_InitStruct.SPI_Mode = SPI_Mode_Master;
+	SPI_InitStruct.SPI_DataSize = SPI_DataSize_8b;
+	SPI_Init(SPI2, &SPI_InitStruct);
 
 	//================================================================
 	//uart2 on PA2 (tx) and PA3 (rx) pins ============================

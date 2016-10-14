@@ -79,6 +79,11 @@ void init(void) {
 	SPI_InitStruct.SPI_Direction = SPI_Direction_1Line_Tx;
 	SPI_InitStruct.SPI_Mode = SPI_Mode_Master;
 	SPI_InitStruct.SPI_DataSize = SPI_DataSize_8b;
+	SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;
+	SPI_InitStruct.SPI_CPHA = SPI_CPHA_2Edge;
+	SPI_InitStruct.SPI_NSS = SPI_NSS_Hard;
+	SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
+	SPI_InitStruct.SPI_FirstBit = SPI_FirstBit_MSB;
 	SPI_Init(SPI2, &SPI_InitStruct);
 
 	//================================================================

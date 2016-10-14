@@ -21,3 +21,6 @@ Display
   PB13 - CLK
   PB15 - DIN
 
+MSB - first
+SDIN is sampled at the positive edge of SCLK
+

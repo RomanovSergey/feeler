@@ -15,11 +15,11 @@ Working Screen (long push - fix measure, double click - enter to main menu)
     See User Al
 
 Display
-  PB10 - RST
-  PB11 - DC
-  PB12 - CE
-  PB13 - CLK
-  PB15 - DIN
+  PB10 - RST (out)
+  PB11 - DnC (out)
+  PB12 - CE  (out)
+  PB13 - CLK (af)
+  PB15 - DIN (af)
 
 MSB - first
 SDIN is sampled at the positive edge of SCLK

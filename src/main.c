@@ -18,6 +18,7 @@
 #include "buttons.h"
 #include "magnetic.h"
 #include "micro.h"
+#include "displayDrv.h"
 
 GLOBAL_T g;
 
@@ -35,6 +36,7 @@ int main(void) {
 		}
 		magnetic();
 		buttons();
+		display();
 		uart();
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
@@ -52,7 +54,6 @@ void init(void) {
 	NVIC_InitTypeDef         NVIC_InitStruct;
 	USART_InitTypeDef        USART_InitStruct;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
-	SPI_InitTypeDef          SPI_InitStruct;
 	//ADC_InitTypeDef          ADC_InitStruct;
 
 	g.alarm = 0;
@@ -62,6 +63,8 @@ void init(void) {
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс
+
+	initDisplay();
 
 	// GPIOC Periph clock enable =======================================
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
@@ -73,18 +76,6 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
-
-	//================================================================
-	// SPI2 init for graphic display =================================
-	SPI_InitStruct.SPI_Direction = SPI_Direction_1Line_Tx;
-	SPI_InitStruct.SPI_Mode = SPI_Mode_Master;
-	SPI_InitStruct.SPI_DataSize = SPI_DataSize_8b;
-	SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;
-	SPI_InitStruct.SPI_CPHA = SPI_CPHA_2Edge;
-	SPI_InitStruct.SPI_NSS = SPI_NSS_Hard;
-	SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
-	SPI_InitStruct.SPI_FirstBit = SPI_FirstBit_MSB;
-	SPI_Init(SPI2, &SPI_InitStruct);
 
 	//================================================================
 	//uart2 on PA2 (tx) and PA3 (rx) pins ============================

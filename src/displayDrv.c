@@ -14,14 +14,13 @@
 #define DispChipEOn      GPIO_ResetBits(GPIOB,GPIO_Pin_12)  //chip enable on
 #define DispChipEOff     GPIO_SetBits(GPIOB,GPIO_Pin_12)    //chip enable off
 
+uint8_t disp[84*6] = {0};
 
 void pcd8544_send_byte(uint8_t data) {
 	DispChipEOn; // Низкий уровень на линии SCE
 	SPI_SendData8(SPI2, data);
-
-	//while ( SET != SPI_I2S_GetFlagStatus(SPI2, SPI_I2S_FLAG_TXE) );
-	while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
-
+	while ( SET == SPI_I2S_GetFlagStatus(SPI2, SPI_I2S_FLAG_BSY) );
+	//while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	DispChipEOff; // Высокий уровень на линии SCE
 }
 
@@ -73,7 +72,7 @@ void initDisplay(void) {
 	SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;
 	SPI_InitStruct.SPI_CPHA = SPI_CPHA_2Edge;
 	SPI_InitStruct.SPI_NSS = SPI_NSS_Soft;
-	SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_32;// 1.5 MHz
+	SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;// 3 MHz
 	SPI_InitStruct.SPI_FirstBit = SPI_FirstBit_MSB;
 	SPI_Init(SPI2, &SPI_InitStruct);
 
@@ -85,12 +84,22 @@ void initDisplay(void) {
 	ResetDisplayOff;
 
 	display_cmd(0x21);	// расширенный набор команд
-	display_cmd(0x80 + 56);	// напряжение смещения
+	display_cmd(0x80 + 64);	// напряжение смещения 56
 
 	display_cmd(0x04);	// Режим температурной коррекции 0
 	display_cmd(0x13);	// схема смещения 1:48
 	display_cmd(0x20);
 	display_cmd(0x0c);	// Нормальное отображение
+
+	//============================================================
+	DMA_InitTypeDef DMA_InitStruct;
+
+	DMA_DeInit(DMA1_Channel5);
+
+	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI2_BASE;
+	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)disp;
+	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralDST;
+	DMA_Init(DMA1_Channel5, &DMA_InitStruct);
 }
 
 // Выбирает страницу и горизонтальную позицию для вывода
@@ -114,7 +123,7 @@ void display_paint() {
 	display_setpos(0, 0);
 	for (uint8_t y = 0; y < 6; y++) {
 		for (uint8_t x = 0; x < 84; x++) {
-			display_data(5);
+			display_data(0xff);
 		}
 	}
 	display_setpos(0, 0);
@@ -123,10 +132,10 @@ void display_paint() {
 void display(void) {
 	static int tim = 0;
 	tim++;
-	if ( tim == 500 ) {
+	if ( tim == 1000 ) {
 		display_clear();
 	}
-	if ( tim == 1000 ) {
+	if ( tim == 2000 ) {
 		display_paint();
 		tim = 0;
 	}

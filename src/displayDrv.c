@@ -99,7 +99,17 @@ void initDisplay(void) {
 	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI2_BASE;
 	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)disp;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralDST;
+	DMA_InitStruct.DMA_BufferSize = (uint32_t)sizeof( disp );
+	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+	DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+	DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;
+	DMA_InitStruct.DMA_Priority = DMA_Priority_High;
+	DMA_InitStruct.DMA_M2M = DMA_M2M_Disable;
 	DMA_Init(DMA1_Channel5, &DMA_InitStruct);
+
+	DMA_Cmd(DMA1_Channel5, ENABLE);
 }
 
 // Выбирает страницу и горизонтальную позицию для вывода

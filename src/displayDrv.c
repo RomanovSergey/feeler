@@ -96,7 +96,7 @@ void initDisplay(void) {
 
 	DMA_DeInit(DMA1_Channel5);
 
-	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI2_BASE;
+	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI2_BASE + 0x0c;
 	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)disp;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralDST;
 	DMA_InitStruct.DMA_BufferSize = (uint32_t)sizeof( disp );
@@ -118,35 +118,32 @@ void display_setpos(uint8_t page, uint8_t x) {
   display_cmd(0x80 | x);
 }
 
-/* Очищает экран, устанавливает курсор в левый верхний угол */
-void display_clear() {
-  display_setpos(0, 0);
-  for (uint8_t y = 0; y < 6; y++) {
-    for (uint8_t x = 0; x < 84; x++) {
-      display_data(0);
-    }
-  }
-  display_setpos(0, 0);
-}
-
-void display_paint() {
-	display_setpos(0, 0);
-	for (uint8_t y = 0; y < 6; y++) {
-		for (uint8_t x = 0; x < 84; x++) {
-			display_data(0xff);
-		}
+void display_set(uint8_t data) {
+	for (int i = 0; i < sizeof( disp ); i++) {
+		disp[i] = data;
 	}
 	display_setpos(0, 0);
+
+	DispData; // Высокий уровень на линии DC: данные
+	DispChipEOn; // Низкий уровень на линии SCE
+	SPI_I2S_DMACmd( SPI2, SPI_I2S_DMAReq_Tx, ENABLE);
+	//DispChipEOff; // Высокий уровень на линии SCE
+
+//	for (int i = 0; i < sizeof( disp ); i++) {
+//		display_data( disp[i] );
+//	}
+
+	//display_setpos(0, 0);
 }
 
 void display(void) {
 	static int tim = 0;
 	tim++;
 	if ( tim == 1000 ) {
-		display_clear();
+		display_set( 0xc0 );
 	}
 	if ( tim == 2000 ) {
-		display_paint();
+		display_set( 0 );
 		tim = 0;
 	}
 }

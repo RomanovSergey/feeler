@@ -128,9 +128,8 @@ void display_set() {
 }
 
 void display_clear() {
-	uint8_t data = 0;
 	for (int i = 0; i < sizeof( disp ); i++) {
-		disp[i] = data++;
+		disp[i] = 0;
 	}
 }
 
@@ -145,12 +144,22 @@ void display(void) {
 	static int tim = 0;
 	tim++;
 	if ( tim == 1000 ) {
+		DispChipEOff;
 		display_set();
 		display_dma_send();
 	}
+	if ( tim == 1200 ) {
+		DMA_Cmd(DMA1_Channel5, DISABLE);
+		DMA_ClearITPendingBit(DMA1_IT_TC5);
+	}
 	if ( tim == 2000 ) {
+		DispChipEOff;
 		display_clear();
 		display_dma_send();
+	}
+	if ( tim == 2200 ) {
+		DMA_Cmd(DMA1_Channel5, DISABLE);
+		DMA_ClearITPendingBit(DMA1_IT_TC5);
 		tim = 0;
 	}
 }

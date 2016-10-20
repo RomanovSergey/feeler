@@ -94,6 +94,7 @@ void initDisplay(void) {
 	//============================================================
 	DMA_InitTypeDef DMA_InitStruct;
 
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 	DMA_DeInit(DMA1_Channel5);
 
 	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI2_BASE + 0x0c;
@@ -109,7 +110,8 @@ void initDisplay(void) {
 	DMA_InitStruct.DMA_M2M = DMA_M2M_Disable;
 	DMA_Init(DMA1_Channel5, &DMA_InitStruct);
 
-	DMA_Cmd(DMA1_Channel5, ENABLE);
+	DMA_Cmd(DMA1_Channel5, DISABLE);
+	SPI_I2S_DMACmd( SPI2, SPI_I2S_DMAReq_Tx, ENABLE);
 }
 
 // Выбирает страницу и горизонтальную позицию для вывода
@@ -118,32 +120,37 @@ void display_setpos(uint8_t page, uint8_t x) {
   display_cmd(0x80 | x);
 }
 
-void display_set(uint8_t data) {
+void display_set() {
+	uint8_t data = 0;
 	for (int i = 0; i < sizeof( disp ); i++) {
-		disp[i] = data;
+		disp[i] = data++;
 	}
-	display_setpos(0, 0);
+}
 
+void display_clear() {
+	uint8_t data = 0;
+	for (int i = 0; i < sizeof( disp ); i++) {
+		disp[i] = data++;
+	}
+}
+
+void display_dma_send() {
+	display_setpos(0, 0);
 	DispData; // Высокий уровень на линии DC: данные
 	DispChipEOn; // Низкий уровень на линии SCE
-	SPI_I2S_DMACmd( SPI2, SPI_I2S_DMAReq_Tx, ENABLE);
-	//DispChipEOff; // Высокий уровень на линии SCE
-
-//	for (int i = 0; i < sizeof( disp ); i++) {
-//		display_data( disp[i] );
-//	}
-
-	//display_setpos(0, 0);
+	DMA_Cmd(DMA1_Channel5, ENABLE);
 }
 
 void display(void) {
 	static int tim = 0;
 	tim++;
 	if ( tim == 1000 ) {
-		display_set( 0xc0 );
+		display_set();
+		display_dma_send();
 	}
 	if ( tim == 2000 ) {
-		display_set( 0 );
+		display_clear();
+		display_dma_send();
 		tim = 0;
 	}
 }

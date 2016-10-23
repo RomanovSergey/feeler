@@ -6,9 +6,9 @@
   * http://www.hertaville.com/stm32f0discovery-part-1-linux.html
   *
   * for erasing
-  * st-flash erase
+  *    st-flash erase
   * for programming
-  * st-flash write feeler.bin 0x8000000
+  *    st-flash write feeler.bin 0x8000000
   ******************************************************************************
 */
 

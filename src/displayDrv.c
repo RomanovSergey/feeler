@@ -14,7 +14,10 @@
 #define CE_LOW       GPIO_ResetBits(GPIOB,GPIO_Pin_12)  //chip enable on
 #define CE_HI        GPIO_SetBits(GPIOB,GPIO_Pin_12)    //chip enable off
 
-uint8_t disp[84*6] = {0};//буфер дисплея
+union {
+uint8_t disp[84*6];// = {0};//буфер дисплея
+uint8_t coor[84][6];
+} un;
 uint8_t dstat = 0;
 
 void display_cmd(uint8_t data) {
@@ -106,9 +109,9 @@ void initDisplay(void) {
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 	DMA_DeInit(DMA1_Channel5);
 	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI2_BASE + 0x0c;
-	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)disp;
+	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)un.disp;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralDST;
-	DMA_InitStruct.DMA_BufferSize = (uint32_t)sizeof( disp );
+	DMA_InitStruct.DMA_BufferSize = (uint32_t)sizeof( un.disp );
 	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
 	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
 	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
@@ -148,14 +151,14 @@ void SPI2_IRQHandler(void) {
 
 void display_set() {
 	uint8_t data = 0;
-	for (int i = 0; i < sizeof( disp ); i++) {
-		disp[i] = data++;
+	for (int i = 0; i < sizeof( un.disp ); i++) {
+		un.disp[i] = data++;
 	}
 }
 
 void display_clear() {
-	for (int i = 0; i < sizeof( disp ); i++) {
-		disp[i] = 0;
+	for (int i = 0; i < sizeof( un.disp ); i++) {
+		un.disp[i] = 0;
 	}
 }
 
@@ -172,8 +175,20 @@ void display_dma_send() {
 	DATA_MODE; // Высокий уровень на линии DC: данные
 	CE_LOW; // Низкий уровень на линии SCE
 	//dstat = d_dmasend;
-	DMA_SetCurrDataCounter(DMA1_Channel5, (uint16_t)sizeof( disp ));
+	DMA_SetCurrDataCounter(DMA1_Channel5, (uint16_t)sizeof( un.disp ));
 	DMA_Cmd(DMA1_Channel5, ENABLE);
+}
+
+void point(int x, int y, int color) {
+	int yb = y / 8;
+	int yo = y % 8;
+	uint8_t val = un.coor[x][yb];
+	if ( color == 0 ) {
+		val &= ~(1 << yo);
+	} else {
+		val |= (1 << yo);
+	}
+	un.coor[x][yb] = val;
 }
 
 void display(void) {
@@ -181,7 +196,17 @@ void display(void) {
 
 	tim++;
 	if ( tim == 1000 ) {
-		display_set();
+		//display_set();
+		for (int i=0; i<84; i++) {
+			point(i, i>>1, 1);
+			point(83-i, 47-(i>>1), 1);
+			point(i, 47, 1);
+			point(i, 0, 1);
+		}
+		for (int i = 0; i<48; i++) {
+			point(0, i, 1);
+			point(83, i, 1);
+		}
 		display_dma_send();
 	}
 	if ( tim == 5000 ) {

@@ -22,10 +22,9 @@ uint8_t dstat = 0;
 
 void display_cmd(uint8_t data) {
 	CMD_MODE; // Низкий уровень на линии DC: инструкция
-	//pcd8544_send_byte(data);
 	CE_LOW; // Низкий уровень на линии SCE
 	SPI_SendData8(SPI2, data);
-	while ( (SPI2->SR & SPI_I2S_FLAG_BSY) );// !(SPI2->SR & SPI_I2S_FLAG_TXE) ||
+	while ( (SPI2->SR & SPI_I2S_FLAG_BSY) );
 	CE_HI; // Высокий уровень на линии SCE
 }
 
@@ -67,7 +66,6 @@ void initDisplay(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
-
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource13, GPIO_AF_0);
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_0);
 
@@ -83,7 +81,6 @@ void initDisplay(void) {
 
 	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_TXE, DISABLE);
 	SPI_Cmd(SPI2, ENABLE);
-
 	while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	RESET_HI;
@@ -92,7 +89,6 @@ void initDisplay(void) {
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 2;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = DISABLE;
 	NVIC_Init(&NVIC_InitStruct);
-
 	uint8_t cmdInit[] = {
 			0x21,//расширенный набор команд
 			0x80 + 64,//напряжение смещения 56
@@ -105,7 +101,6 @@ void initDisplay(void) {
 
 	//============================================================
 	DMA_InitTypeDef DMA_InitStruct;
-
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 	DMA_DeInit(DMA1_Channel5);
 	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI2_BASE + 0x0c;
@@ -174,21 +169,38 @@ void display_dma_send() {
 	display_setpos(0, 0);
 	DATA_MODE; // Высокий уровень на линии DC: данные
 	CE_LOW; // Низкий уровень на линии SCE
-	//dstat = d_dmasend;
 	DMA_SetCurrDataCounter(DMA1_Channel5, (uint16_t)sizeof( un.disp ));
 	DMA_Cmd(DMA1_Channel5, ENABLE);
 }
 
-void point(int x, int y, int color) {
+void point(int x, int y) {
 	int yb = y / 8;
 	int yo = y % 8;
 	uint8_t val = un.coor[x][yb];
-	if ( color == 0 ) {
-		val &= ~(1 << yo);
-	} else {
-		val |= (1 << yo);
-	}
+	val |= (1 << yo);
 	un.coor[x][yb] = val;
+}
+
+uint8_t charB[6] = {
+		0x00, 0x7e, 0x52, 0x52, 0x2c, 0x00
+};
+uint8_t char_x[6] = {
+		0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc
+};
+void wrChar_6x8(uint8_t *c, uint8_t x0, uint8_t y0) {
+	uint8_t y = y0;
+	uint8_t x = x0;
+	for ( int i = 0;  i < 6;  i++ ) {
+		uint8_t b = c[i];
+		for ( int k = 0; k < 8; k ++ ) {
+			if ( b & (1 << k) ) {
+				point( x, y );
+			}
+			y++;
+		}
+		x++;
+		y = y0;
+	}
 }
 
 void display(void) {
@@ -196,17 +208,19 @@ void display(void) {
 
 	tim++;
 	if ( tim == 1000 ) {
-		//display_set();
 		for (int i=0; i<84; i++) {
-			point(i, i>>1, 1);
-			point(83-i, 47-(i>>1), 1);
-			point(i, 47, 1);
-			point(i, 0, 1);
+			point(i, i>>1);
+			point(83-i, 47-(i>>1));
+			point(i, 47);
+			point(i, 0);
 		}
 		for (int i = 0; i<48; i++) {
-			point(0, i, 1);
-			point(83, i, 1);
+			point(0, i);
+			point(83, i);
 		}
+		wrChar_6x8( charB, 20, 0 );
+		wrChar_6x8( charB, 40, 8 );
+		wrChar_6x8( char_x, 60, 8 );
 		display_dma_send();
 	}
 	if ( tim == 5000 ) {
@@ -215,7 +229,7 @@ void display(void) {
 		tim = 0;
 	}
 
-	if ( /*!(SPI2->SR & SPI_I2S_FLAG_TXE) ||*/ (SPI2->SR & SPI_I2S_FLAG_BSY) ) {
+	if ( SPI2->SR & SPI_I2S_FLAG_BSY ) {
 		return;
 	}
 	if ( 1 == dstat ) {

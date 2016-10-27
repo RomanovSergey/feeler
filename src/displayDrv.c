@@ -14,10 +14,9 @@
 #define CE_LOW       GPIO_ResetBits(GPIOB,GPIO_Pin_12)  //chip enable on
 #define CE_HI        GPIO_SetBits(GPIOB,GPIO_Pin_12)    //chip enable off
 
-union {
-uint8_t disp[84*6];// = {0};//буфер дисплея
-uint8_t coor[84][6];
-} un;
+#define DISP_X  84
+#define DISP_Y  48
+uint8_t coor[DISP_X][DISP_Y / 8];//буфер дисплея 84x48 пикселей (1 бит на пиксель)
 uint8_t dstat = 0;
 
 void display_cmd(uint8_t data) {
@@ -104,9 +103,9 @@ void initDisplay(void) {
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 	DMA_DeInit(DMA1_Channel5);
 	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI2_BASE + 0x0c;
-	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)un.disp;
+	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)coor;//un.disp;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralDST;
-	DMA_InitStruct.DMA_BufferSize = (uint32_t)sizeof( un.disp );
+	DMA_InitStruct.DMA_BufferSize = (uint32_t)(DISP_X * DISP_Y / 8);// un.disp );
 	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
 	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
 	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
@@ -137,23 +136,11 @@ void DMA1_Channel4_5_IRQHandler (void) {
 	}
 }
 
-/*
- * interrupt handler
-
-void SPI2_IRQHandler(void) {
-
-} */
-
-void display_set() {
-	uint8_t data = 0;
-	for (int i = 0; i < sizeof( un.disp ); i++) {
-		un.disp[i] = data++;
-	}
-}
-
 void display_clear() {
-	for (int i = 0; i < sizeof( un.disp ); i++) {
-		un.disp[i] = 0;
+	for (int x = 0; x < DISP_X; x++) {
+		for (int y = 0; y < DISP_Y/8; y++) {
+			coor[x][y] = 0;
+		}
 	}
 }
 
@@ -169,37 +156,50 @@ void display_dma_send() {
 	display_setpos(0, 0);
 	DATA_MODE; // Высокий уровень на линии DC: данные
 	CE_LOW; // Низкий уровень на линии SCE
-	DMA_SetCurrDataCounter(DMA1_Channel5, (uint16_t)sizeof( un.disp ));
+	DMA_SetCurrDataCounter( DMA1_Channel5, (uint16_t)(DISP_X * DISP_Y / 8) );
 	DMA_Cmd(DMA1_Channel5, ENABLE);
 }
 
-void point(int x, int y) {
+void setPixel(int x, int y) {
 	int yb = y / 8;
 	int yo = y % 8;
-	uint8_t val = un.coor[x][yb];
+	uint8_t val = coor[x][yb];
 	val |= (1 << yo);
-	un.coor[x][yb] = val;
+	coor[x][yb] = val;
 }
 
+uint8_t charA[6] = {
+		0x70, 0x1c, 0x13, 0x13, 0x1c, 0x70
+};
 uint8_t charB[6] = {
 		0x00, 0x7e, 0x52, 0x52, 0x2c, 0x00
 };
-uint8_t char_x[6] = {
-		0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc
+uint8_t charC[6] = {
+		0x1c, 0x22, 0x41, 0x41, 0x41, 0x22
 };
-void wrChar_6x8(uint8_t *c, uint8_t x0, uint8_t y0) {
-	uint8_t y = y0;
-	uint8_t x = x0;
-	for ( int i = 0;  i < 6;  i++ ) {
-		uint8_t b = c[i];
-		for ( int k = 0; k < 8; k ++ ) {
-			if ( b & (1 << k) ) {
-				point( x, y );
-			}
-			y++;
+/*
+ * Печать символа высотой 8 шириной 6 пикселей
+ */
+void wrChar_6x8(uint8_t x, uint8_t y, uint8_t *c) {
+	if ( (y % 8) == 0 ) {//если соблюдено условие для быстрой печати
+		for ( int dy = 0; dy < 6; dy ++ ) {
+			coor[x][y] = c[dy];//вывод в буфер дисплея
+			x++;
 		}
-		x++;
-		y = y0;
+		return;
+	} else {//иначе медленная печать (много битовых операций)
+		uint8_t yn = y;
+		for ( int dy = 0;  dy < 6;  dy++ ) {
+			uint8_t b = c[dy];
+			for ( int dx = 0; dx < 8; dx ++ ) {
+				if ( b & (1 << dx) ) {
+					setPixel( x, yn );
+				}
+				yn++;
+			}
+			x++;
+			yn = y;
+		}
 	}
 }
 
@@ -208,19 +208,23 @@ void display(void) {
 
 	tim++;
 	if ( tim == 1000 ) {
-		for (int i=0; i<84; i++) {
-			point(i, i>>1);
-			point(83-i, 47-(i>>1));
-			point(i, 47);
-			point(i, 0);
+		for (int x=0; x<84; x++) {
+			setPixel(x, 47);
+			setPixel(x, 0);
 		}
-		for (int i = 0; i<48; i++) {
-			point(0, i);
-			point(83, i);
+		for (int y = 0; y<48; y++) {
+			setPixel(0, y);
+			setPixel(83, y);
 		}
-		wrChar_6x8( charB, 20, 0 );
-		wrChar_6x8( charB, 40, 8 );
-		wrChar_6x8( char_x, 60, 8 );
+		wrChar_6x8( 20, 8, charA );
+		wrChar_6x8( 27, 8, charB );
+		wrChar_6x8( 34, 8, charC );
+
+
+		wrChar_6x8( 20, 16, charA );
+		wrChar_6x8( 27, 16, charB );
+		wrChar_6x8( 34, 16, charC );
+
 		display_dma_send();
 	}
 	if ( tim == 5000 ) {

@@ -172,7 +172,7 @@ uint8_t charA[6] = {
 		0x70, 0x1c, 0x13, 0x13, 0x1c, 0x70
 };
 uint8_t charB[6] = {
-		0x00, 0x7e, 0x52, 0x52, 0x2c, 0x00
+		0x7f, 0x49, 0x49, 0x49, 0x49, 0x36
 };
 uint8_t charC[6] = {
 		0x1c, 0x22, 0x41, 0x41, 0x41, 0x22
@@ -182,6 +182,7 @@ uint8_t charC[6] = {
  */
 void wrChar_6x8(uint8_t x, uint8_t y, uint8_t *c) {
 	if ( (y % 8) == 0 ) {//если соблюдено условие для быстрой печати
+		y = y >> 3;
 		for ( int dy = 0; dy < 6; dy ++ ) {
 			coor[x][y] = c[dy];//вывод в буфер дисплея
 			x++;
@@ -216,14 +217,29 @@ void display(void) {
 			setPixel(0, y);
 			setPixel(83, y);
 		}
-		wrChar_6x8( 20, 8, charA );
-		wrChar_6x8( 27, 8, charB );
-		wrChar_6x8( 34, 8, charC );
+		wrChar_6x8( 0, 0, charA );
+		wrChar_6x8( 7, 0, charB );
+		wrChar_6x8( 14, 0, charC );
 
+		wrChar_6x8( 10, 8, charA );
+		wrChar_6x8( 17, 8, charB );
+		wrChar_6x8( 24, 8, charC );
 
 		wrChar_6x8( 20, 16, charA );
 		wrChar_6x8( 27, 16, charB );
 		wrChar_6x8( 34, 16, charC );
+
+		wrChar_6x8( 30, 24, charA );
+		wrChar_6x8( 37, 24, charB );
+		wrChar_6x8( 44, 24, charC );
+
+		wrChar_6x8( 40, 32, charA );
+		wrChar_6x8( 47, 32, charB );
+		wrChar_6x8( 54, 32, charC );
+
+		wrChar_6x8( 50, 40, charA );
+		wrChar_6x8( 57, 40, charB );
+		wrChar_6x8( 64, 40, charC );
 
 		display_dma_send();
 	}

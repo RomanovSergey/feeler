@@ -204,6 +204,23 @@ void wrChar_6x8(uint8_t x, uint8_t y, uint8_t *c) {
 	}
 }
 
+/*
+ * Печать символа
+ */
+void wrChar(uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint8_t* c) {
+	if ( (y%8) == 0 ) {//условие быстрой печати
+		y >>= 3;
+		if ( height == 8 ) {
+			for ( int dy = 0;  dy < width;  dy++ ) {
+				coor[x][y] = c[dy];
+				x++;
+			}
+		} else if ( height == 16 ) {
+
+		}
+	}
+}
+
 void display(void) {
 	static int tim = 0;
 

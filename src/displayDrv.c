@@ -5,7 +5,9 @@
  *      Author: se
  */
 
+#include "fonts/FastFont.h"
 #include "stm32f0xx.h"
+#include <string.h>
 
 #define RESET_LOW    GPIO_ResetBits(GPIOB,GPIO_Pin_10)  //reset display on
 #define RESET_HI     GPIO_SetBits(GPIOB,GPIO_Pin_10)    //reset display off
@@ -103,9 +105,9 @@ void initDisplay(void) {
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 	DMA_DeInit(DMA1_Channel5);
 	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI2_BASE + 0x0c;
-	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)coor;//un.disp;
+	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)coor;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralDST;
-	DMA_InitStruct.DMA_BufferSize = (uint32_t)(DISP_X * DISP_Y / 8);// un.disp );
+	DMA_InitStruct.DMA_BufferSize = (uint32_t)(DISP_X * DISP_Y / 8);
 	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
 	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
 	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
@@ -131,17 +133,19 @@ void initDisplay(void) {
 void DMA1_Channel4_5_IRQHandler (void) {
 	if ( SET == DMA_GetFlagStatus(DMA1_FLAG_TC5) ) {
 		dstat = 1;
-		//DMA_Cmd(DMA1_Channel5, DISABLE);
+
 		DMA_ClearITPendingBit(DMA1_IT_TC5);
 	}
 }
 
 void display_clear() {
-	for (int x = 0; x < DISP_X; x++) {
-		for (int y = 0; y < DISP_Y/8; y++) {
-			coor[x][y] = 0;
-		}
-	}
+
+	memset( coor, 0, DISP_X * DISP_Y / 8);
+//	for (int x = 0; x < DISP_X; x++) {
+//		for (int y = 0; y < DISP_Y/8; y++) {
+//			coor[x][y] = 0;
+//		}
+//	}
 }
 
 // Выбирает страницу и горизонтальную позицию для вывода
@@ -168,19 +172,19 @@ void setPixel(int x, int y) {
 	coor[x][yb] = val;
 }
 
-uint8_t charA[6] = {
+const uint8_t charA[6] = {
 		0x70, 0x1c, 0x13, 0x13, 0x1c, 0x70
 };
-uint8_t charB[6] = {
+const uint8_t charB[6] = {
 		0x7f, 0x49, 0x49, 0x49, 0x49, 0x36
 };
-uint8_t charC[6] = {
+const uint8_t charC[6] = {
 		0x1c, 0x22, 0x41, 0x41, 0x41, 0x22
 };
 /*
  * Печать символа высотой 8 шириной 6 пикселей
  */
-void wrChar_6x8(uint8_t x, uint8_t y, uint8_t *c) {
+void wrChar_6x8(uint8_t x, uint8_t y, const uint8_t *c) {
 	if ( (y % 8) == 0 ) {//если соблюдено условие для быстрой печати
 		y = y >> 3;
 		for ( int dy = 0; dy < 6; dy ++ ) {
@@ -205,64 +209,93 @@ void wrChar_6x8(uint8_t x, uint8_t y, uint8_t *c) {
 }
 
 /*
- * Печать символа
+ * Печать символа шириной width высотой height
+ * x, y - координаты верхнего левого пикселя
+ * *с - указатель на шрифт выводимого символа [width] байт
  */
-void wrChar(uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint8_t* c) {
+void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, const uint8_t* c) {
 	if ( (y%8) == 0 ) {//условие быстрой печати
 		y >>= 3;
-		if ( height == 8 ) {
-			for ( int dy = 0;  dy < width;  dy++ ) {
-				coor[x][y] = c[dy];
-				x++;
-			}
-		} else if ( height == 16 ) {
+		for ( int dy = 0;  dy < width;  dy++ ) {
+			coor[x][y] = c[dy];
+			x++;
+		}
+	}
+}
 
+/*
+ * prints печать строки на дисплей
+ * Параметры:
+ *   numstr - номер строки 0..5
+ *   pos - позиция символа 0..13
+ *   *s  - указатель на строку
+ */
+void prints(uint8_t pos, uint8_t numstr, const char* s) {
+	uint8_t x;
+	uint8_t y;
+	int i;
+
+	if ( pos > 13 ) {
+		return;
+	} else if ( numstr > 5 ) {
+		return;
+	}
+	x = pos * 6;
+	y = numstr * 8;
+	i=0;
+	while ( s[i] != 0 ) {
+		//if ( s[i] < 128 ) {
+			wrChar_x_8( x, y, 5, FontTable[ (int)s[i] ] );
+		//}
+		x += 6;
+		i++;
+		if ( x >= 84 ) {
+			break;
 		}
 	}
 }
 
 void display(void) {
 	static int tim = 0;
+	static int n = 28;
 
 	tim++;
 	if ( tim == 1000 ) {
-		for (int x=0; x<84; x++) {
-			setPixel(x, 47);
-			setPixel(x, 0);
-		}
-		for (int y = 0; y<48; y++) {
-			setPixel(0, y);
-			setPixel(83, y);
-		}
-		wrChar_6x8( 0, 0, charA );
-		wrChar_6x8( 7, 0, charB );
-		wrChar_6x8( 14, 0, charC );
-
-		wrChar_6x8( 10, 8, charA );
-		wrChar_6x8( 17, 8, charB );
-		wrChar_6x8( 24, 8, charC );
-
-		wrChar_6x8( 20, 16, charA );
-		wrChar_6x8( 27, 16, charB );
-		wrChar_6x8( 34, 16, charC );
-
-		wrChar_6x8( 30, 24, charA );
-		wrChar_6x8( 37, 24, charB );
-		wrChar_6x8( 44, 24, charC );
-
-		wrChar_6x8( 40, 32, charA );
-		wrChar_6x8( 47, 32, charB );
-		wrChar_6x8( 54, 32, charC );
-
-		wrChar_6x8( 50, 40, charA );
-		wrChar_6x8( 57, 40, charB );
-		wrChar_6x8( 64, 40, charC );
-
-		display_dma_send();
-	}
-	if ( tim == 5000 ) {
 		display_clear();
 		display_dma_send();
+	} else if ( tim == 2000 ) {
+		prints( 0, 0, "HELLO world!");
+		prints( 0, 1, "English Русский");
+		for (int iy=0; iy<6; iy++) {
+			for (int ix=0; ix<14; ix++) {
+				//wrChar_x_8( ix*6,  iy*8, 5, FontTable[n]);
+				n++;
+			}
+		}
+		display_dma_send();
+	} else if ( tim == 5000 ) {
+		display_clear();
+		display_dma_send();
+	} else if ( tim == 5500 ) {
+		for (int iy=0; iy<6; iy++) {
+			for (int ix=0; ix<14; ix++) {
+				wrChar_x_8( ix*6,  iy*8, 5, FontTable[n]);
+				n++;
+			}
+		}
+		display_dma_send();
+	} else if ( tim == 6000 ) {
+		display_clear();
+		display_dma_send();
+	} else if ( tim == 6500 ) {
+		for (int iy=0; iy<6 && n<256; iy++) {
+			for (int ix=0; ix<14 && n<256; ix++) {
+				wrChar_x_8( ix*6,  iy*8, 5, FontTable[n]);
+				n++;
+			}
+		}
+		display_dma_send();
+		n = 28;
 		tim = 0;
 	}
 

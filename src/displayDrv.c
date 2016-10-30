@@ -5,8 +5,8 @@
  *      Author: se
  */
 
-#include "fonts/FastFont.h"
 #include "stm32f0xx.h"
+#include "fonts/FastFont.h"
 #include <string.h>
 
 #define RESET_LOW    GPIO_ResetBits(GPIOB,GPIO_Pin_10)  //reset display on
@@ -139,13 +139,7 @@ void DMA1_Channel4_5_IRQHandler (void) {
 }
 
 void display_clear() {
-
 	memset( coor, 0, DISP_X * DISP_Y / 8);
-//	for (int x = 0; x < DISP_X; x++) {
-//		for (int y = 0; y < DISP_Y/8; y++) {
-//			coor[x][y] = 0;
-//		}
-//	}
 }
 
 // Выбирает страницу и горизонтальную позицию для вывода
@@ -213,11 +207,12 @@ void wrChar_6x8(uint8_t x, uint8_t y, const uint8_t *c) {
  * x, y - координаты верхнего левого пикселя
  * *с - указатель на шрифт выводимого символа [width] байт
  */
-void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, const uint8_t* c) {
+void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
+	const char* img = getImg5x8( code );
 	if ( (y%8) == 0 ) {//условие быстрой печати
 		y >>= 3;
 		for ( int dy = 0;  dy < width;  dy++ ) {
-			coor[x][y] = c[dy];
+			coor[x][y] = img[dy];
 			x++;
 		}
 	}
@@ -233,8 +228,7 @@ void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, const uint8_t* c) {
 void prints(uint8_t pos, uint8_t numstr, const char* s) {
 	uint8_t x;
 	uint8_t y;
-	int i;
-
+	uint16_t code;
 	if ( pos > 13 ) {
 		return;
 	} else if ( numstr > 5 ) {
@@ -242,13 +236,15 @@ void prints(uint8_t pos, uint8_t numstr, const char* s) {
 	}
 	x = pos * 6;
 	y = numstr * 8;
-	i=0;
-	while ( s[i] != 0 ) {
-		//if ( s[i] < 128 ) {
-			wrChar_x_8( x, y, 5, FontTable[ (int)s[i] ] );
-		//}
+	while ( *s != 0 ) {
+		code = *s;
+		if ( code >= 0xD0 ) {
+			code = code << 8;
+			code |= *(++s);
+		}
+		wrChar_x_8( x, y, 5, code);
 		x += 6;
-		i++;
+		s++;
 		if ( x >= 84 ) {
 			break;
 		}
@@ -257,48 +253,20 @@ void prints(uint8_t pos, uint8_t numstr, const char* s) {
 
 void display(void) {
 	static int tim = 0;
-	static int n = 28;
-
 	tim++;
-	if ( tim == 1000 ) {
+	if ( tim == 500 ) {
+		prints( 0, 0, "Русский текст");
+		prints( 0, 1, "кодир-а UTF-8");
+		prints( 0, 2, "АБВГД ЕЁ её");
+		prints( 0, 3, "Ferrum");
+		prints( 0, 4, "Alumin!@#$%^&*");
+		prints( 0, 5, "Happy New Year!");
+		display_dma_send();
+	} else if ( tim == 2500 ) {
 		display_clear();
 		display_dma_send();
-	} else if ( tim == 2000 ) {
-		prints( 0, 0, "HELLO world!");
-		prints( 0, 1, "English Русский");
-		for (int iy=0; iy<6; iy++) {
-			for (int ix=0; ix<14; ix++) {
-				//wrChar_x_8( ix*6,  iy*8, 5, FontTable[n]);
-				n++;
-			}
-		}
-		display_dma_send();
-	} else if ( tim == 5000 ) {
-		display_clear();
-		display_dma_send();
-	} else if ( tim == 5500 ) {
-		for (int iy=0; iy<6; iy++) {
-			for (int ix=0; ix<14; ix++) {
-				wrChar_x_8( ix*6,  iy*8, 5, FontTable[n]);
-				n++;
-			}
-		}
-		display_dma_send();
-	} else if ( tim == 6000 ) {
-		display_clear();
-		display_dma_send();
-	} else if ( tim == 6500 ) {
-		for (int iy=0; iy<6 && n<256; iy++) {
-			for (int ix=0; ix<14 && n<256; ix++) {
-				wrChar_x_8( ix*6,  iy*8, 5, FontTable[n]);
-				n++;
-			}
-		}
-		display_dma_send();
-		n = 28;
 		tim = 0;
 	}
-
 	if ( SPI2->SR & SPI_I2S_FLAG_BSY ) {
 		return;
 	}

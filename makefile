@@ -54,6 +54,7 @@ S_OBJS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := ./src
+SUBDIRS += ./src/fonts
 SUBDIRS += ./startup
 SUBDIRS += ./Libraries/CMSIS/STM32F0xx/Source/
 SUBDIRS += ./Libraries/STM32F0xx_StdPeriph_Driver/src/

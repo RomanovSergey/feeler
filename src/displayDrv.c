@@ -166,46 +166,10 @@ void setPixel(int x, int y) {
 	coor[x][yb] = val;
 }
 
-const uint8_t charA[6] = {
-		0x70, 0x1c, 0x13, 0x13, 0x1c, 0x70
-};
-const uint8_t charB[6] = {
-		0x7f, 0x49, 0x49, 0x49, 0x49, 0x36
-};
-const uint8_t charC[6] = {
-		0x1c, 0x22, 0x41, 0x41, 0x41, 0x22
-};
-/*
- * Печать символа высотой 8 шириной 6 пикселей
- */
-void wrChar_6x8(uint8_t x, uint8_t y, const uint8_t *c) {
-	if ( (y % 8) == 0 ) {//если соблюдено условие для быстрой печати
-		y = y >> 3;
-		for ( int dy = 0; dy < 6; dy ++ ) {
-			coor[x][y] = c[dy];//вывод в буфер дисплея
-			x++;
-		}
-		return;
-	} else {//иначе медленная печать (много битовых операций)
-		uint8_t yn = y;
-		for ( int dy = 0;  dy < 6;  dy++ ) {
-			uint8_t b = c[dy];
-			for ( int dx = 0; dx < 8; dx ++ ) {
-				if ( b & (1 << dx) ) {
-					setPixel( x, yn );
-				}
-				yn++;
-			}
-			x++;
-			yn = y;
-		}
-	}
-}
-
 /*
  * Печать символа шириной width высотой height
  * x, y - координаты верхнего левого пикселя
- * *с - указатель на шрифт выводимого символа [width] байт
+ * code - код utf-8 выводимого символа [width] байт
  */
 void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
 	const char* img = getImg5x8( code );
@@ -221,8 +185,8 @@ void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
 /*
  * prints печать строки на дисплей
  * Параметры:
- *   numstr - номер строки 0..5
  *   pos - позиция символа 0..13
+ *   numstr - номер строки 0..5
  *   *s  - указатель на строку
  */
 void prints(uint8_t pos, uint8_t numstr, const char* s) {
@@ -238,7 +202,7 @@ void prints(uint8_t pos, uint8_t numstr, const char* s) {
 	y = numstr * 8;
 	while ( *s != 0 ) {
 		code = *s;
-		if ( code >= 0xD0 ) {
+		if ( code >= 0x80 ) {//utf-8
 			code = code << 8;
 			code |= *(++s);
 		}

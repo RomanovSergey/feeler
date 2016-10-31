@@ -350,51 +350,34 @@ tchar FastArr[] = {
 };
 
 const char* getImg5x8( const uint16_t code ) {
-	//int max = 162;//sizeof ( FastArr ) / sizeof ( tchar );
 	int i;
 
 	if ( code < 0x20 ) {
 		return fast_0x3F;// '?'
 	} else if ( code <= 0x7E ) {
 		i = code - 0x20;
-		if ( FastArr[i].code == code ) {//ToDo: only for test, delete this!
-			return FastArr[i].img;
-		} else {
-			return fast_0x3F;// '?'
-		}
+		return FastArr[i].img;
 	} else if ( code <= 0xD0BF ) {
 		if ( code >= 0xD090 ) {
-			i = 0x7E - 0x20 + 3;
-			if ( FastArr[i].code == code ) {//ToDo: only for test, delete this!
-				return FastArr[i].img;
-			} else {
-				return fast_0x3F;// '?'
-			}
+			i = (code - 0xD090) + (0x7E - 0x20) + 3;
+			return FastArr[i].img;
 		} else {
 			if ( code == 0x85 ) {
 				return fast_0x85;// '...'
-			} else if ( code == 0xD001 ) {
+			} else {
 				return fast_0xD001;// Ё
 			}
 		}
 	} else if ( code <= 0xD18F ) {
 		if ( code >= 0xD180 ) {
-			i = 0x7E - 0x20 + 3 + 0xD0BF - 0xD090 + 1;
-			if ( FastArr[i].code == code ) {//ToDo: only for test, delete this!
-				return FastArr[i].img;
-			} else {
-				return fast_0x3F;// '?'
-			}
+			i = (code - 0xD180) + (0xD0BF - 0xD090) + (0x7E - 0x20) + 4;
+			return FastArr[i].img;
 		}
 	} else if ( code == 0xD191 ) {
-		return fast_0xD191;
+		return fast_0xD191;// ё
 	}
 	return fast_0x3F;// '?'
 }
-//	for ( i = 0x7E - 0x20 + 1;   i<max;   i++ ) {
-//		if ( FastArr[i].code == code ) {
-//			return FastArr[i].img;
-//		}
-//	}
+
 
 

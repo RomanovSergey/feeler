@@ -9,11 +9,11 @@
 #define INC_MAIN_H_
 
 
-#define GREEN_ON      GPIO_SetBits(GPIOC,GPIO_Pin_9)
-#define GREEN_OFF     GPIO_ResetBits(GPIOC,GPIO_Pin_9)
+#define BL1_ON      GPIO_SetBits(GPIOA,GPIO_Pin_11)
+#define BL1_OFF     GPIO_ResetBits(GPIOA,GPIO_Pin_11)
 
-#define BLUE_ON       GPIO_SetBits(GPIOC,GPIO_Pin_8)
-#define BLUE_OFF      GPIO_ResetBits(GPIOC,GPIO_Pin_8)
+#define BL2_ON      GPIO_SetBits(GPIOA,GPIO_Pin_12)
+#define BL2_OFF     GPIO_ResetBits(GPIOA,GPIO_Pin_12)
 
 //коды событий (здесь нельзя использовать событие с кодом 0)
 #define Eb1Click  1

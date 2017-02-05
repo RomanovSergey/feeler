@@ -38,14 +38,14 @@ uint32_t getFreq(void) {
  */
 void TIM2_IRQHandler(void) {
 	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_Update) ) {
-		static int ledstat = 0;
-		if (ledstat) {
-			ledstat = 0;
-			GREEN_ON;
-		} else {
-			ledstat = 1;
-			GREEN_OFF;
-		}
+//		static int ledstat = 0;
+//		if (ledstat) {
+//			ledstat = 0;
+//			GREEN_ON;
+//		} else {
+//			ledstat = 1;
+//			GREEN_OFF;
+//		}
 		irq_freq = TIM_GetCounter( TIM3 );
 		TIM_SetCounter(TIM3, 0);
 		measureDone = 1;//флаг - данные измерения готовы

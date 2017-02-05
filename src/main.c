@@ -34,10 +34,25 @@ int main(void) {
 				put_event( Ealarm );
 			}
 		}
-		magnetic();
-		buttons();
-		display();
-		uart();
+		//magnetic();
+		//buttons();
+		//display();
+		//uart();
+		{
+			static int count = 0;
+			count++;
+			if ( count == 500 ) {
+				static int stat = 0;
+				count = 0;
+				stat ^= 1;
+				if ( stat == 0 ) {
+					BL1_ON;
+				} else {
+					BL1_OFF;
+				}
+			}
+		}
+
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
 }
@@ -49,37 +64,39 @@ void init(void) {
 // To reconfigure the default setting of SystemInit() function, refer to
 // system_stm32f0xx.c file
 
-
 	GPIO_InitTypeDef         GPIO_InitStructure;
-	NVIC_InitTypeDef         NVIC_InitStruct;
-	USART_InitTypeDef        USART_InitStruct;
-	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
-	//ADC_InitTypeDef          ADC_InitStruct;
+	//NVIC_InitTypeDef         NVIC_InitStruct;
+	//USART_InitTypeDef        USART_InitStruct;
+	//TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
+	////ADC_InitTypeDef          ADC_InitStruct;
 
 	g.alarm = 0;
 	initCalib();
 	put_event( Erepaint );
 
-
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс
 
-	initDisplay();
+	/*initDisplay();*/
 
-	// GPIOC Periph clock enable =======================================
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
-	// Configure PC8 and PC9 in output pushpull mode (right left lamp)
-	GPIO_DeInit(GPIOC);
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9;//лампочки на discovery плате
+	//================================================================
+	// светодиодная подсветка: PA11 S1, S2; PA12 S3, S4.
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	GPIO_DeInit(GPIOA);
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11 | GPIO_Pin_12;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOC, &GPIO_InitStructure);
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	/*// GPIOC Periph clock enable =======================================
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
+	*/
 
 	//================================================================
 	//uart2 on PA2 (tx) and PA3 (rx) pins ============================
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	/*
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 	//
 	GPIO_DeInit(GPIOA);
@@ -109,8 +126,6 @@ void init(void) {
 	USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 	USART_Init(USART2, &USART_InitStruct);
 	//
-	//USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
-	//USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
 	USART_Cmd(USART2, ENABLE);
 	//
 	NVIC_InitStruct.NVIC_IRQChannel = USART2_IRQn;
@@ -208,7 +223,7 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;//main priority
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStruct);
+	NVIC_Init(&NVIC_InitStruct);*/
 }
 
 #ifdef  USE_FULL_ASSERT

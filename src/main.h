@@ -15,6 +15,9 @@
 #define BL2_ON      GPIO_SetBits(GPIOA,GPIO_Pin_12)
 #define BL2_OFF     GPIO_ResetBits(GPIOA,GPIO_Pin_12)
 
+#define PWR_ON      GPIO_SetBits(GPIOB,GPIO_Pin_0)
+#define PWR_OFF     GPIO_ResetBits(GPIOB,GPIO_Pin_0)
+
 //коды событий (здесь нельзя использовать событие с кодом 0)
 #define Eb1Click  1
 #define Eb1Double 2

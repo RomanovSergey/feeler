@@ -36,20 +36,16 @@ int main(void) {
 		}
 		//magnetic();
 		//buttons();
-		//display();
+		display();
 		//uart();
 		{
 			static int count = 0;
-			count++;
-			if ( count == 500 ) {
-				static int stat = 0;
-				count = 0;
-				stat ^= 1;
-				if ( stat == 0 ) {
-					BL1_ON;
-				} else {
-					BL1_OFF;
-				}
+			if ( count < 500 ) {
+				count++;
+			} else if ( count == 500 ) {
+				count++;
+				PWR_ON;
+				BL1_ON;
 			}
 		}
 
@@ -77,18 +73,41 @@ void init(void) {
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс
 
-	/*initDisplay();*/
+	//================================================================
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	GPIO_DeInit(GPIOA);
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+	GPIO_DeInit(GPIOB);
+
+	initDisplay();
 
 	//================================================================
 	// светодиодная подсветка: PA11 S1, S2; PA12 S3, S4.
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-	GPIO_DeInit(GPIOA);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11 | GPIO_Pin_12;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	//======================================================================
+	//input pin PA8 B1 Button ==============================================
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	//================================================================
+	// управление питанием: PB0
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	PWR_OFF;
 
 	/*// GPIOC Periph clock enable =======================================
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
@@ -132,15 +151,6 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
-
-	//======================================================================
-	//input pin PA8 B1 Button ==============================================
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	//15====================================================================
 	//COMP1 ================================================================

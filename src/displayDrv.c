@@ -9,12 +9,12 @@
 #include "fonts/FastFont.h"
 #include <string.h>
 
-#define RESET_LOW    GPIO_ResetBits(GPIOB,GPIO_Pin_10)  //reset display on
-#define RESET_HI     GPIO_SetBits(GPIOB,GPIO_Pin_10)    //reset display off
-#define CMD_MODE     GPIO_ResetBits(GPIOB,GPIO_Pin_11)  //command mode
-#define DATA_MODE    GPIO_SetBits(GPIOB,GPIO_Pin_11)    //data mode
-#define CE_LOW       GPIO_ResetBits(GPIOB,GPIO_Pin_12)  //chip enable on
-#define CE_HI        GPIO_SetBits(GPIOB,GPIO_Pin_12)    //chip enable off
+#define RESET_LOW    GPIO_ResetBits(GPIOB,GPIO_Pin_1)   //reset display on
+#define RESET_HI     GPIO_SetBits(GPIOB,GPIO_Pin_1)     //reset display off
+#define CMD_MODE     GPIO_ResetBits(GPIOA,GPIO_Pin_15)  //command mode
+#define DATA_MODE    GPIO_SetBits(GPIOA,GPIO_Pin_15)    //data mode
+#define CE_LOW       GPIO_ResetBits(GPIOB,GPIO_Pin_6)   //chip enable on
+#define CE_HI        GPIO_SetBits(GPIOB,GPIO_Pin_6)     //chip enable off
 
 #define DISP_X  84
 #define DISP_Y  48
@@ -24,8 +24,8 @@ uint8_t dstat = 0;
 void display_cmd(uint8_t data) {
 	CMD_MODE; // Низкий уровень на линии DC: инструкция
 	CE_LOW; // Низкий уровень на линии SCE
-	SPI_SendData8(SPI2, data);
-	while ( (SPI2->SR & SPI_I2S_FLAG_BSY) );
+	SPI_SendData8(SPI1, data);
+	while ( (SPI1->SR & SPI_I2S_FLAG_BSY) );
 	CE_HI; // Высокий уровень на линии SCE
 }
 
@@ -33,42 +33,49 @@ void disp_cmds(uint8_t *arr, uint8_t len) {
 	CMD_MODE;
 	CE_LOW;
 	for (int i=0; i<len; i++) {
-		while( !(SPI2->SR & SPI_I2S_FLAG_TXE) );
-		SPI_SendData8(SPI2, arr[i]);
+		while( !(SPI1->SR & SPI_I2S_FLAG_TXE) );
+		SPI_SendData8(SPI1, arr[i]);
 	}
-	while ( (SPI2->SR & SPI_I2S_FLAG_BSY) );
+	while ( (SPI1->SR & SPI_I2S_FLAG_BSY) );
 	CE_HI;
 }
 
 void initDisplay(void) {
-	SPI_InitTypeDef          SPI_InitStruct;
-	GPIO_InitTypeDef         GPIO_InitStructure;
-	NVIC_InitTypeDef         NVIC_InitStruct;
+	SPI_InitTypeDef     SPI_InitStruct;
+	GPIO_InitTypeDef    GPIO_InitStructure;
+	NVIC_InitTypeDef    NVIC_InitStruct;
 
 	//================================================================
-	// SPI2 init for graphic display =================================
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
-	GPIO_DeInit(GPIOB);
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;//display Reset
-	GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_11;//display Data/Command
-	GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_12;//display Chip Enable
+	// SPI1 init for graphic display =================================
+	//RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+	//GPIO_DeInit(GPIOB);
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;//display Reset
+	GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_6;//display Chip Enable
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;//display Data/Command
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
 	RESET_LOW;//reset display
 
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;//display spi2_clk
-	GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_15;//display spi2_mosi
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;//display spi2_clk
+	GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_5;//display spi2_mosi
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	GPIO_PinAFConfig(GPIOB, GPIO_PinSource13, GPIO_AF_0);
-	GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_0);
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource3, GPIO_AF_0);
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource5, GPIO_AF_0);
 
 	SPI_InitStruct.SPI_Direction = SPI_Direction_1Line_Tx;
 	SPI_InitStruct.SPI_Mode = SPI_Mode_Master;
@@ -78,15 +85,15 @@ void initDisplay(void) {
 	SPI_InitStruct.SPI_NSS = SPI_NSS_Soft;
 	SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;// 3 MHz
 	SPI_InitStruct.SPI_FirstBit = SPI_FirstBit_MSB;
-	SPI_Init(SPI2, &SPI_InitStruct);
+	SPI_Init(SPI1, &SPI_InitStruct);
 
-	SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_TXE, DISABLE);
-	SPI_Cmd(SPI2, ENABLE);
+	SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_TXE, DISABLE);
+	SPI_Cmd(SPI1, ENABLE);
 	while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	RESET_HI;
 
-	NVIC_InitStruct.NVIC_IRQChannel = SPI2_IRQn;
+	NVIC_InitStruct.NVIC_IRQChannel = SPI1_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 2;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = DISABLE;
 	NVIC_Init(&NVIC_InitStruct);
@@ -103,8 +110,8 @@ void initDisplay(void) {
 	//============================================================
 	DMA_InitTypeDef DMA_InitStruct;
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
-	DMA_DeInit(DMA1_Channel5);
-	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI2_BASE + 0x0c;
+	DMA_DeInit(DMA1_Channel3);
+	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI1_BASE + 0x0c;
 	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)coor;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralDST;
 	DMA_InitStruct.DMA_BufferSize = (uint32_t)(DISP_X * DISP_Y / 8);
@@ -115,13 +122,13 @@ void initDisplay(void) {
 	DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;
 	DMA_InitStruct.DMA_Priority = DMA_Priority_High;
 	DMA_InitStruct.DMA_M2M = DMA_M2M_Disable;
-	DMA_Init(DMA1_Channel5, &DMA_InitStruct);
+	DMA_Init(DMA1_Channel3, &DMA_InitStruct);
 
-	DMA_Cmd(DMA1_Channel5, DISABLE);
-	SPI_I2S_DMACmd( SPI2, SPI_I2S_DMAReq_Tx, ENABLE);
-	DMA_ITConfig(DMA1_Channel5, DMA_IT_TC, ENABLE);
+	DMA_Cmd(DMA1_Channel3, DISABLE);
+	SPI_I2S_DMACmd( SPI1, SPI_I2S_DMAReq_Tx, ENABLE);
+	DMA_ITConfig(DMA1_Channel3, DMA_IT_TC, ENABLE);
 
-	NVIC_InitStruct.NVIC_IRQChannel = DMA1_Channel4_5_IRQn;
+	NVIC_InitStruct.NVIC_IRQChannel = DMA1_Channel2_3_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
@@ -130,11 +137,10 @@ void initDisplay(void) {
 /*
  * interrupt handler
  */
-void DMA1_Channel4_5_IRQHandler (void) {
-	if ( SET == DMA_GetFlagStatus(DMA1_FLAG_TC5) ) {
+void DMA1_Channel2_3_IRQHandler (void) {
+	if ( SET == DMA_GetFlagStatus(DMA1_FLAG_TC3) ) {
 		dstat = 1;
-
-		DMA_ClearITPendingBit(DMA1_IT_TC5);
+		DMA_ClearITPendingBit(DMA1_IT_TC3);
 	}
 }
 
@@ -154,8 +160,8 @@ void display_dma_send() {
 	display_setpos(0, 0);
 	DATA_MODE; // Высокий уровень на линии DC: данные
 	CE_LOW; // Низкий уровень на линии SCE
-	DMA_SetCurrDataCounter( DMA1_Channel5, (uint16_t)(DISP_X * DISP_Y / 8) );
-	DMA_Cmd(DMA1_Channel5, ENABLE);
+	DMA_SetCurrDataCounter( DMA1_Channel3, (uint16_t)(DISP_X * DISP_Y / 8) );
+	DMA_Cmd(DMA1_Channel3, ENABLE);
 }
 
 void setPixel(int x, int y) {
@@ -231,11 +237,11 @@ void display(void) {
 		display_dma_send();
 		tim = 0;
 	}
-	if ( SPI2->SR & SPI_I2S_FLAG_BSY ) {
+	if ( SPI1->SR & SPI_I2S_FLAG_BSY ) {
 		return;
 	}
 	if ( 1 == dstat ) {
-		DMA_Cmd(DMA1_Channel5, DISABLE);
+		DMA_Cmd(DMA1_Channel3, DISABLE);
 		CE_HI;
 		dstat = 0;
 	}

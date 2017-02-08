@@ -39,10 +39,11 @@ int main(void) {
 		display();
 		//uart();
 		{
+			static const uint16_t ctim = 100;
 			static int count = 0;
-			if ( count < 500 ) {
+			if ( count < ctim ) {
 				count++;
-			} else if ( count == 500 ) {
+			} else if ( count == ctim ) {
 				count++;
 				PWR_ON;
 				BL1_ON;

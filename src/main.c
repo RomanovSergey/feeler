@@ -35,7 +35,7 @@ int main(void) {
 			}
 		}
 		//magnetic();
-		//buttons();
+		buttons();
 		display();
 		//uart();
 		{
@@ -64,7 +64,7 @@ void init(void) {
 	GPIO_InitTypeDef         GPIO_InitStructure;
 	//NVIC_InitTypeDef         NVIC_InitStruct;
 	//USART_InitTypeDef        USART_InitStruct;
-	//TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
+	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
 	////ADC_InitTypeDef          ADC_InitStruct;
 
 	g.alarm = 0;
@@ -92,8 +92,8 @@ void init(void) {
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	//======================================================================
-	//input pin PA8 B1 Button ==============================================
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
+	//Buttons input: PA8-B1, PA5-B2, PA7-B3 ================================
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7 | GPIO_Pin_8;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -109,6 +109,25 @@ void init(void) {
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 	PWR_OFF;
+
+	//======================================================================
+	//timer17 for PWM Sound player =========================================
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM17, ENABLE);
+	TIM_DeInit(TIM17);
+	//
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 0;
+	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
+	TIM_TimeBaseInitStruct.TIM_Period = 24000000L;
+	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
+	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
+	TIM_TimeBaseInit(TIM17, &TIM_TimeBaseInitStruct);
+	//
+	TIM_ITConfig(TIM17, TIM_IT_Update, ENABLE);
+	//
+	TIM_SetCounter(TIM17, 0);
+	TIM_Cmd(TIM17, ENABLE);
+
+
 
 	/*// GPIOC Periph clock enable =======================================
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);

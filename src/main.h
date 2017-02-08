@@ -27,6 +27,8 @@
 #define Emeasure  6
 #define Erepaint  7
 #define Ealarm    8
+#define Eb2Click  21
+#define Eb3Click  31
 
 typedef struct {
 	uint32_t air;//air's frequency on power on

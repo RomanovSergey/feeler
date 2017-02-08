@@ -9,6 +9,8 @@
 #include "main.h"
 
 #define READ_B1     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_8)
+#define READ_B2     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_5)
+#define READ_B3     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_7)
 
 //локальная структура состояния кнопки
 typedef struct  {
@@ -18,14 +20,25 @@ typedef struct  {
 	uint16_t tim;//временная метка клика(ов)
 } button_t;
 
-//only one button yet
+//под каждую кнопку свой объект
 button_t B1 = {
 	.debcount = 0,
 	.current = 0,
 	.state = 0,
 	.tim = 0,
 };
-
+button_t B2 = {
+	.debcount = 0,
+	.current = 0,
+	.state = 0,
+	.tim = 0,
+};
+button_t B3 = {
+	.debcount = 0,
+	.current = 0,
+	.state = 0,
+	.tim = 0,
+};
 //================================================================================
 
 /*
@@ -163,10 +176,15 @@ void buttonEvent(button_t *b, uint8_t Eclick, uint8_t Edouble,
  * this function called from main loop every 1 ms
  */
 void buttons(void) {
-
 	debounce( &B1, READ_B1 );//антидребезг B1
+	debounce( &B2, READ_B2 );//антидребезг B1
+	debounce( &B3, READ_B3 );//антидребезг B1
 	buttonEvent( &B1, Eb1Click, Eb1Double,
 			Eb1Long, Eb1Push, Eb1Pull );//generate different events on B1 button
+	buttonEvent( &B2, Eb2Click, 0,
+			0, 0, 0 );//generate different events on B2 button
+	buttonEvent( &B3, Eb3Click, 0,
+			0, 0, 0 );//generate different events on B3 button
 }
 
 

@@ -5,7 +5,7 @@
   * example may be from here (do not remember):
   * http://www.hertaville.com/stm32f0discovery-part-1-linux.html
   *
-  * for erasing
+  * for erasing (stlink-master)
   *    st-flash erase
   * for programming
   *    st-flash write feeler.bin 0x8000000
@@ -50,6 +50,7 @@ int main(void) {
 			} else if ( count > ctim ) {
 				static int state = 0;
 				static int timer = 0;
+				static int timoff = 0;
 				timer++;
 				if ( timer == 1000 ) {
 					timer = 0;
@@ -58,17 +59,13 @@ int main(void) {
 						BL1_OFF;
 					else
 						BL1_ON;
+					timoff++;
+					if ( timoff == 5 ) {
+						PWR_OFF;
+					}
 				}
 			}
 		}
-//		{
-//			static int state = 0;
-//			state ^= 1;
-//			if (state)
-//				BEEP_ON;
-//			else
-//				BEEP_OFF;
-//		}
 
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
@@ -85,6 +82,7 @@ void init(void) {
 	//NVIC_InitTypeDef         NVIC_InitStruct;
 	//USART_InitTypeDef        USART_InitStruct;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
+	TIM_OCInitTypeDef        TIM_OCInitStruct;
 	////ADC_InitTypeDef          ADC_InitStruct;
 
 	g.alarm = 0;
@@ -140,12 +138,12 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_5);
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_2);
 	//======================================================================
 	//timer17 for PWM Sound player =========================================
-	const uint16_t period = 48000;
+	const uint16_t period = 48000 * 2;
 	//
-	TIM_TimeBaseInitStruct.TIM_Prescaler = 0;
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInitStruct.TIM_Period = period;// 1 kHz
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -154,14 +152,13 @@ void init(void) {
 	//
 	TIM_SetCounter(TIM17, 0);
 	//
-	TIM_OCInitTypeDef TIM_OCInitStruct;
-	//TIM_OCStructInit( &TIM_OCInitStruct );
+	TIM_OCStructInit( &TIM_OCInitStruct );
 	TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
-	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
-	TIM_OCInitStruct.TIM_OutputNState = TIM_OutputNState_Disable;
+	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Disable;
+	TIM_OCInitStruct.TIM_OutputNState = TIM_OutputNState_Enable;//not used
 	TIM_OCInitStruct.TIM_Pulse = period / 2;
 	TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
-	TIM_OCInitStruct.TIM_OCNPolarity = TIM_OCNPolarity_Low;//not used
+	TIM_OCInitStruct.TIM_OCNPolarity = TIM_OCNPolarity_High;//not used
 	TIM_OCInitStruct.TIM_OCIdleState = TIM_OCIdleState_Reset;//not used
 	TIM_OCInitStruct.TIM_OCNIdleState = TIM_OCNIdleState_Reset;//not used
 	TIM_OC1Init( TIM17, &TIM_OCInitStruct );

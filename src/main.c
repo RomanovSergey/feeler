@@ -39,7 +39,7 @@ int main(void) {
 		display();
 		//uart();
 		{
-			static const uint16_t ctim = 100;
+			static const uint16_t ctim = 200;
 			static int count = 0;
 			if ( count < ctim ) {
 				count++;
@@ -47,8 +47,28 @@ int main(void) {
 				count++;
 				PWR_ON;
 				BL1_ON;
+			} else if ( count > ctim ) {
+				static int state = 0;
+				static int timer = 0;
+				timer++;
+				if ( timer == 1000 ) {
+					timer = 0;
+					state ^= 1;
+					if (state)
+						BL1_OFF;
+					else
+						BL1_ON;
+				}
 			}
 		}
+//		{
+//			static int state = 0;
+//			state ^= 1;
+//			if (state)
+//				BEEP_ON;
+//			else
+//				BEEP_OFF;
+//		}
 
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
@@ -79,6 +99,8 @@ void init(void) {
 	GPIO_DeInit(GPIOA);
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
 	GPIO_DeInit(GPIOB);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM17, ENABLE);
+	TIM_DeInit(TIM17);
 
 	initDisplay();
 
@@ -110,23 +132,42 @@ void init(void) {
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 	PWR_OFF;
 
+	//================================================================
+	// Sound buzzer: PB7
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_5);
 	//======================================================================
 	//timer17 for PWM Sound player =========================================
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM17, ENABLE);
-	TIM_DeInit(TIM17);
+	const uint16_t period = 48000;
 	//
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 0;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = 24000000L;
+	TIM_TimeBaseInitStruct.TIM_Period = period;// 1 kHz
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
-	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
+	//TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(TIM17, &TIM_TimeBaseInitStruct);
 	//
-	TIM_ITConfig(TIM17, TIM_IT_Update, ENABLE);
-	//
 	TIM_SetCounter(TIM17, 0);
+	//
+	TIM_OCInitTypeDef TIM_OCInitStruct;
+	//TIM_OCStructInit( &TIM_OCInitStruct );
+	TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
+	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
+	TIM_OCInitStruct.TIM_OutputNState = TIM_OutputNState_Disable;
+	TIM_OCInitStruct.TIM_Pulse = period / 2;
+	TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
+	TIM_OCInitStruct.TIM_OCNPolarity = TIM_OCNPolarity_Low;//not used
+	TIM_OCInitStruct.TIM_OCIdleState = TIM_OCIdleState_Reset;//not used
+	TIM_OCInitStruct.TIM_OCNIdleState = TIM_OCNIdleState_Reset;//not used
+	TIM_OC1Init( TIM17, &TIM_OCInitStruct );
+	//
+	TIM_CtrlPWMOutputs(TIM17, ENABLE);
 	TIM_Cmd(TIM17, ENABLE);
-
 
 
 	/*// GPIOC Periph clock enable =======================================
@@ -274,14 +315,13 @@ void assert_failed(uint8_t* file, uint32_t line)
 	/* Infinite loop */
 	while (1) {
 		tim++;
-		if (tim == 200) {
+		if (tim == 100) {
 			tim = 0;
+			stat ^= 1;
 			if (stat == 0) {
-				stat = 1;
-				GPIO_SetBits( GPIOC, GPIO_Pin_8 );
+				BL1_ON;
 			} else {
-				stat = 0;
-				GPIO_ResetBits( GPIOC, GPIO_Pin_8 );
+				BL1_OFF;
 			}
 		}
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)

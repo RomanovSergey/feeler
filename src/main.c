@@ -37,7 +37,7 @@ int main(void) {
 		//magnetic();
 		buttons();
 		display();
-		//uart();
+		uart();
 		{
 			static const uint16_t ctim = 200;
 			static int count = 0;
@@ -79,10 +79,10 @@ void init(void) {
 // system_stm32f0xx.c file
 
 	GPIO_InitTypeDef         GPIO_InitStructure;
-	//NVIC_InitTypeDef         NVIC_InitStruct;
-	//USART_InitTypeDef        USART_InitStruct;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseInitStruct;
 	TIM_OCInitTypeDef        TIM_OCInitStruct;
+	USART_InitTypeDef        USART_InitStruct;
+	NVIC_InitTypeDef         NVIC_InitStruct;
 	////ADC_InitTypeDef          ADC_InitStruct;
 
 	g.alarm = 0;
@@ -141,11 +141,11 @@ void init(void) {
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_2);
 	//======================================================================
 	//timer17 for PWM Sound player =========================================
-	const uint16_t period = 48000 * 2;
+	const uint16_t period = 500;
 	//
-	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 48;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = period;// 1 kHz
+	TIM_TimeBaseInitStruct.TIM_Period = period;// 2 kHz
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	//TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(TIM17, &TIM_TimeBaseInitStruct);
@@ -167,45 +167,40 @@ void init(void) {
 	TIM_Cmd(TIM17, ENABLE);
 
 
-	/*// GPIOC Periph clock enable =======================================
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
-	*/
-
 	//================================================================
 	//uart2 on PA2 (tx) and PA3 (rx) pins ============================
-	/*
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 	//
 	GPIO_DeInit(GPIOA);
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;//uart TX
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;//uart TX
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	//
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;//uart RX
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;//uart RX
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	//
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);
 	//UART2 initialization
-	USART_DeInit(USART2);
+	USART_DeInit(USART1);
 	USART_InitStruct.USART_BaudRate = 115200;
 	USART_InitStruct.USART_WordLength = USART_WordLength_8b;
 	USART_InitStruct.USART_StopBits = USART_StopBits_1;
 	USART_InitStruct.USART_Parity = USART_Parity_No;
 	USART_InitStruct.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
 	USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	USART_Init(USART2, &USART_InitStruct);
+	USART_Init(USART1, &USART_InitStruct);
 	//
-	USART_Cmd(USART2, ENABLE);
+	USART_Cmd(USART1, ENABLE);
 	//
-	NVIC_InitStruct.NVIC_IRQChannel = USART2_IRQn;
+	NVIC_InitStruct.NVIC_IRQChannel = USART1_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
@@ -213,7 +208,7 @@ void init(void) {
 	//15====================================================================
 	//COMP1 ================================================================
 	//COMP_DeInit();
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+	/*	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
 	COMP_InitTypeDef COMP_InitStruct;
 	COMP_InitStruct.COMP_InvertingInput = COMP_InvertingInput_IO;
 	COMP_InitStruct.COMP_Output = COMP_Output_TIM3IC1;

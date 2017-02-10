@@ -35,9 +35,9 @@ void uart(void) {
 	}
 
 	if ( res ) {//если есть данные для отрисовки
-		USART_SendData(USART2, tx.buf[0]);
+		USART_SendData(USART1, tx.buf[0]);
 		tx.ind = 1;
-		USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
+		USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
 	}
 }
 
@@ -138,29 +138,29 @@ void uint16_to_5str(uint16_t n)
 /*
  * Обработчик прерывания
  */
-void USART2_IRQHandler(void) {
+void USART1_IRQHandler(void) {
 
-	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) {
-		USART_SendData(USART2, USART_ReceiveData(USART2));
+	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) {
+		USART_SendData(USART1, USART_ReceiveData(USART1));
 	}
 
-	if(USART_GetITStatus(USART2, USART_IT_TXE) != RESET) {
+	if(USART_GetITStatus(USART1, USART_IT_TXE) != RESET) {
 		if (tx.buf[tx.ind] == 0) {//нулевой символ? (конец данных)
-			USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
-			USART_ClearITPendingBit(USART2, USART_IT_TC);
-			USART_ITConfig(USART2, USART_IT_TC, ENABLE);
+			USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
+			USART_ClearITPendingBit(USART1, USART_IT_TC);
+			USART_ITConfig(USART1, USART_IT_TC, ENABLE);
 		} else if (tx.ind < TX_SIZE) {//не дошли до конца буфера? и не поймали нулевой символ
-			USART_SendData(USART2, tx.buf[tx.ind++]);//отправим символ в порт
+			USART_SendData(USART1, tx.buf[tx.ind++]);//отправим символ в порт
 		} else {//значит уже дошли до конца буфера
-			USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
-			USART_ClearITPendingBit(USART2, USART_IT_TC);
-			USART_ITConfig(USART2, USART_IT_TC, ENABLE);
+			USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
+			USART_ClearITPendingBit(USART1, USART_IT_TC);
+			USART_ITConfig(USART1, USART_IT_TC, ENABLE);
 		}
 	}
 
-	if(USART_GetITStatus(USART2, USART_IT_TC) != RESET) {//последний символ отправлен
-		USART_ClearFlag(USART2, USART_FLAG_TC);
-		USART_ITConfig(USART2, USART_IT_TC, DISABLE);
+	if(USART_GetITStatus(USART1, USART_IT_TC) != RESET) {//последний символ отправлен
+		USART_ClearFlag(USART1, USART_FLAG_TC);
+		USART_ITConfig(USART1, USART_IT_TC, DISABLE);
 	}
 }
 

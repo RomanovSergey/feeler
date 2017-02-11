@@ -19,6 +19,7 @@
 #include "magnetic.h"
 #include "micro.h"
 #include "displayDrv.h"
+#include "sound.h"
 
 GLOBAL_T g;
 
@@ -35,9 +36,10 @@ int main(void) {
 			}
 		}
 		//magnetic();
+		sound();
 		buttons();
 		display();
-		uart();
+		//uart();
 		{
 			static const uint16_t ctim = 200;
 			static int count = 0;
@@ -50,7 +52,7 @@ int main(void) {
 			} else if ( count > ctim ) {
 				static int state = 0;
 				static int timer = 0;
-				static int timoff = 0;
+				//static int timoff = 0;
 				timer++;
 				if ( timer == 1000 ) {
 					timer = 0;
@@ -59,10 +61,10 @@ int main(void) {
 						BL1_OFF;
 					else
 						BL1_ON;
-					timoff++;
-					if ( timoff == 5 ) {
-						PWR_OFF;
-					}
+					//timoff++;
+					//if ( timoff == 5 ) {
+					//	PWR_OFF;
+					//}
 				}
 			}
 		}
@@ -158,20 +160,18 @@ void init(void) {
 	TIM_OCInitStruct.TIM_OutputNState = TIM_OutputNState_Enable;//not used
 	TIM_OCInitStruct.TIM_Pulse = period / 2;
 	TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
-	TIM_OCInitStruct.TIM_OCNPolarity = TIM_OCNPolarity_High;//not used
+	TIM_OCInitStruct.TIM_OCNPolarity = TIM_OCNPolarity_Low;//not used
 	TIM_OCInitStruct.TIM_OCIdleState = TIM_OCIdleState_Reset;//not used
 	TIM_OCInitStruct.TIM_OCNIdleState = TIM_OCNIdleState_Reset;//not used
 	TIM_OC1Init( TIM17, &TIM_OCInitStruct );
 	//
-	TIM_CtrlPWMOutputs(TIM17, ENABLE);
-	TIM_Cmd(TIM17, ENABLE);
-
+	TIM_CtrlPWMOutputs(TIM17, DISABLE);
+	TIM_Cmd(TIM17, DISABLE);
 
 	//================================================================
-	//uart2 on PA2 (tx) and PA3 (rx) pins ============================
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+	//uart1 on PA9 (tx) and PA10 (rx) pins ============================
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 	//
-	GPIO_DeInit(GPIOA);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;//uart TX
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -204,6 +204,7 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
+
 
 	//15====================================================================
 	//COMP1 ================================================================
@@ -320,7 +321,6 @@ void assert_failed(uint8_t* file, uint32_t line)
 	}
 }
 #endif
-
 
 
 //для кругового буфера событий

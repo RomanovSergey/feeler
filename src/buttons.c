@@ -7,6 +7,7 @@
 
 #include "stm32f0xx.h"
 #include "main.h"
+#include "sound.h"
 
 #define READ_B1     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_8)
 #define READ_B2     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_5)
@@ -52,7 +53,7 @@ button_t B3 = {
  */
 void debounce(button_t *b, uint8_t instance) {
 	static const int ANTI_TIME = 20;    //time of debounce
-	if ( instance > 0 ) {//if button is pushed *************************
+	if ( instance == 0 ) {//if button is pushed *************************
 		if ( b->debcount < ANTI_TIME ) {
 			b->debcount++;//filter
 		} else {
@@ -101,6 +102,7 @@ void buttonEvent(button_t *b, uint8_t Eclick, uint8_t Edouble,
 			b->state = 0;
 			b->tim = 0;
 			put_event( Eclick );//click event
+			sndPutEv( 1 );
 		}
 		if ( b->current == 1 ) {//пока клонит к двойному щелчку
 			b->tim = 0;

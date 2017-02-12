@@ -8,6 +8,7 @@
 #include "stm32f0xx.h"
 #include "main.h"
 #include "sound.h"
+#include "displayDrv.h"
 
 #define READ_B1     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_8)
 #define READ_B2     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_5)
@@ -101,7 +102,7 @@ void buttonEvent(button_t *b, uint8_t Eclick, uint8_t Edouble,
 		if ( b->tim == clickLimit ) {//если кнопку отпустили на слишком долго
 			b->state = 0;
 			b->tim = 0;
-			put_event( Eclick );//click event
+			dispPutEv( Eclick );//click event
 			sndPutEv( 1 );
 		}
 		if ( b->current == 1 ) {//пока клонит к двойному щелчку
@@ -127,7 +128,7 @@ void buttonEvent(button_t *b, uint8_t Eclick, uint8_t Edouble,
 		if ( b->tim == clickLimit ) {
 			b->state = 0;
 			b->tim = 0;
-			put_event( Edouble );//double click event
+			dispPutEv( Edouble );//double click event
 		}
 		break;
 
@@ -146,26 +147,26 @@ void buttonEvent(button_t *b, uint8_t Eclick, uint8_t Edouble,
 		if ( b->tim == clickLimit ) {
 			b->state = 101;
 			b->tim = 0;
-			put_event( Epush );//push event
+			dispPutEv( Epush );//push event
 		}
 		break;
 	case 101:
 		if ( b->current == 0 ) {
 			b->state = 0;
 			b->tim = 0;
-			put_event( Epull );//pull event
+			dispPutEv( Epull );//pull event
 		}
 		if ( b->tim == longPush ) {
 			b->tim = 0;
 			b->state = 102;
-			put_event( Elong );//long push event
+			dispPutEv( Elong );//long push event
 		}
 		break;
 	case 102:
 		if ( b->current == 0 ) {
 			b->state = 0;
 			b->tim = 0;
-			put_event( Epull );//pull event
+			dispPutEv( Epull );//pull event
 		}
 		break;
 	default:
@@ -181,11 +182,11 @@ void buttons(void) {
 	debounce( &B1, READ_B1 );//антидребезг B1
 	debounce( &B2, READ_B2 );//антидребезг B1
 	debounce( &B3, READ_B3 );//антидребезг B1
-	buttonEvent( &B1, Eb1Click, Eb1Double,
-			Eb1Long, Eb1Push, Eb1Pull );//generate different events on B1 button
-	buttonEvent( &B2, Eb2Click, 0,
+	buttonEvent( &B1, DIS_CLICK_OK, 0,
+			0, 0, 0 );//generate different events on B1 button
+	buttonEvent( &B2, DIS_CLICK_L, 0,
 			0, 0, 0 );//generate different events on B2 button
-	buttonEvent( &B3, Eb3Click, 0,
+	buttonEvent( &B3, DIS_CLICK_R, 0,
 			0, 0, 0 );//generate different events on B3 button
 }
 

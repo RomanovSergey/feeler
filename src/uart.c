@@ -30,7 +30,7 @@ void uart(void) {
 		res = pmenu(event);//отобразим функцию меню на экране (единственное место отображения)
 		if ( pmold != pmenu ) {
 			pmold = pmenu;
-			put_event( Erepaint );//меню поменялось, надо перерисовать
+			//put_event( Erepaint );//меню поменялось, надо перерисовать
 		}
 	}
 

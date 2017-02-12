@@ -7,6 +7,9 @@
 
 #include "stm32f0xx.h"
 #include "fonts/FastFont.h"
+#include "displayDrv.h"
+#include "menu.h"
+#include "main.h"
 #include <string.h>
 
 #define RESET_LOW    GPIO_ResetBits(GPIOB,GPIO_Pin_1)   //reset display on
@@ -144,20 +147,20 @@ void DMA1_Channel2_3_IRQHandler (void) {
 	}
 }
 
-void display_clear() {
+void disClear(void) {
 	memset( coor, 0, DISP_X * DISP_Y / 8);
 }
 
 // Выбирает страницу и горизонтальную позицию для вывода
-void display_setpos(uint8_t page, uint8_t x) {
+void disSetPos(uint8_t page, uint8_t x) {
 	uint8_t setPos[2];
 	setPos[0] = 0x40 | (page & 7);
 	setPos[1] = 0x80 | x;
 	disp_cmds(setPos, 2);
 }
 
-void display_dma_send() {
-	display_setpos(0, 0);
+void disDMAsend() {
+	disSetPos(0, 0);
 	DATA_MODE; // Высокий уровень на линии DC: данные
 	CE_LOW; // Низкий уровень на линии SCE
 	DMA_SetCurrDataCounter( DMA1_Channel3, (uint16_t)(DISP_X * DISP_Y / 8) );
@@ -195,7 +198,7 @@ void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
  *   numstr - номер строки 0..5
  *   *s  - указатель на строку
  */
-void prints(uint8_t pos, uint8_t numstr, const char* s) {
+void disPrint(uint8_t pos, uint8_t numstr, const char* s) {
 	uint8_t x;
 	uint8_t y;
 	uint16_t code;
@@ -221,22 +224,102 @@ void prints(uint8_t pos, uint8_t numstr, const char* s) {
 	}
 }
 
-void display(void) {
-	static int tim = 0;
-	tim++;
-	if ( tim == 500 ) {
-		prints( 0, 0, "Русский текст");
-		prints( 0, 1, "кодир-а UTF-8");
-		prints( 0, 2, "АБВГД ЕЁ её");
-		prints( 0, 3, "Ferrum");
-		prints( 0, 4, "Alumin!@#$%^&*");
-		prints( 0, 5, "Happy New Year!");
-		display_dma_send();
-	} else if ( tim == 2500 ) {
-		display_clear();
-		display_dma_send();
-		tim = 0;
+//void display(void) {
+//	static int tim = 0;
+//	tim++;
+//	if ( tim == 500 ) {
+//		prints( 0, 0, "Русский текст");
+//		prints( 0, 1, "кодир-а UTF-8");
+//		prints( 0, 2, "АБВГД ЕЁ её");
+//		prints( 0, 3, "Ferrum");
+//		prints( 0, 4, "Alumin!@#$%^&*");
+//		prints( 0, 5, "Happy New Year!");
+//		display_dma_send();
+//	} else if ( tim == 2500 ) {
+//		display_clear();
+//		display_dma_send();
+//		tim = 0;
+//	}
+//	if ( SPI1->SR & SPI_I2S_FLAG_BSY ) {
+//		return;
+//	}
+//	if ( 1 == dstat ) {
+//		DMA_Cmd(DMA1_Channel3, DISABLE);
+//		CE_HI;
+//		dstat = 0;
+//	}
+//}
+
+//===========================================================================
+//===========================================================================
+//для кругового буфера событий
+#define DISP_LEN_BITS   4
+#define DISP_LEN_BUF    (1<<DISP_LEN_BITS) // 8 или 2^3 или (1<<3)
+#define DISP_LEN_MASK   (DISP_LEN_BUF-1)   // bits: 0000 0111
+static uint8_t bufEv[DISP_LEN_BUF] = {0};
+static uint8_t tail = 0;
+static uint8_t head = 0;
+/*
+ * возвращает 1 если в кольцевом буфере есть свободное место для элемента, иначе 0
+ */
+static int dispHasFree(void) {
+	if ( ((tail + 1) & DISP_LEN_MASK) == head ) {
+		return 0;//свободного места нет
 	}
+	return 1;//есть свободное место
+}
+/*
+ * помещает событие в круговой буфер
+ * return 1 - успешно; 0 - нет места в буфере
+ */
+int dispPutEv(uint8_t event) {
+	if (event == 0) {
+		return 1;//событие с нулевым кодом пусть не будет для удобства
+	}
+	if ( dispHasFree() ) {
+		bufEv[head] = event;
+		head = (1 + head) & DISP_LEN_MASK;//инкремент кругового индекса
+		return 1;
+	} else {
+		return 0;//нет места в буфере
+	}
+}
+/*
+ *  извлекает событие из кругового буфера
+ *  если 0 - нет событий
+ */
+uint8_t dispGetEv(void) {
+	uint8_t event = 0;
+	if (head != tail) {//если в буфере есть данные
+		event = bufEv[tail];
+		tail = (1 + tail) & DISP_LEN_MASK;//инкремент кругового индекса
+	}
+	return event;
+}
+//===========================================================================
+//===========================================================================
+
+pdisp_t pdisp = dworkScreen;
+
+
+void display(void) {
+	uint8_t event;
+	static pdisp_t pdold = dworkScreen;//указатель на предыдущую функцию меню
+	int res = 0;
+
+	event = dispGetEv();
+	if ( event != 0 ) {
+		res = pdisp(event);//отобразим функцию меню на экране (единственное место отображения)
+		if ( pdold != pdisp ) {
+			pdold = pdisp;
+			dispPutEv( DIS_REPAINT );//меню поменялось, надо перерисовать
+		}
+	}
+
+	if ( res ) {//если есть данные для отрисовки
+		disDMAsend();
+	}
+
 	if ( SPI1->SR & SPI_I2S_FLAG_BSY ) {
 		return;
 	}
@@ -246,5 +329,27 @@ void display(void) {
 		dstat = 0;
 	}
 }
-
+//	static int tim = 0;
+//	tim++;
+//	if ( tim == 500 ) {
+//		prints( 0, 0, "Главный экран");
+//		prints( 0, 1, "кодир-а UTF-8");
+//		prints( 0, 2, "АБВГД ЕЁ её");
+//		prints( 0, 3, "Ferrum");
+//		prints( 0, 4, "Alumin!@#$%^&*");
+//		display_dma_send();
+//	} else if ( tim == 2500 ) {
+//		display_clear();
+//		display_dma_send();
+//		tim = 0;
+//	}
+//	if ( SPI1->SR & SPI_I2S_FLAG_BSY ) {
+//		return;
+//	}
+//	if ( 1 == dstat ) {
+//		DMA_Cmd(DMA1_Channel3, DISABLE);
+//		CE_HI;
+//		dstat = 0;
+//	}
+//}
 

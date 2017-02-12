@@ -7,6 +7,7 @@
 
 #include "stm32f0xx.h"
 #include "main.h"
+#include "displayDrv.h"
 
 static int measureDone = 0;
 static uint32_t irq_freq = 0;
@@ -22,7 +23,8 @@ void magnetic(void) {
 	if (measureDone == 1) {//для синхронизации с прерыванием
 		measureDone = 0;
 		freq = irq_freq;
-		put_event( Emeasure );//событие - данные измерения готовы
+		//put_event( Emeasure );//событие - данные измерения готовы
+		dispPutEv( DIS_MEASURE );//событие - данные измерения готовы
 	}
 }
 

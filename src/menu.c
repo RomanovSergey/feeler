@@ -15,11 +15,11 @@
 
 void dshowV(uint32_t val) {
 	disClear();
-	disPrint(0, 0,"Главный экран");
-	disPrint(0, 1, "F = ");
-	//uint32_to_str( val );
-	disPrint(4, 1, " y.e.");
-	disPrint(0, 2, " u = ");
+	disPrint(0, 0, "Главный экран");
+	disPrint(1, 0, "F = ");
+	disUINT32_to_str(1, 0xFF, val );
+	disPrint(1, 0xFF, " y.e.");
+	disPrint(2, 6, " u = ");
 //	uint16_t microValue = micro( val );
 //	if ( microValue == 0xFFFF ) {
 //		disPrint(5, 3, "Air");

@@ -21,8 +21,9 @@
 
 #define DISP_X  84
 #define DISP_Y  48
-uint8_t coor[DISP_X][DISP_Y / 8];//буфер дисплея 84x48 пикселей (1 бит на пиксель)
-uint8_t dstat = 0;
+static uint8_t coor[DISP_X][DISP_Y / 8];//буфер дисплея 84x48 пикселей (1 бит на пиксель)
+static uint8_t dstat = 0;//dma status
+static uint8_t Xcoor = 0;//текущая координата Х для разных функций печати на дисплей
 
 void display_cmd(uint8_t data) {
 	CMD_MODE; // Низкий уровень на линии DC: инструкция
@@ -176,7 +177,7 @@ void setPixel(int x, int y) {
 }
 
 /*
- * Печать символа шириной width высотой height
+ * Печать символа шириной width высотой 8 p.
  * x, y - координаты верхнего левого пикселя
  * code - код utf-8 выводимого символа [width] байт
  */
@@ -194,20 +195,22 @@ void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
 /*
  * prints печать строки на дисплей
  * Параметры:
- *   pos - позиция символа 0..13
  *   numstr - номер строки 0..5
+ *   X - горизонтальная координата 0..84 (до 13 символов)
+ *       если x == 0xFF, то берется сохраненная (предыдущая) координата
  *   *s  - указатель на строку
  */
-void disPrint(uint8_t pos, uint8_t numstr, const char* s) {
-	uint8_t x;
+void disPrint(uint8_t numstr, uint8_t X, const char* s) {
 	uint8_t y;
 	uint16_t code;
-	if ( pos > 13 ) {
+	if ( X != 0xFF ) {
+		Xcoor = X;
+	}
+	if ( Xcoor > 77 ) {
 		return;
 	} else if ( numstr > 5 ) {
 		return;
 	}
-	x = pos * 6;
 	y = numstr * 8;
 	while ( *s != 0 ) {
 		code = *s;
@@ -215,13 +218,58 @@ void disPrint(uint8_t pos, uint8_t numstr, const char* s) {
 			code = code << 8;
 			code |= *(++s);
 		}
-		wrChar_x_8( x, y, 5, code);
-		x += 6;
+		wrChar_x_8( Xcoor, y, 5, code);
+		Xcoor += 6;
 		s++;
-		if ( x >= 84 ) {
+		if ( Xcoor >= 84 ) {
 			break;
 		}
 	}
+}
+
+/**
+ * Преобразует 32 битное число в строку с нулем на конце
+ * Параметры:
+ *   numstr - номер строки 0..5
+ *   X - горизонтальная координата 0..84 (до 13 символов)
+ *       если x == 0xFF, то берется сохраненная (предыдущая) координата
+ *   nmb - число для вывода
+ */
+void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
+{
+	char tmp_str [11] = {0,};
+	int i = 0, j;
+	uint8_t y;
+
+	if ( X != 0xFF ) {
+		Xcoor = X;
+	}
+	if ( Xcoor > 77 ) {
+		return;
+	} else if ( numstr > 5 ) {
+		return;
+	}
+	y = numstr * 8;
+
+	if (nmb == 0){//если ноль
+		//tx.buf[tx.ind++] = '0';
+		wrChar_x_8( Xcoor, y, 5, '0');
+		Xcoor += 6;
+	}else{
+		while (nmb > 0) {
+			tmp_str[i++] = (nmb % 10) + '0';
+			nmb /=10;
+		}
+		for (j = 0; j < i; ++j) {
+			//tx.buf[tx.ind++] = tmp_str [i-j-1];
+			wrChar_x_8( Xcoor, y, 5, tmp_str [i-j-1]);//перевернем
+			Xcoor += 6;
+			if ( Xcoor >= 84 ) {
+				break;
+			}
+		}
+	}
+	//tx.buf[tx.ind] = 0;//null terminator
 }
 
 //void display(void) {
@@ -329,27 +377,5 @@ void display(void) {
 		dstat = 0;
 	}
 }
-//	static int tim = 0;
-//	tim++;
-//	if ( tim == 500 ) {
-//		prints( 0, 0, "Главный экран");
-//		prints( 0, 1, "кодир-а UTF-8");
-//		prints( 0, 2, "АБВГД ЕЁ её");
-//		prints( 0, 3, "Ferrum");
-//		prints( 0, 4, "Alumin!@#$%^&*");
-//		display_dma_send();
-//	} else if ( tim == 2500 ) {
-//		display_clear();
-//		display_dma_send();
-//		tim = 0;
-//	}
-//	if ( SPI1->SR & SPI_I2S_FLAG_BSY ) {
-//		return;
-//	}
-//	if ( 1 == dstat ) {
-//		DMA_Cmd(DMA1_Channel3, DISABLE);
-//		CE_HI;
-//		dstat = 0;
-//	}
-//}
+
 

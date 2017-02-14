@@ -20,7 +20,7 @@ INCLUDE += -I ./src/
 
 OBJ_FOLDER := objs
 
-COMPILER_OPTIONS = -O3 -Os -Wall -fno-strict-aliasing \
+COMPILER_OPTIONS = -O3 -Os -Wall -fno-strict-aliasing -std=c99 \
 	-fmessage-length=0 -fno-builtin  -m$(INSTRUCTION_MODE) \
 	-mcpu=$(CPU) -MMD -MP -ffunction-sections -fdata-sections
 	

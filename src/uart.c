@@ -15,31 +15,31 @@
 #include "menu.h"
 
 struct Tsend tx;//буфер для отправки по уарт
-int (*pmenu)(uint8_t) = powerOn;//указатель на функцию меню
+//int (*pmenu)(uint8_t) = powerOn;//указатель на функцию меню
 
 /*
  * Периодически вызывается из main.c
  */
-void uart(void) {
-	uint8_t event;
-	static int (*pmold)(uint8_t) = powerOn;//указатель на предыдущую функцию меню
-	int res = 0;
-
-	event = get_event();
-	if ( event != 0 ) {
-		res = pmenu(event);//отобразим функцию меню на экране (единственное место отображения)
-		if ( pmold != pmenu ) {
-			pmold = pmenu;
-			//put_event( Erepaint );//меню поменялось, надо перерисовать
-		}
-	}
-
-	if ( res ) {//если есть данные для отрисовки
-		USART_SendData(USART1, tx.buf[0]);
-		tx.ind = 1;
-		USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
-	}
-}
+//void uart(void) {
+//	uint8_t event;
+//	static int (*pmold)(uint8_t) = powerOn;//указатель на предыдущую функцию меню
+//	int res = 0;
+//
+//	event = get_event();
+//	if ( event != 0 ) {
+//		res = pmenu(event);//отобразим функцию меню на экране (единственное место отображения)
+//		if ( pmold != pmenu ) {
+//			pmold = pmenu;
+//			//put_event( Erepaint );//меню поменялось, надо перерисовать
+//		}
+//	}
+//
+//	if ( res ) {//если есть данные для отрисовки
+//		USART_SendData(USART1, tx.buf[0]);
+//		tx.ind = 1;
+//		USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
+//	}
+//}
 
 /*
  * Копирует строку str в буфер tx

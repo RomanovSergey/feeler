@@ -24,6 +24,7 @@
 static uint8_t coor[DISP_X][DISP_Y / 8];//буфер дисплея 84x48 пикселей (1 бит на пиксель)
 static uint8_t dstat = 0;//dma status
 static uint8_t Xcoor = 0;//текущая координата Х для разных функций печати на дисплей
+static uint8_t Ycoor = 0;//текущая координата Y для разных функций печати на дисплей
 
 void display_cmd(uint8_t data) {
 	CMD_MODE; // Низкий уровень на линии DC: инструкция
@@ -201,7 +202,6 @@ void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
  *   *s  - указатель на строку
  */
 void disPrint(uint8_t numstr, uint8_t X, const char* s) {
-	uint8_t y;
 	uint16_t code;
 	if ( X != 0xFF ) {
 		Xcoor = X;
@@ -211,20 +211,24 @@ void disPrint(uint8_t numstr, uint8_t X, const char* s) {
 	} else if ( numstr > 5 ) {
 		return;
 	}
-	y = numstr * 8;
+	Ycoor = numstr * 8;
 	while ( *s != 0 ) {
 		code = *s;
 		if ( code >= 0x80 ) {//utf-8
 			code = code << 8;
 			code |= *(++s);
 		}
-		wrChar_x_8( Xcoor, y, 5, code);
+		wrChar_x_8( Xcoor, Ycoor, 5, code);
 		Xcoor += 6;
 		s++;
 		if ( Xcoor >= 84 ) {
 			break;
 		}
 	}
+}
+
+void disPrin(const char* s) {
+
 }
 
 /**

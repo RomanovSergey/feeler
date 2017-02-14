@@ -17,7 +17,7 @@ struct Tsend{
 extern struct Tsend tx;
 
 
-extern int(*pmenu)(uint8_t);
+//extern int(*pmenu)(uint8_t);
 
 void uart(void);
 

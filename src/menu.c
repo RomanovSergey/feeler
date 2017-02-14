@@ -13,26 +13,95 @@
 #include "magnetic.h"
 #include "displayDrv.h"
 
-void dshowV(uint32_t val) {
+/*
+ * Отображается при включении питания
+ * просит замерить частоту на воздухе
+ */
+int dPowerOn(uint8_t ev) {
+	switch (ev) {
+	case DIS_CLICK_OK:
+		g.air = getFreq();
+		pdisp = dworkScreen;
+		return 0;
+	}
+	disClear();
+	disPrint(0,0,"Замерте воздух");
+	disPrint(1,0,"нажмите кнопку");
+	disPrint(2,0,"F = ");
+	disUINT32_to_str(2,0xFF, getFreq() );
+	disPrint(2,0xFF," y.e.");
+	return 1;
+}
+
+void dshowV(uint32_t val) { //из dworkScreen()
 	disClear();
 	disPrint(0, 0, "Главный экран");
 	disPrint(1, 0, "F = ");
 	disUINT32_to_str(1, 0xFF, val );
 	disPrint(1, 0xFF, " y.e.");
 	disPrint(2, 6, " u = ");
-//	uint16_t microValue = micro( val );
-//	if ( microValue == 0xFFFF ) {
-//		disPrint(5, 3, "Air");
-//	} else {
-//		uint32_to_str( microValue );
-//		disPrint(5, 3, " um");
-//	}
+	uint16_t microValue = micro( val );
+	if ( microValue == 0xFFFF ) {
+		disPrint(2, 0xFF, "Air");
+	} else {
+		disUINT32_to_str(2, 0xFF, microValue );
+		disPrint(2, 0xFF, " um");
+	}
 }
 
-int dworkScreen(uint8_t event) {
-
+/*
+ * Рабочий - отображает измеренное значение толщины
+ * по мере поступления новых данных
+ */
+int dworkScreen(uint8_t ev) {
+	switch (ev) {
+	case DIS_CLICK_OK:
+		pdisp = dmainM;//на главное меню
+		return 0;
+	case DIS_CLICK_L:
+		//pdisp = keepValM;
+		return 0;
+	}
 	dshowV(1000);
 	return 1;//надо перерисовать
+}
+
+/*
+ * Главное меню
+ */
+int dmainM(uint8_t ev) {
+	static uint8_t curs = 1;
+	switch (ev) {
+	case DIS_CLICK_L:
+		pdisp = dworkScreen;
+		curs = 1;
+		return 0;
+	case DIS_CLICK_OK:
+		if ( curs == 1 ) {
+			//pdisp = notDoneM;
+			curs = 1;
+		} else if ( curs == 2 ) {
+			//pdisp = userCalibM;
+		} else if ( curs == 3 ) {
+			//pdisp = notDoneM;
+			curs = 1;
+		} else {
+			curs = 1;
+		}
+		return 0;
+	case DIS_CLICK_R:
+		curs++;
+		if ( curs == 4 ) {
+			curs = 1;
+		}
+		break;
+	}
+	disClear();
+	toPrint("Главное меню\r\n");
+	curs==1 ? disPrin(">") : disPrin(" ") ; disPrin("Выбор рабочей калибровки\r\n");
+	curs==2 ? disPrin(">") : disPrin(" ") ; disPrin("Пользовательская калибровка\r\n");
+	curs==3 ? disPrin(">") : disPrin(" ") ; disPrin("Просмотр таблиц\r\n");
+	return 1;
 }
 
 //===========================================================================

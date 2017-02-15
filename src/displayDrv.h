@@ -8,7 +8,8 @@
 #ifndef DISPLAYDRV_H_
 #define DISPLAYDRV_H_
 
-#define DIS_REPAINT   1
+#define DIS_PAINT     1
+#define DIS_REPAINT   2
 #define DIS_CLICK_OK  10
 #define DIS_CLICK_L   11
 #define DIS_CLICK_R   12

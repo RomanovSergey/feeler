@@ -137,6 +137,8 @@ void initDisplay(void) {
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
+
+	dispPutEv( DIS_REPAINT );
 }
 
 /*
@@ -203,9 +205,9 @@ void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
  */
 void disPrint(uint8_t numstr, uint8_t X, const char* s) {
 	uint16_t code;
-	if ( X != 0xFF ) {
+	//if ( X != 0xFF ) {
 		Xcoor = X;
-	}
+	//}
 	if ( Xcoor > 77 ) {
 		return;
 	} else if ( numstr > 5 ) {
@@ -228,7 +230,26 @@ void disPrint(uint8_t numstr, uint8_t X, const char* s) {
 }
 
 void disPrin(const char* s) {
+	uint16_t code;
 
+	if ( Xcoor > 77 ) {
+		return;
+	} else if ( Ycoor > 47 ) {
+		return;
+	}
+	while ( *s != 0 ) {
+		code = *s;
+		if ( code >= 0x80 ) {//utf-8
+			code = code << 8;
+			code |= *(++s);
+		}
+		wrChar_x_8( Xcoor, Ycoor, 5, code);
+		Xcoor += 6;
+		s++;
+		if ( Xcoor >= 84 ) {
+			break;
+		}
+	}
 }
 
 /**
@@ -275,32 +296,6 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 	}
 	//tx.buf[tx.ind] = 0;//null terminator
 }
-
-//void display(void) {
-//	static int tim = 0;
-//	tim++;
-//	if ( tim == 500 ) {
-//		prints( 0, 0, "Русский текст");
-//		prints( 0, 1, "кодир-а UTF-8");
-//		prints( 0, 2, "АБВГД ЕЁ её");
-//		prints( 0, 3, "Ferrum");
-//		prints( 0, 4, "Alumin!@#$%^&*");
-//		prints( 0, 5, "Happy New Year!");
-//		display_dma_send();
-//	} else if ( tim == 2500 ) {
-//		display_clear();
-//		display_dma_send();
-//		tim = 0;
-//	}
-//	if ( SPI1->SR & SPI_I2S_FLAG_BSY ) {
-//		return;
-//	}
-//	if ( 1 == dstat ) {
-//		DMA_Cmd(DMA1_Channel3, DISABLE);
-//		CE_HI;
-//		dstat = 0;
-//	}
-//}
 
 //===========================================================================
 //===========================================================================
@@ -351,12 +346,11 @@ uint8_t dispGetEv(void) {
 //===========================================================================
 //===========================================================================
 
-pdisp_t pdisp = dworkScreen;
-
+pdisp_t pdisp = emptyDisplay;
 
 void display(void) {
 	uint8_t event;
-	static pdisp_t pdold = dworkScreen;//указатель на предыдущую функцию меню
+	static pdisp_t pdold = emptyDisplay;//указатель на предыдущую функцию меню
 	int res = 0;
 
 	event = dispGetEv();

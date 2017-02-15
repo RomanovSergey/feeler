@@ -21,6 +21,8 @@
 #include "displayDrv.h"
 #include "sound.h"
 
+void power(void);
+
 GLOBAL_T g;
 
 void init(void);
@@ -40,35 +42,7 @@ int main(void) {
 		buttons();
 		display();
 		//uart();
-		{
-			static const uint16_t ctim = 500;
-			static int count = 0;
-			if ( count < ctim ) {
-				count++;
-			} else if ( count == ctim ) {
-				count++;
-				PWR_ON;
-				BL1_ON;
-			} else if ( count > ctim ) {
-				static int state = 0;
-				static int timer = 0;
-				//static int timoff = 0;
-				timer++;
-				if ( timer == 1000 ) {
-					timer = 0;
-					state ^= 1;
-					if (state)
-						BL1_OFF;
-					else
-						BL1_ON;
-					dispPutEv( DIS_REPAINT );
-					//timoff++;
-					//if ( timoff == 5 ) {
-					//	PWR_OFF;
-					//}
-				}
-			}
-		}
+		power();
 
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
@@ -90,7 +64,6 @@ void init(void) {
 
 	g.alarm = 0;
 	initCalib();
-	dispPutEv( DIS_REPAINT );
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс
@@ -291,6 +264,37 @@ void init(void) {
 	NVIC_Init(&NVIC_InitStruct);*/
 }
 
+void power(void)
+{
+	static const uint16_t ctim = 500;
+	static int startTime = 0;
+	if ( startTime < ctim ) {
+		startTime++;
+	} else if ( startTime == ctim ) {
+		startTime++;
+		PWR_ON;
+		BL1_ON;
+		dispPutEv( DIS_PAINT );
+	} else if ( startTime > ctim ) {
+		static int state = 0;
+		static int timer = 0;
+		//static int timoff = 0;
+		timer++;
+		if ( timer == 1000 ) {
+			timer = 0;
+			state ^= 1;
+			if (state)
+				BL1_OFF;
+			else
+				BL1_ON;
+			//timoff++;
+			//if ( timoff == 5 ) {
+			//	PWR_OFF;
+			//}
+		}
+	}
+}
+
 #ifdef  USE_FULL_ASSERT
 
 /**
@@ -322,53 +326,3 @@ void assert_failed(uint8_t* file, uint32_t line)
 	}
 }
 #endif
-
-
-////для кругового буфера событий
-//#define LEN_BITS   3
-//#define LEN_BUF    (1<<LEN_BITS) // 8 или 2^3 или (1<<3)
-//#define LEN_MASK   (LEN_BUF-1)   // bits: 0000 0111
-//static uint8_t bufEv[LEN_BUF] = {0};
-//static uint8_t tail = 0;
-//static uint8_t head = 0;
-//
-///*
-// * возвращает 1 если в кольцевом буфере есть свободное место для элемента, иначе 0
-// */
-//static int has_free(void) {
-//	if ( ((tail + 1) & LEN_MASK) == head ) {
-//		return 0;//свободного места нет
-//	}
-//	return 1;//есть свободное место
-//}
-//
-///*
-// * помещает событие в круговой буфер
-// * return 1 - успешно; 0 - нет места в буфере
-// */
-//int put_event(uint8_t event) {
-//	if (event == 0) {
-//		return 1;//событие с нулевым кодом пусть не будет для удобства
-//	}
-//	if (has_free()) {
-//		bufEv[head] = event;
-//		head = (1 + head) & LEN_MASK;//инкремент кругового индекса
-//		return 1;
-//	} else {
-//		return 0;//нет места в буфере
-//	}
-//}
-//
-///*
-// *  извлекает событие из кругового буфера
-// *  если 0 - нет событий
-// */
-//uint8_t get_event(void) {
-//	uint8_t event = 0;
-//	if (head != tail) {//если в буфере есть данные
-//		event = bufEv[tail];
-//		tail = (1 + tail) & LEN_MASK;//инкремент кругового индекса
-//	}
-//	return event;
-//}
-//

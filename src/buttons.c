@@ -184,9 +184,9 @@ void buttons(void) {
 	debounce( &B3, READ_B3 );//антидребезг B1
 	buttonEvent( &B1, DIS_CLICK_OK, 0,
 			0, 0, 0 );//generate different events on B1 button
-	buttonEvent( &B2, DIS_CLICK_L, 0,
+	buttonEvent( &B2, DIS_CLICK_R, 0,
 			0, 0, 0 );//generate different events on B2 button
-	buttonEvent( &B3, DIS_CLICK_R, 0,
+	buttonEvent( &B3, DIS_CLICK_L, 0,
 			0, 0, 0 );//generate different events on B3 button
 }
 

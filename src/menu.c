@@ -13,6 +13,16 @@
 #include "magnetic.h"
 #include "displayDrv.h"
 
+
+int emptyDisplay(uint8_t event) {
+	if ( event == DIS_PAINT ) {
+		pdisp = dPowerOn;
+		return 0;
+	}
+	disClear();
+	return 1;
+}
+
 /*
  * Отображается при включении питания
  * просит замерить частоту на воздухе
@@ -26,26 +36,26 @@ int dPowerOn(uint8_t ev) {
 	}
 	disClear();
 	disPrint(0,0,"Замерте воздух");
-	disPrint(1,0,"нажмите кнопку");
+	disPrint(1,0,"  нажмите OK");
 	disPrint(2,0,"F = ");
 	disUINT32_to_str(2,0xFF, getFreq() );
-	disPrint(2,0xFF," y.e.");
+	disPrin(" y.e.");
 	return 1;
 }
 
 void dshowV(uint32_t val) { //из dworkScreen()
 	disClear();
-	disPrint(0, 0, "Главный экран");
+	disPrint(0, 0, "  ИЗМЕРЕНИЯ");
 	disPrint(1, 0, "F = ");
 	disUINT32_to_str(1, 0xFF, val );
-	disPrint(1, 0xFF, " y.e.");
+	disPrin(" y.e.");
 	disPrint(2, 6, " u = ");
 	uint16_t microValue = micro( val );
 	if ( microValue == 0xFFFF ) {
-		disPrint(2, 0xFF, "Air");
+		disPrin("Air");
 	} else {
 		disUINT32_to_str(2, 0xFF, microValue );
-		disPrint(2, 0xFF, " um");
+		disPrin(" um");
 	}
 }
 
@@ -59,10 +69,10 @@ int dworkScreen(uint8_t ev) {
 		pdisp = dmainM;//на главное меню
 		return 0;
 	case DIS_CLICK_L:
-		//pdisp = keepValM;
+		pdisp = dPowerOn;
 		return 0;
 	}
-	dshowV(1000);
+	dshowV(32768);
 	return 1;//надо перерисовать
 }
 
@@ -70,37 +80,42 @@ int dworkScreen(uint8_t ev) {
  * Главное меню
  */
 int dmainM(uint8_t ev) {
-	static uint8_t curs = 1;
+	static int8_t curs = 0;
 	switch (ev) {
-	case DIS_CLICK_L:
-		pdisp = dworkScreen;
-		curs = 1;
-		return 0;
 	case DIS_CLICK_OK:
-		if ( curs == 1 ) {
-			//pdisp = notDoneM;
-			curs = 1;
+		if ( curs == 0 ) {
+			pdisp = dworkScreen;
+			curs = 0;
 		} else if ( curs == 2 ) {
 			//pdisp = userCalibM;
+			//curs = 0;
 		} else if ( curs == 3 ) {
 			//pdisp = notDoneM;
-			curs = 1;
+			//curs = 0;
 		} else {
-			curs = 1;
+			//curs = 0;
 		}
 		return 0;
+	case DIS_CLICK_L:
+		if ( curs > 0 ) {
+			curs--;
+		} else {
+			curs = 3;
+		}
+		break;
 	case DIS_CLICK_R:
 		curs++;
 		if ( curs == 4 ) {
-			curs = 1;
+			curs = 0;
 		}
 		break;
 	}
 	disClear();
-	toPrint("Главное меню\r\n");
-	curs==1 ? disPrin(">") : disPrin(" ") ; disPrin("Выбор рабочей калибровки\r\n");
-	curs==2 ? disPrin(">") : disPrin(" ") ; disPrin("Пользовательская калибровка\r\n");
-	curs==3 ? disPrin(">") : disPrin(" ") ; disPrin("Просмотр таблиц\r\n");
+	disPrint(0,0,"Главное меню");
+	curs==0 ? disPrint(1,0,">") : disPrint(1,0," ") ; disPrin("Наверх");
+	curs==1 ? disPrint(2,0,">") : disPrint(2,0," ") ; disPrin("Выбор калибр.");
+	curs==2 ? disPrint(3,0,">") : disPrint(3,0," ") ; disPrin("Польз.калибр.");
+	curs==3 ? disPrint(4,0,">") : disPrint(4,0," ") ; disPrin("Просмотр таб.");
 	return 1;
 }
 

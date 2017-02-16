@@ -19,23 +19,23 @@ typedef struct  {
 	int16_t  debcount;//счетчик антидребезга
 	uint8_t  current;//текущее отфильтрованное состояние кнопки
 	uint8_t  state;//машинное состояние (для отличия клика от дабле клика и лонг пуша)
-	uint16_t tim;//временная метка клика(ов)
+	uint32_t tim;//временная метка клика(ов)
 } button_t;
 
 //под каждую кнопку свой объект
-button_t B1 = {
+button_t B_OK = {
 	.debcount = 0,
 	.current = 0,
 	.state = 0,
 	.tim = 0,
 };
-button_t B2 = {
+button_t B_R = {
 	.debcount = 0,
 	.current = 0,
 	.state = 0,
 	.tim = 0,
 };
-button_t B3 = {
+button_t B_L = {
 	.debcount = 0,
 	.current = 0,
 	.state = 0,
@@ -67,6 +67,37 @@ void debounce(button_t *b, uint8_t instance) {
 			b->current = 0;
 		}
 	}
+}
+
+void buttonEv(button_t *b, int *push, int *Lpush) {
+	static const int LONGPUSH = 2000; //ms время для генер. события длит. нажатия
+
+	*push = 0;
+	*Lpush = 0;
+	switch ( b->state ) {
+	case 0:
+		if ( b->current == 1 ) {//первое нажатие кнопки
+			b->state = 1;
+			b->tim = 0;
+			*push = 1;
+		}
+		break;
+	case 1:
+		if ( b->current == 0 ) {//первое отпускание кнопки
+			b->state = 0;
+			b->tim = 0;
+		}
+		if ( b->tim == LONGPUSH ) {
+			*Lpush = 1;
+		} else if ( b->tim > LONGPUSH ) {
+			return;
+		}
+		break;
+	default:
+		b->state = 0;
+		b->tim = 0;
+	}
+	b->tim++;
 }
 
 /*
@@ -179,15 +210,44 @@ void buttonEvent(button_t *b, uint8_t Eclick, uint8_t Edouble,
  * this function called from main loop every 1 ms
  */
 void buttons(void) {
-	debounce( &B1, READ_B1 );//антидребезг B1
-	debounce( &B2, READ_B2 );//антидребезг B1
-	debounce( &B3, READ_B3 );//антидребезг B1
-	buttonEvent( &B1, DIS_CLICK_OK, 0,
-			0, 0, 0 );//generate different events on B1 button
-	buttonEvent( &B2, DIS_CLICK_R, 0,
-			0, 0, 0 );//generate different events on B2 button
-	buttonEvent( &B3, DIS_CLICK_L, 0,
-			0, 0, 0 );//generate different events on B3 button
+	int pushEv, LpushEv;
+
+	debounce( &B_OK, READ_B1 ); // антидребезг
+	debounce( &B_R, READ_B2 );  // антидребезг
+	debounce( &B_L, READ_B3 );  // антидребезг
+
+	buttonEv( &B_OK, &pushEv, &LpushEv );
+	if ( pushEv ) {
+		dispPutEv( DIS_PUSH_OK );
+		sndPutEv( 1 );
+	}
+	if ( LpushEv ) {
+		dispPutEv( DIS_LONGPUSH_OK );
+	}
+
+	buttonEv( &B_R, &pushEv, &LpushEv );
+	if ( pushEv ) {
+		dispPutEv( DIS_PUSH_R );
+		sndPutEv( 1 );
+	}
+	if ( LpushEv ) {
+		dispPutEv( DIS_LONGPUSH_R );
+	}
+
+	buttonEv( &B_L, &pushEv, &LpushEv );
+	if ( pushEv ) {
+		dispPutEv( DIS_PUSH_L );
+		sndPutEv( 1 );
+	}
+	if ( LpushEv ) {
+		dispPutEv( DIS_LONGPUSH_L );
+	}
+//	buttonEvent( &B1, DIS_CLICK_OK, 0,
+//			0, 0, 0 );//generate different events on B1 button
+//	buttonEvent( &B2, DIS_CLICK_R, 0,
+//			0, 0, 0 );//generate different events on B2 button
+//	buttonEvent( &B3, DIS_CLICK_L, 0,
+//			0, 0, 0 );//generate different events on B3 button
 }
 
 

@@ -268,30 +268,16 @@ void power(void)
 {
 	static const uint16_t ctim = 500;
 	static int startTime = 0;
-	if ( startTime < ctim ) {
+
+	if ( startTime > ctim ) {
+
+	} else if ( startTime < ctim ) {
 		startTime++;
 	} else if ( startTime == ctim ) {
 		startTime++;
 		PWR_ON;
 		BL1_ON;
 		dispPutEv( DIS_PAINT );
-	} else if ( startTime > ctim ) {
-		static int state = 0;
-		static int timer = 0;
-		//static int timoff = 0;
-		timer++;
-		if ( timer == 1000 ) {
-			timer = 0;
-			state ^= 1;
-			if (state)
-				BL1_OFF;
-			else
-				BL1_ON;
-			//timoff++;
-			//if ( timoff == 5 ) {
-			//	PWR_OFF;
-			//}
-		}
 	}
 }
 

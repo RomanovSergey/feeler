@@ -29,7 +29,7 @@ int emptyDisplay(uint8_t event) {
  */
 int dPowerOn(uint8_t ev) {
 	switch (ev) {
-	case DIS_CLICK_OK:
+	case DIS_PUSH_OK:
 		g.air = getFreq();
 		pdisp = dworkScreen;
 		return 0;
@@ -65,10 +65,10 @@ void dshowV(uint32_t val) { //из dworkScreen()
  */
 int dworkScreen(uint8_t ev) {
 	switch (ev) {
-	case DIS_CLICK_OK:
+	case DIS_PUSH_OK:
 		pdisp = dmainM;//на главное меню
 		return 0;
-	case DIS_CLICK_L:
+	case DIS_PUSH_L:
 		pdisp = dPowerOn;
 		return 0;
 	}
@@ -82,7 +82,7 @@ int dworkScreen(uint8_t ev) {
 int dmainM(uint8_t ev) {
 	static int8_t curs = 0;
 	switch (ev) {
-	case DIS_CLICK_OK:
+	case DIS_PUSH_OK:
 		if ( curs == 0 ) {
 			pdisp = dworkScreen;
 			curs = 0;
@@ -96,14 +96,14 @@ int dmainM(uint8_t ev) {
 			//curs = 0;
 		}
 		return 0;
-	case DIS_CLICK_L:
+	case DIS_PUSH_L:
 		if ( curs > 0 ) {
 			curs--;
 		} else {
 			curs = 3;
 		}
 		break;
-	case DIS_CLICK_R:
+	case DIS_PUSH_R:
 		curs++;
 		if ( curs == 4 ) {
 			curs = 0;

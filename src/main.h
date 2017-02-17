@@ -21,21 +21,10 @@
 #define BEEP_ON      GPIO_SetBits(GPIOB,GPIO_Pin_7)
 #define BEEP_OFF     GPIO_ResetBits(GPIOB,GPIO_Pin_7)
 
-////коды событий (здесь нельзя использовать событие с кодом 0)
-//#define Eb1Click  1
-//#define Eb1Double 2
-//#define Eb1Long   3
-//#define Eb1Push   4
-//#define Eb1Pull   5
-//#define Emeasure  6
-//#define Erepaint  7
-//#define Ealarm    8
-//#define Eb2Click  21
-//#define Eb3Click  31
 
 typedef struct {
 	uint32_t air;//air's frequency on power on
-	uint32_t alarm;//будильник для отсчета времени отображения временного меню
+	//uint32_t alarm;//будильник для отсчета времени отображения временного меню
 } GLOBAL_T;
 
 extern GLOBAL_T g;

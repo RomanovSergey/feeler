@@ -205,9 +205,9 @@ void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
  */
 void disPrint(uint8_t numstr, uint8_t X, const char* s) {
 	uint16_t code;
-	//if ( X != 0xFF ) {
-		Xcoor = X;
-	//}
+
+	Xcoor = X;
+
 	if ( Xcoor > 77 ) {
 		return;
 	} else if ( numstr > 5 ) {
@@ -277,7 +277,6 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 	y = numstr * 8;
 
 	if (nmb == 0){//если ноль
-		//tx.buf[tx.ind++] = '0';
 		wrChar_x_8( Xcoor, y, 5, '0');
 		Xcoor += 6;
 	}else{
@@ -286,7 +285,6 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 			nmb /=10;
 		}
 		for (j = 0; j < i; ++j) {
-			//tx.buf[tx.ind++] = tmp_str [i-j-1];
 			wrChar_x_8( Xcoor, y, 5, tmp_str [i-j-1]);//перевернем
 			Xcoor += 6;
 			if ( Xcoor >= 84 ) {
@@ -294,7 +292,6 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 			}
 		}
 	}
-	//tx.buf[tx.ind] = 0;//null terminator
 }
 
 //===========================================================================

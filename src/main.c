@@ -20,8 +20,7 @@
 #include "micro.h"
 #include "displayDrv.h"
 #include "sound.h"
-
-void power(void);
+#include "pwr.h"
 
 GLOBAL_T g;
 
@@ -39,8 +38,8 @@ int main(void) {
 //		}
 		//magnetic();
 		sound();
-		buttons();
 		display();
+		buttons();
 		//uart();
 		power();
 
@@ -62,7 +61,7 @@ void init(void) {
 	NVIC_InitTypeDef         NVIC_InitStruct;
 	////ADC_InitTypeDef          ADC_InitStruct;
 
-	g.alarm = 0;
+	//g.alarm = 0;
 	initCalib();
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
@@ -262,23 +261,6 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;//main priority
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);*/
-}
-
-void power(void)
-{
-	static const uint16_t ctim = 500;
-	static int startTime = 0;
-
-	if ( startTime > ctim ) {
-
-	} else if ( startTime < ctim ) {
-		startTime++;
-	} else if ( startTime == ctim ) {
-		startTime++;
-		PWR_ON;
-		BL1_ON;
-		dispPutEv( DIS_PAINT );
-	}
 }
 
 #ifdef  USE_FULL_ASSERT

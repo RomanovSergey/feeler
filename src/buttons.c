@@ -9,6 +9,7 @@
 #include "main.h"
 #include "sound.h"
 #include "displayDrv.h"
+#include "pwr.h"
 
 #define READ_B1     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_8)
 #define READ_B2     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_5)
@@ -54,7 +55,7 @@ button_t B_L = {
  */
 void debounce(button_t *b, uint8_t instance) {
 	static const int ANTI_TIME = 20;    //time of debounce
-	if ( instance == 0 ) {//if button is pushed *************************
+	if ( instance == 0 ) {//if button is pushed ************************
 		if ( b->debcount < ANTI_TIME ) {
 			b->debcount++;//filter
 		} else {
@@ -69,28 +70,42 @@ void debounce(button_t *b, uint8_t instance) {
 	}
 }
 
-void buttonEv(button_t *b, int *push, int *Lpush) {
+/*
+ * buttonEv() устанавливает флаг при возниковения событий
+ * чтобы вызывающий софт генерировал нужные события нужным устрйствам
+ * Params:
+ *   *b - указатель на структуру кнопки
+ *   *push - событие нажатия
+ *   *Lpush - событие длительного нажатия
+ * Return:
+ *   1 - есть новое событие
+ *   0 - нет новых событий
+ */
+int buttonEv(button_t *b, int *push, int *Lpush) {
 	static const int LONGPUSH = 2000; //ms время для генер. события длит. нажатия
-
 	*push = 0;
 	*Lpush = 0;
 	switch ( b->state ) {
 	case 0:
-		if ( b->current == 1 ) {//первое нажатие кнопки
+		if ( b->current == 1 ) { //первое нажатие кнопки
 			b->state = 1;
 			b->tim = 0;
 			*push = 1;
+			return 1;
 		}
 		break;
 	case 1:
-		if ( b->current == 0 ) {//первое отпускание кнопки
+		if ( b->current == 0 ) { //первое отпускание кнопки
 			b->state = 0;
 			b->tim = 0;
 		}
 		if ( b->tim == LONGPUSH ) {
+			b->tim++;
 			*Lpush = 1;
+			return 1;
 		} else if ( b->tim > LONGPUSH ) {
-			return;
+			//таймеру нечего больше считать
+			return 0;
 		}
 		break;
 	default:
@@ -98,156 +113,72 @@ void buttonEv(button_t *b, int *push, int *Lpush) {
 		b->tim = 0;
 	}
 	b->tim++;
-}
-
-/*
- * buttonEvent локальная функция
- * генерить событие клика, двойной клик, нажатие и отпускание,
- * длительное нажатие
- */
-void buttonEvent(button_t *b, uint8_t Eclick, uint8_t Edouble,
-		uint8_t Elong, uint8_t Epush, uint8_t Epull)
-{
-	static const uint16_t clickLimit = 180;
-	static const int longPush = 1500;
-
-	b->tim++;
-	switch ( b->state ) {
-	case 0:
-		if ( b->current == 1 ) {//первое нажатие кнопки
-			b->state = 1;
-			b->tim = 0;
-		}
-		break;
-	case 1:
-		if ( b->current == 0 ) {//первое отпускание кнопки
-			b->state = 2;
-			b->tim = 0;
-		}
-		if ( b->tim == clickLimit ) {
-			b->state = 100;
-			b->tim = 0;
-		}
-		break;
-	case 2:
-		if ( b->tim == clickLimit ) {//если кнопку отпустили на слишком долго
-			b->state = 0;
-			b->tim = 0;
-			dispPutEv( Eclick );//click event
-			sndPutEv( 1 );
-		}
-		if ( b->current == 1 ) {//пока клонит к двойному щелчку
-			b->tim = 0;
-			b->state = 3;
-		}
-		break;
-	case 3:
-		if ( b->current == 0 ) {//второй раз отпустили кнопку
-			b->tim = 0;
-			b->state = 4;
-		}
-		if ( b->tim == clickLimit ) {//слишком долго держат нажатой второй раз кнопку
-			b->state = 10;
-			b->tim = 0;
-		}
-		break;
-	case 4:
-		if ( b->current == 1 ) {//слишком шустро нажимать кнопки не следует
-			b->tim = 0;
-			b->state = 10;
-		}
-		if ( b->tim == clickLimit ) {
-			b->state = 0;
-			b->tim = 0;
-			dispPutEv( Edouble );//double click event
-		}
-		break;
-
-	case 10://просто ждем отпускания кнопки без генерации событий
-		if ( b->current == 0 ) {//ну наконец то отпустили кнопку
-			b->tim = 0;
-			b->state = 0;
-		}
-		break;
-
-	case 100:
-		if ( b->current == 0 ) {//отпустили кнопку раньше Long push
-			b->tim = 0;
-			b->state = 0;
-		}
-		if ( b->tim == clickLimit ) {
-			b->state = 101;
-			b->tim = 0;
-			dispPutEv( Epush );//push event
-		}
-		break;
-	case 101:
-		if ( b->current == 0 ) {
-			b->state = 0;
-			b->tim = 0;
-			dispPutEv( Epull );//pull event
-		}
-		if ( b->tim == longPush ) {
-			b->tim = 0;
-			b->state = 102;
-			dispPutEv( Elong );//long push event
-		}
-		break;
-	case 102:
-		if ( b->current == 0 ) {
-			b->state = 0;
-			b->tim = 0;
-			dispPutEv( Epull );//pull event
-		}
-		break;
-	default:
-		b->state = 0;
-		b->tim = 0;
-	}
+	return 0;
 }
 
 /*
  * this function called from main loop every 1 ms
  */
 void buttons(void) {
+	static uint16_t timer_ms = 0;
+	static uint16_t timer_s = 0;
+	static const uint32_t LEFT_TIME_S = 10;
+	int wasEvent = 0; // для генер. событ. при длит. отсутствий нажатий
 	int pushEv, LpushEv;
 
-	debounce( &B_OK, READ_B1 ); // антидребезг
-	debounce( &B_R, READ_B2 );  // антидребезг
-	debounce( &B_L, READ_B3 );  // антидребезг
+	debounce( &B_OK, READ_B1 );
+	debounce( &B_R, READ_B2 );
+	debounce( &B_L, READ_B3 );
 
-	buttonEv( &B_OK, &pushEv, &LpushEv );
-	if ( pushEv ) {
-		dispPutEv( DIS_PUSH_OK );
-		sndPutEv( 1 );
-	}
-	if ( LpushEv ) {
-		dispPutEv( DIS_LONGPUSH_OK );
-	}
-
-	buttonEv( &B_R, &pushEv, &LpushEv );
-	if ( pushEv ) {
-		dispPutEv( DIS_PUSH_R );
-		sndPutEv( 1 );
-	}
-	if ( LpushEv ) {
-		dispPutEv( DIS_LONGPUSH_R );
+	if ( buttonEv( &B_OK, &pushEv, &LpushEv ) ) {
+		wasEvent = 1;
+		if ( pushEv ) {
+			dispPutEv( DIS_PUSH_OK );
+			sndPutEv( 1 );
+		}
+		if ( LpushEv ) {
+			dispPutEv( DIS_LONGPUSH_OK );
+		}
 	}
 
-	buttonEv( &B_L, &pushEv, &LpushEv );
-	if ( pushEv ) {
-		dispPutEv( DIS_PUSH_L );
-		sndPutEv( 1 );
+	if ( buttonEv( &B_R, &pushEv, &LpushEv ) ) {
+		wasEvent = 1;
+		if ( pushEv ) {
+			dispPutEv( DIS_PUSH_R );
+			sndPutEv( 1 );
+		}
+		if ( LpushEv ) {
+			dispPutEv( DIS_LONGPUSH_R );
+		}
 	}
-	if ( LpushEv ) {
-		dispPutEv( DIS_LONGPUSH_L );
+
+	if ( buttonEv( &B_L, &pushEv, &LpushEv ) ) {
+		wasEvent = 1;
+		if ( pushEv ) {
+			dispPutEv( DIS_PUSH_L );
+			sndPutEv( 1 );
+		}
+		if ( LpushEv ) {
+			dispPutEv( DIS_LONGPUSH_L );
+		}
 	}
-//	buttonEvent( &B1, DIS_CLICK_OK, 0,
-//			0, 0, 0 );//generate different events on B1 button
-//	buttonEvent( &B2, DIS_CLICK_R, 0,
-//			0, 0, 0 );//generate different events on B2 button
-//	buttonEvent( &B3, DIS_CLICK_L, 0,
-//			0, 0, 0 );//generate different events on B3 button
+
+	if ( wasEvent ) {
+		timer_ms = 0;
+		timer_s = 0;
+	} else {
+		timer_ms++;
+		if ( timer_ms > 999 ) {
+			timer_ms = 0;
+			timer_s++;
+		}
+
+		if ( timer_s > LEFT_TIME_S ) {
+			timer_s = 0;
+			//to generate event
+			pwrPutEv( PWR_POWEROFF );
+		}
+	}
 }
 
 

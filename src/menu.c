@@ -12,7 +12,30 @@
 #include "micro.h"
 #include "magnetic.h"
 #include "displayDrv.h"
+#include "pwr.h"
 
+/*
+ * Не существующее меню
+ */
+int dnotDone(uint8_t ev) {
+	switch (ev) {
+	case DIS_ALARM:
+		pdisp = dworkScreen;
+		return 0;
+	case DIS_MEASURE:
+		return 0;
+	case DIS_REPAINT:
+		pwrPutEv( PWR_ALARM_3000 );//заведем будильник отображения данного сообщения
+		break;
+	}
+
+	disClear();
+	disPrint(0, 27, "Sorry");
+	disPrint(1, 6,  "Данный пункт");
+	disPrint(2, 9,  "меню еще не");
+	disPrint(3, 12, "существует");
+	return 1;
+}
 
 int emptyDisplay(uint8_t event) {
 	if ( event == DIS_PAINT ) {
@@ -86,14 +109,18 @@ int dmainM(uint8_t ev) {
 		if ( curs == 0 ) {
 			pdisp = dworkScreen;
 			curs = 0;
+		} else if ( curs == 1 ) {
+			pdisp = dnotDone;
+			curs = 0;
 		} else if ( curs == 2 ) {
-			//pdisp = userCalibM;
-			//curs = 0;
+			pdisp = dnotDone;
+			curs = 0;
 		} else if ( curs == 3 ) {
-			//pdisp = notDoneM;
-			//curs = 0;
+			pdisp = dnotDone;
+			curs = 0;
 		} else {
-			//curs = 0;
+			pdisp = dnotDone;
+			curs = 0;
 		}
 		return 0;
 	case DIS_PUSH_L:

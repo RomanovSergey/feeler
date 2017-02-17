@@ -120,9 +120,8 @@ int buttonEv(button_t *b, int *push, int *Lpush) {
  * this function called from main loop every 1 ms
  */
 void buttons(void) {
-	static uint16_t timer_ms = 0;
-	static uint16_t timer_s = 0;
-	static const uint32_t LEFT_TIME_S = 10;
+	static uint32_t timer_ms = 0;
+	static const uint32_t LEFT_TIME_MS = 10000UL;
 	int wasEvent = 0; // для генер. событ. при длит. отсутствий нажатий
 	int pushEv, LpushEv;
 
@@ -134,7 +133,7 @@ void buttons(void) {
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_OK );
-			sndPutEv( 1 );
+			sndPutEv( SND_BEEP );
 		}
 		if ( LpushEv ) {
 			dispPutEv( DIS_LONGPUSH_OK );
@@ -145,7 +144,7 @@ void buttons(void) {
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_R );
-			sndPutEv( 1 );
+			sndPutEv( SND_BEEP );
 		}
 		if ( LpushEv ) {
 			dispPutEv( DIS_LONGPUSH_R );
@@ -156,27 +155,22 @@ void buttons(void) {
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_L );
-			sndPutEv( 1 );
+			sndPutEv( SND_BEEP );
 		}
 		if ( LpushEv ) {
 			dispPutEv( DIS_LONGPUSH_L );
 		}
 	}
-
+	// отслеживаем длительность простоя кнопок
 	if ( wasEvent ) {
 		timer_ms = 0;
-		timer_s = 0;
 	} else {
-		timer_ms++;
-		if ( timer_ms > 999 ) {
-			timer_ms = 0;
-			timer_s++;
-		}
-
-		if ( timer_s > LEFT_TIME_S ) {
-			timer_s = 0;
+		if ( timer_ms == LEFT_TIME_MS ) {
+			timer_ms++;
 			//to generate event
 			pwrPutEv( PWR_POWEROFF );
+		} else {
+			timer_ms++;
 		}
 	}
 }

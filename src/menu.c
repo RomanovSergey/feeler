@@ -13,6 +13,7 @@
 #include "magnetic.h"
 #include "displayDrv.h"
 #include "pwr.h"
+#include "sound.h"
 
 /*
  * Не существующее меню
@@ -40,6 +41,7 @@ int dnotDone(uint8_t ev) {
 int emptyDisplay(uint8_t event) {
 	if ( event == DIS_PAINT ) {
 		pdisp = dPowerOn;
+		sndPutEv( SND_PERMIT );
 		return 0;
 	}
 	disClear();

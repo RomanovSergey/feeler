@@ -15,14 +15,14 @@
 #define SND_LEN_BITS   4
 #define SND_LEN_BUF    (1<<SND_LEN_BITS) // 8 или 2^3 или (1<<3)
 #define SND_LEN_MASK   (SND_LEN_BUF-1)   // bits: 0000 0111
-static uint8_t bufEv[SND_LEN_BUF] = {0};
-static uint8_t tail = 0;
-static uint8_t head = 0;
+static uint8_t sndbufEv[SND_LEN_BUF] = {0};
+static uint8_t sndtail = 0;
+static uint8_t sndhead = 0;
 /*
  * возвращает 1 если в кольцевом буфере есть свободное место для элемента, иначе 0
  */
 static int sndHasFree(void) {
-	if ( ((tail + 1) & SND_LEN_MASK) == head ) {
+	if ( ((sndtail + 1) & SND_LEN_MASK) == sndhead ) {
 		return 0;//свободного места нет
 	}
 	return 1;//есть свободное место
@@ -36,8 +36,8 @@ int sndPutEv(uint8_t event) {
 		return 1;//событие с нулевым кодом пусть не будет для удобства
 	}
 	if ( sndHasFree() ) {
-		bufEv[head] = event;
-		head = (1 + head) & SND_LEN_MASK;//инкремент кругового индекса
+		sndbufEv[sndhead] = event;
+		sndhead = (1 + sndhead) & SND_LEN_MASK;//инкремент кругового индекса
 		return 1;
 	} else {
 		return 0;//нет места в буфере
@@ -49,9 +49,9 @@ int sndPutEv(uint8_t event) {
  */
 uint8_t sndGetEv(void) {
 	uint8_t event = 0;
-	if (head != tail) {//если в буфере есть данные
-		event = bufEv[tail];
-		tail = (1 + tail) & SND_LEN_MASK;//инкремент кругового индекса
+	if (sndhead != sndtail) {//если в буфере есть данные
+		event = sndbufEv[sndtail];
+		sndtail = (1 + sndtail) & SND_LEN_MASK;//инкремент кругового индекса
 	}
 	return event;
 }
@@ -72,7 +72,7 @@ void sndBeepState(void) {
 		TIM_Cmd( TIM17, ENABLE );
 	}
 	mstime++;
-	if ( mstime == 50 ) {
+	if ( mstime == 5 ) {
 		TIM_CtrlPWMOutputs( TIM17, DISABLE );
 		TIM_Cmd( TIM17, DISABLE );
 		BEEP_OFF;
@@ -83,16 +83,26 @@ void sndBeepState(void) {
 /*
  * вызывается из main раз в 1 мс
  */
-void sound(void) {
-
+void sound(void)
+{
+	static int canSound = 0; //пока звук запрещен, события звука теряются
 	uint8_t event = 0;
 	event = sndGetEv();
 
-	if ( event == 1 ) {
+	switch ( event ) {
+	case SND_BEEP:
 		mstime = 0;
 		pSnd = sndBeepState;
+		break;
+	case SND_PERMIT:
+		canSound = 1;
+		pSnd = NULL;
+		break;
 	}
 
+	if ( canSound == 0 ) {
+		return;
+	}
 	if ( pSnd == NULL ) {
 		return;
 	}

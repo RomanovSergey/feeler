@@ -61,7 +61,7 @@ uint8_t pwrGetEv(void) {
 
 void power(void)
 {
-	static const uint16_t CTIM = 500;
+	static const uint16_t CTIM = 2000;
 	static int startTime = 0;
 
 	if ( startTime > CTIM ) {
@@ -86,6 +86,7 @@ void power(void)
 		startTime++;
 		PWR_ON;
 		BL1_ON;
+		BL2_ON;
 		dispPutEv( DIS_PAINT );
 	}
 }

@@ -8,6 +8,8 @@
 #ifndef SRC_SOUND_H_
 #define SRC_SOUND_H_
 
+#define SND_BEEP   1
+#define SND_PERMIT 10
 
 int sndPutEv(uint8_t event);
 

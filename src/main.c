@@ -30,13 +30,7 @@ int main(void) {
 	init();
 
 	while (1) {
-//		if ( g.alarm != 0 ) {
-//			g.alarm--;
-//			if ( g.alarm == 0 ) {
-//				put_event( Ealarm );
-//			}
-//		}
-		//magnetic();
+		magnetic();
 		sound();
 		display();
 		buttons();
@@ -61,7 +55,6 @@ void init(void) {
 	NVIC_InitTypeDef         NVIC_InitStruct;
 	////ADC_InitTypeDef          ADC_InitStruct;
 
-	//g.alarm = 0;
 	initCalib();
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
@@ -113,7 +106,9 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	BEEP_OFF;
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_2);
+
 	//======================================================================
 	//timer17 for PWM Sound player =========================================
 	const uint16_t period = 500;
@@ -182,7 +177,7 @@ void init(void) {
 	//15====================================================================
 	//COMP1 ================================================================
 	//COMP_DeInit();
-	/*	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
 	COMP_InitTypeDef COMP_InitStruct;
 	COMP_InitStruct.COMP_InvertingInput = COMP_InvertingInput_IO;
 	COMP_InitStruct.COMP_Output = COMP_Output_TIM3IC1;
@@ -260,7 +255,7 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;//main priority
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStruct);*/
+	NVIC_Init(&NVIC_InitStruct);
 }
 
 #ifdef  USE_FULL_ASSERT

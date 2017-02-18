@@ -67,11 +67,16 @@ void power(void)
 	if ( startTime > CTIM ) {
 		static uint32_t alarm = 0;
 		uint8_t event;
+
 		event = pwrGetEv();
-		if ( event == PWR_POWEROFF ) {
+
+		switch ( event ) {
+		case PWR_POWEROFF:
 			PWR_OFF;
-		} else if ( event == PWR_ALARM_3000 ) {
+			break;
+		case PWR_ALARM_3000:
 			alarm = 3000;
+			break;
 		}
 
 		if ( alarm != 0 ) {

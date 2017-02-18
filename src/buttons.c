@@ -121,7 +121,7 @@ int buttonEv(button_t *b, int *push, int *Lpush) {
  */
 void buttons(void) {
 	static uint32_t timer_ms = 0;
-	static const uint32_t LEFT_TIME_MS = 10000UL;
+	static const uint32_t LEFT_TIME_MS = 30000UL;
 	int wasEvent = 0; // для генер. событ. при длит. отсутствий нажатий
 	int pushEv, LpushEv;
 

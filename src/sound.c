@@ -72,7 +72,7 @@ void sndBeepState(void) {
 		TIM_Cmd( TIM17, ENABLE );
 	}
 	mstime++;
-	if ( mstime == 5 ) {
+	if ( mstime == 50 ) {
 		TIM_CtrlPWMOutputs( TIM17, DISABLE );
 		TIM_Cmd( TIM17, DISABLE );
 		BEEP_OFF;
@@ -92,7 +92,7 @@ void sound(void)
 	switch ( event ) {
 	case SND_BEEP:
 		mstime = 0;
-		pSnd = sndBeepState;
+		pSnd = NULL;// sndBeepState;
 		break;
 	case SND_PERMIT:
 		canSound = 1;

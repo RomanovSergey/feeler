@@ -15,13 +15,20 @@
 #include "pwr.h"
 #include "sound.h"
 
+static pdisp_t prev = NULL;
+
 /*
  * Не существующее меню
  */
 int dnotDone(uint8_t ev) {
 	switch (ev) {
 	case DIS_ALARM:
-		pdisp = dworkScreen;
+		if ( prev != NULL ) {
+			pdisp = prev;
+			prev = NULL;
+		} else {
+			pdisp = dworkScreen;
+		}
 		return 0;
 	case DIS_MEASURE:
 		return 0;
@@ -38,9 +45,36 @@ int dnotDone(uint8_t ev) {
 	return 1;
 }
 
+/*
+ * Функция для вывода временного сообщения 1
+ */
+int dmessageError1(uint8_t ev) {
+	switch (ev) {
+	case DIS_ALARM://сработал будильник
+		if ( prev != NULL ) {
+			pdisp = prev;
+			prev = NULL;
+		} else {
+			pdisp = dworkScreen;
+		}
+		return 0;
+	case DIS_MEASURE:
+		return 0;
+	case DIS_REPAINT:
+		pwrPutEv( PWR_ALARM_3000 );//заведем будильник отображения данного сообщения
+		break;
+	}
+	disClear();
+	disPrint(0,0,"Error error!!!");
+	disPrint(1,0,"Вы сделали");
+	disPrint(2,0,"что то не");
+	disPrint(3,0,"хорошее");
+	return 1;
+}
+
 int emptyDisplay(uint8_t event) {
 	if ( event == DIS_PAINT ) {
-		pdisp = dPowerOn;
+		pdisp = dworkScreen;
 		sndPutEv( SND_PERMIT );
 		return 0;
 	}
@@ -74,12 +108,12 @@ void dshowV(uint32_t val) { //из dworkScreen()
 	disPrint(1, 0, "F = ");
 	disUINT32_to_str(1, 0xFF, val );
 	disPrin(" y.e.");
-	disPrint(2, 6, " u = ");
+	//disPrint(2, 6, " u = ");
 	uint16_t microValue = micro( val );
 	if ( microValue == 0xFFFF ) {
-		disPrin("Air");
+		disPrint(3,24,"Air");
 	} else {
-		disUINT32_to_str(2, 0xFF, microValue );
+		disUINT32_to_str(3, 24, microValue );
 		disPrin(" um");
 	}
 }
@@ -94,7 +128,7 @@ int dworkScreen(uint8_t ev) {
 		pdisp = dmainM;//на главное меню
 		return 0;
 	case DIS_PUSH_L:
-		pdisp = dPowerOn;
+		//pdisp = dPowerOn;
 		return 0;
 	}
 	dshowV( getFreq() );
@@ -109,19 +143,19 @@ int dmainM(uint8_t ev) {
 	static int8_t curs = 0;
 	switch (ev) {
 	case DIS_PUSH_OK:
-		if ( curs == 0 ) {
+		if ( curs == 0 ) {        // Наверх
 			pdisp = dworkScreen;
 			curs = 0;
-		} else if ( curs == 1 ) {
+		} else if ( curs == 1 ) { // Выбор калибровки
+			prev  = dmainM;
 			pdisp = dnotDone;
-			curs = 0;
-		} else if ( curs == 2 ) {
+		} else if ( curs == 2 ) { // Польз. калибр.
+			pdisp = duserCalib;
+		} else if ( curs == 3 ) { // Просмотр таб.
+			prev  = dmainM;
 			pdisp = dnotDone;
-			curs = 0;
-		} else if ( curs == 3 ) {
-			pdisp = dnotDone;
-			curs = 0;
 		} else {
+			prev  = dmainM;
 			pdisp = dnotDone;
 			curs = 0;
 		}
@@ -142,10 +176,65 @@ int dmainM(uint8_t ev) {
 	}
 	disClear();
 	disPrint(0,0,"Главное меню");
-	curs==0 ? disPrint(1,0,">") : disPrint(1,0," ") ; disPrin("Наверх");
-	curs==1 ? disPrint(2,0,">") : disPrint(2,0," ") ; disPrin("Выбор калибр.");
-	curs==2 ? disPrint(3,0,">") : disPrint(3,0," ") ; disPrin("Польз.калибр.");
-	curs==3 ? disPrint(4,0,">") : disPrint(4,0," ") ; disPrin("Просмотр таб.");
+	disPrint(1,6, "Наверх");
+	disPrint(2,6, "Выбор калибр.");
+	disPrint(3,6, "Польз.калибр.");
+	disPrint(4,6, "Просмотр таб.");
+	disPrint( curs + 1, 0, "*");
+
+//	curs==0 ? disPrint(1,0,"*") : disPrint(1,0," ") ; disPrin("Наверх");
+//	curs==1 ? disPrint(2,0,"→") : disPrint(2,0," ") ; disPrin("Выбор калибр.");
+//	curs==2 ? disPrint(3,0,"→") : disPrint(3,0," ") ; disPrin("Польз.калибр.");
+//	curs==3 ? disPrint(4,0,"→") : disPrint(4,0," ") ; disPrin("Просмотр таб.");
+	return 1;
+}
+
+/*
+ * Пользовательская калибровка
+ */
+int duserCalib(uint8_t ev) {
+	static uint8_t curs = 0;
+	switch (ev) {
+	case DIS_PUSH_L:
+		if ( curs > 0 ) {
+			curs--;
+		} else {
+			curs = 2;
+		}
+		break;
+	case DIS_PUSH_R:
+		curs++;
+		if ( curs > 2 ) {
+			curs = 0;
+		}
+		break;
+	case DIS_PUSH_OK:
+		if ( curs == 0 ) {
+			pdisp = dmainM;
+			curs = 0;
+		} else if ( curs == 1 ) {
+			prev  = duserCalib;
+			pdisp = dnotDone;
+		} else if ( curs == 2 ) {
+			prev  = duserCalib;
+			pdisp = dnotDone;
+		} else {
+			prev  = duserCalib;
+			pdisp = dmessageError1;
+			curs = 1;
+		}
+		return 0;
+	}
+	disClear();
+	disPrint(0,0,"Клаибровка");
+	disPrint(1,6,"Наверх");
+	disPrint(2,6,"Железо");
+	disPrint(3,6,"Алюминий");
+	disPrint( curs + 1, 0, "*");
+
+//	curs==0 ? disPrint(1,0,">") : disPrint(1,0," ") ; disPrin("Наверх");
+//	curs==1 ? disPrint(2,0,"→") : disPrint(2,0," ") ; disPrin("Железо");
+//	curs==2 ? disPrint(3,0,"→") : disPrint(3,0," ") ; disPrin("Алюминий");
 	return 1;
 }
 

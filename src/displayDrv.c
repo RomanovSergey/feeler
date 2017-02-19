@@ -6,7 +6,7 @@
  */
 
 #include "stm32f0xx.h"
-#include "fonts/FastFont.h"
+#include "fonts/fontA.h"
 #include "displayDrv.h"
 #include "menu.h"
 #include "main.h"
@@ -185,12 +185,73 @@ void setPixel(int x, int y) {
  * code - код utf-8 выводимого символа [width] байт
  */
 void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
-	const char* img = getImg5x8( code );
+	const char* img = getFont5x8( code );//getImg5x8( code );
 	if ( (y%8) == 0 ) {//условие быстрой печати
 		y >>= 3;
 		for ( int dy = 0;  dy < width;  dy++ ) {
 			coor[x][y] = img[dy];
 			x++;
+		}
+	}
+}
+
+uint16_t getUCode( const char** str ) {
+	uint32_t abc = 0;
+	uint16_t code = 0;
+
+	if ( **str != 0) { // if not NULL symbol
+
+		if ( (**str & 0x80) == 0) { // if 1 byte
+			(*str)++;
+			return code;
+		}
+
+		if ( (**str & 0xE0) == 0xC0 ) { // if 2 bytes 0b110..
+			abc = **str;
+			(*str)++;
+			if ( (**str & 0xC0) != 0x80 ) { // error no 0b10.. bits
+				return 0;
+			}
+			abc <<= 8;
+			abc |= **str;
+
+			code = abc & 0x3F;
+			abc >>= 2;
+			code |= abc & 0x07C0;
+
+			(*str)++;
+			return code; // error
+		}
+
+//		if ( (code & 0xF0) == 0xE0 ) { // if 3 bytes 0b1110..
+//
+//		}
+
+	}
+	return 0;
+}
+
+void disPrint(uint8_t numstr, uint8_t X, const char* s)
+{
+	uint16_t code;
+
+	Xcoor = X;
+	if ( Xcoor > 77 ) {
+		return;
+	} else if ( numstr > 5 ) {
+		return;
+	}
+	Ycoor = numstr * 8;
+
+	while (1) {
+		code = getUCode( &s );
+		if ( code == 0 ) {
+			break;
+		}
+		wrChar_x_8( Xcoor, Ycoor, 5, code);
+		Xcoor += 6;
+		if ( Xcoor >= 84 ) {
+			break;
 		}
 	}
 }
@@ -203,31 +264,31 @@ void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
  *       если x == 0xFF, то берется сохраненная (предыдущая) координата
  *   *s  - указатель на строку
  */
-void disPrint(uint8_t numstr, uint8_t X, const char* s) {
-	uint16_t code;
-
-	Xcoor = X;
-
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( numstr > 5 ) {
-		return;
-	}
-	Ycoor = numstr * 8;
-	while ( *s != 0 ) {
-		code = *s;
-		if ( code >= 0x80 ) {//utf-8
-			code = code << 8;
-			code |= *(++s);
-		}
-		wrChar_x_8( Xcoor, Ycoor, 5, code);
-		Xcoor += 6;
-		s++;
-		if ( Xcoor >= 84 ) {
-			break;
-		}
-	}
-}
+//void dPrint(uint8_t numstr, uint8_t X, const char* s) {
+//	uint16_t code;
+//
+//	Xcoor = X;
+//
+//	if ( Xcoor > 77 ) {
+//		return;
+//	} else if ( numstr > 5 ) {
+//		return;
+//	}
+//	Ycoor = numstr * 8;
+//	while ( *s != 0 ) {
+//		code = *s;
+//		if ( code >= 0x80 ) {//utf-8
+//			code = code << 8;
+//			code |= *(++s);
+//		}
+//		wrChar_x_8( Xcoor, Ycoor, 5, code);
+//		Xcoor += 6;
+//		s++;
+//		if ( Xcoor >= 84 ) {
+//			break;
+//		}
+//	}
+//}
 
 void disPrin(const char* s) {
 	uint16_t code;

@@ -9,10 +9,12 @@
 #define SRC_MENU_H_
 
 int dnotDone(uint8_t ev);
+int dmessageError1(uint8_t ev);
 int emptyDisplay(uint8_t event);
 int dPowerOn(uint8_t ev);
 int dworkScreen(uint8_t event);
 int dmainM(uint8_t ev);
+int duserCalib(uint8_t ev);
 
 
 //===========================================================================

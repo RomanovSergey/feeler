@@ -61,7 +61,7 @@ uint8_t pwrGetEv(void) {
 
 void power(void)
 {
-	static const uint16_t CTIM = 2000;
+	static const uint16_t CTIM = 1000;
 	static int startTime = 0;
 
 	if ( startTime > CTIM ) {

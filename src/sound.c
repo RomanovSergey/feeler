@@ -66,13 +66,13 @@ static uint32_t mstime = 0;
 void sndBeepState(void) {
 	if ( mstime == 0 ) {
 		TIM_SetCounter( TIM17, 0);
-		TIM_SetAutoreload( TIM17, 1000 );
-		TIM_SetCompare1( TIM17, 500 );
+		TIM_SetAutoreload( TIM17, 333 );
+		TIM_SetCompare1( TIM17, 333-40 );
 		TIM_CtrlPWMOutputs( TIM17, ENABLE );
 		TIM_Cmd( TIM17, ENABLE );
 	}
 	mstime++;
-	if ( mstime == 50 ) {
+	if ( mstime == 10 ) {
 		TIM_CtrlPWMOutputs( TIM17, DISABLE );
 		TIM_Cmd( TIM17, DISABLE );
 		BEEP_OFF;
@@ -92,7 +92,7 @@ void sound(void)
 	switch ( event ) {
 	case SND_BEEP:
 		mstime = 0;
-		pSnd = NULL;// sndBeepState;
+		pSnd = sndBeepState;
 		break;
 	case SND_PERMIT:
 		canSound = 1;

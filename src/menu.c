@@ -104,7 +104,7 @@ int dPowerOn(uint8_t ev) {
 
 void dshowV(uint32_t val) { //из dworkScreen()
 	disClear();
-	disPrint(0, 0, "  ИЗМЕРЕНИЕ");
+	disPrint(0, 6, "ИЗМЕРЕНИЕ");
 	disPrint(1, 0, "F = ");
 	disUINT32_to_str(1, 0xFF, val );
 	disPrin(" y.e.");

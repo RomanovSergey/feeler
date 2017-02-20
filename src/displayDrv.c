@@ -197,19 +197,18 @@ void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
 
 uint16_t getUCode( const char* str, uint16_t *code ) {
 	uint32_t abc = 0;
-	uint16_t ret = 0; // на сколько символов передвинуть указатель строки
 
 	if ( *str != 0) { // if not NULL symbol
 		if ( (*str & 0x80) == 0) { // if 1 byte
 			*code = *str;
-			ret++;
-			return ret;
+			return 1;
 		}
 		if ( (*str & 0xE0) == 0xC0 ) { // if 2 bytes 0b110..
 			abc = *str;
 			str++;
 			if ( (*str & 0xC0) != 0x80 ) { // error no 0b10.. bits
-				return 0;
+				*code = 0;
+				return 1;
 			}
 			abc <<= 8;
 			abc |= *str;
@@ -217,13 +216,31 @@ uint16_t getUCode( const char* str, uint16_t *code ) {
 			*code = abc & 0x3F;
 			abc >>= 2;
 			*code |= abc & 0x07C0;
-
-			ret = 2;
-			return ret; // error
+			return 2;
 		}
-//		if ( (code & 0xF0) == 0xE0 ) { // if 3 bytes 0b1110..
-//
-//		}
+		if ( (*str & 0xF0) == 0xE0 ) { // if 3 bytes 0b1110..
+			abc = *str;
+			str++;
+			if ( (*str & 0xC0) != 0x80 ) { // error no 0b10.. bits
+				*code = 0;
+				return 1;
+			}
+			abc <<= 8;
+			abc |= *str;
+			if ( (*str & 0xC0) != 0x80 ) { // error no 0b10.. bits
+				*code = 0;
+				return 2;
+			}
+			abc <<= 8;
+			abc |= *str;
+
+			*code = abc & 0x3F;
+			abc >>= 2;
+			*code |= abc & 0x0FC0;
+			abc >>= 2;
+			*code |= abc & 0xF000;
+			return 3;
+		}
 	}
 	*code = 0;
 	return 0;

@@ -132,7 +132,6 @@ int dworkScreen(uint8_t ev) {
 		return 0;
 	}
 	dshowV( getFreq() );
-	//dshowV(32768);
 	return 1;//надо перерисовать
 }
 
@@ -180,12 +179,7 @@ int dmainM(uint8_t ev) {
 	disPrint(2,6, "Выбор калибр.");
 	disPrint(3,6, "Польз.калибр.");
 	disPrint(4,6, "Просмотр таб.");
-	disPrint( curs + 1, 0, "*");
-
-//	curs==0 ? disPrint(1,0,"*") : disPrint(1,0," ") ; disPrin("Наверх");
-//	curs==1 ? disPrint(2,0,"→") : disPrint(2,0," ") ; disPrin("Выбор калибр.");
-//	curs==2 ? disPrint(3,0,"→") : disPrint(3,0," ") ; disPrin("Польз.калибр.");
-//	curs==3 ? disPrint(4,0,"→") : disPrint(4,0," ") ; disPrin("Просмотр таб.");
+	disPrint( curs + 1, 0, "→");
 	return 1;
 }
 
@@ -230,11 +224,7 @@ int duserCalib(uint8_t ev) {
 	disPrint(1,6,"Наверх");
 	disPrint(2,6,"Железо");
 	disPrint(3,6,"Алюминий");
-	disPrint( curs + 1, 0, "*");
-
-//	curs==0 ? disPrint(1,0,">") : disPrint(1,0," ") ; disPrin("Наверх");
-//	curs==1 ? disPrint(2,0,"→") : disPrint(2,0," ") ; disPrin("Железо");
-//	curs==2 ? disPrint(3,0,"→") : disPrint(3,0," ") ; disPrin("Алюминий");
+	disPrint( curs + 1, 0, "→");
 	return 1;
 }
 

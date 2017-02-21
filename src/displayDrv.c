@@ -10,6 +10,7 @@
 #include "displayDrv.h"
 #include "menu.h"
 #include "main.h"
+#include "uart.h"
 #include <string.h>
 
 #define RESET_LOW    GPIO_ResetBits(GPIOB,GPIO_Pin_1)   //reset display on
@@ -195,6 +196,17 @@ void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
 	}
 }
 
+/*
+ * getUCode() получает код unicode из строки формата UTF-8
+ * Здесь в упрощенной функции, код unicode ограничен 2-я байтами,
+ * а соответсвующий код UTF-8 может занимать от 1 до 3х байт.
+ * Params:
+ *   *str - указатель на строку
+ *   *code - куда запишется результат - код юникод
+ * Return:
+ *   от 0 до 3 - сколько байт занял символ (чтобы вызывающий код
+ *   в дальнейшем передвинул указатель строки на столько байт)
+ */
 uint16_t getUCode( const char* str, uint16_t *code ) {
 	uint32_t abc = 0;
 
@@ -219,26 +231,33 @@ uint16_t getUCode( const char* str, uint16_t *code ) {
 			return 2;
 		}
 		if ( (*str & 0xF0) == 0xE0 ) { // if 3 bytes 0b1110..
-			abc = *str;
+			urtPrint("0b1110\n");
+			abc = *str; // first byte
+			abc <<= 8;
 			str++;
 			if ( (*str & 0xC0) != 0x80 ) { // error no 0b10.. bits
 				*code = 0;
+				urtPrint("utf8 err1\n");
 				return 1;
 			}
+			abc |= *str; // second byte
 			abc <<= 8;
-			abc |= *str;
+			str++;
 			if ( (*str & 0xC0) != 0x80 ) { // error no 0b10.. bits
 				*code = 0;
+				urtPrint("utf8 err2\n");
 				return 2;
 			}
-			abc <<= 8;
-			abc |= *str;
+			abc |= *str; // third byte
 
 			*code = abc & 0x3F;
 			abc >>= 2;
 			*code |= abc & 0x0FC0;
 			abc >>= 2;
 			*code |= abc & 0xF000;
+			urtPrint("get code: ");
+			urt_uint16_to_5str( *code );
+			urtPrint("\n");
 			return 3;
 		}
 	}
@@ -246,6 +265,13 @@ uint16_t getUCode( const char* str, uint16_t *code ) {
 	return 0;
 }
 
+/*
+ * disPrint() печать строки на дисплей
+ * Параметры:
+ *   numstr - номер строки 0..5
+ *   X - горизонтальная координата 0..84 (до 13 символов)
+ *   *s  - указатель на строку
+ */
 void disPrint(uint8_t numstr, uint8_t X, const char* s)
 {
 	uint16_t code;
@@ -271,39 +297,6 @@ void disPrint(uint8_t numstr, uint8_t X, const char* s)
 	}
 }
 
-/*
- * prints печать строки на дисплей
- * Параметры:
- *   numstr - номер строки 0..5
- *   X - горизонтальная координата 0..84 (до 13 символов)
- *       если x == 0xFF, то берется сохраненная (предыдущая) координата
- *   *s  - указатель на строку
- */
-//void dPrint(uint8_t numstr, uint8_t X, const char* s) {
-//	uint16_t code;
-//
-//	Xcoor = X;
-//
-//	if ( Xcoor > 77 ) {
-//		return;
-//	} else if ( numstr > 5 ) {
-//		return;
-//	}
-//	Ycoor = numstr * 8;
-//	while ( *s != 0 ) {
-//		code = *s;
-//		if ( code >= 0x80 ) {//utf-8
-//			code = code << 8;
-//			code |= *(++s);
-//		}
-//		wrChar_x_8( Xcoor, Ycoor, 5, code);
-//		Xcoor += 6;
-//		s++;
-//		if ( Xcoor >= 84 ) {
-//			break;
-//		}
-//	}
-//}
 
 void disPrin(const char* s) {
 	uint16_t code;
@@ -313,15 +306,13 @@ void disPrin(const char* s) {
 	} else if ( Ycoor > 47 ) {
 		return;
 	}
-	while ( *s != 0 ) {
-		code = *s;
-		if ( code >= 0x80 ) {//utf-8
-			code = code << 8;
-			code |= *(++s);
+	while (1) {
+		s += getUCode( s, &code );
+		if ( code == 0 ) { // если конец строки
+			break;
 		}
 		wrChar_x_8( Xcoor, Ycoor, 5, code);
 		Xcoor += 6;
-		s++;
 		if ( Xcoor >= 84 ) {
 			break;
 		}

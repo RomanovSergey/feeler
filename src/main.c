@@ -29,12 +29,13 @@ void init(void);
 int main(void) {
 	init();
 
+	urtPrint("Hello world!\n");
 	while (1) {
 		magnetic();
 		sound();
 		display();
 		buttons();
-		//uart();
+		uart();
 		power();
 
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
@@ -162,7 +163,7 @@ void init(void) {
 	USART_InitStruct.USART_WordLength = USART_WordLength_8b;
 	USART_InitStruct.USART_StopBits = USART_StopBits_1;
 	USART_InitStruct.USART_Parity = USART_Parity_No;
-	USART_InitStruct.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
+	USART_InitStruct.USART_Mode = USART_Mode_Tx;// | USART_Mode_Rx;
 	USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 	USART_Init(USART1, &USART_InitStruct);
 	//

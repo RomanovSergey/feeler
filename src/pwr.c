@@ -9,6 +9,7 @@
 #include "main.h"
 #include "displayDrv.h"
 #include "pwr.h"
+#include "menu.h"
 
 //===========================================================================
 //===========================================================================
@@ -23,7 +24,7 @@ static uint8_t pwrhead = 0;
  * возвращает 1 если в кольцевом буфере есть свободное место для элемента, иначе 0
  */
 static int pwrHasFree(void) {
-	if ( ((pwrtail + 1) & PWR_LEN_MASK) == pwrhead ) {
+	if ( ((pwrhead + 1) & PWR_LEN_MASK) == pwrtail ) {
 		return 0;//свободного места нет
 	}
 	return 1;//есть свободное место
@@ -64,7 +65,7 @@ void power(void)
 	static const uint16_t CTIM = 1000;
 	static int startTime = 0;
 
-	if ( startTime > CTIM ) {
+	if ( startTime > CTIM ) { // working mode
 		static uint32_t alarm = 0;
 		uint8_t event;
 
@@ -73,6 +74,11 @@ void power(void)
 		switch ( event ) {
 		case PWR_POWEROFF:
 			PWR_OFF;
+			BL1_OFF;
+			BL2_OFF;
+			DISRESET_LOW;
+			pdisp = emptyDisplay;
+			//dispPutEv( DIS_REPAINT );
 			break;
 		case PWR_ALARM_3000:
 			alarm = 3000;
@@ -85,9 +91,9 @@ void power(void)
 				dispPutEv( DIS_ALARM );
 			}
 		}
-	} else if ( startTime < CTIM ) {
+	} else if ( startTime < CTIM ) { // waiting mode
 		startTime++;
-	} else if ( startTime == CTIM ) {
+	} else if ( startTime == CTIM ) { // switch on mode
 		startTime++;
 		PWR_ON;
 		BL1_ON;

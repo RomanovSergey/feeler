@@ -23,7 +23,6 @@ void magnetic(void) {
 	if (measureDone == 1) {//для синхронизации с прерыванием
 		measureDone = 0;
 		freq = irq_freq;
-		//put_event( Emeasure );//событие - данные измерения готовы
 		dispPutEv( DIS_MEASURE );//событие - данные измерения готовы
 	}
 }
@@ -40,14 +39,6 @@ uint32_t getFreq(void) {
  */
 void TIM2_IRQHandler(void) {
 	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_Update) ) {
-//		static int ledstat = 0;
-//		if (ledstat) {
-//			ledstat = 0;
-//			GREEN_ON;
-//		} else {
-//			ledstat = 1;
-//			GREEN_OFF;
-//		}
 		irq_freq = TIM_GetCounter( TIM3 );
 		TIM_SetCounter(TIM3, 0);
 		measureDone = 1;//флаг - данные измерения готовы

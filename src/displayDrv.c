@@ -7,14 +7,13 @@
 
 #include "stm32f0xx.h"
 #include "fonts/fontA.h"
+#include "fonts/font_10x16.h"
 #include "displayDrv.h"
 #include "menu.h"
 #include "main.h"
 #include "uart.h"
 #include <string.h>
 
-#define RESET_LOW    GPIO_ResetBits(GPIOB,GPIO_Pin_1)   //reset display on
-#define RESET_HI     GPIO_SetBits(GPIOB,GPIO_Pin_1)     //reset display off
 #define CMD_MODE     GPIO_ResetBits(GPIOA,GPIO_Pin_15)  //command mode
 #define DATA_MODE    GPIO_SetBits(GPIOA,GPIO_Pin_15)    //data mode
 #define CE_LOW       GPIO_ResetBits(GPIOB,GPIO_Pin_6)   //chip enable on
@@ -70,7 +69,7 @@ void initDisplay(void) {
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	RESET_LOW;//reset display
+	DISRESET_LOW;//reset display
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;//display spi2_clk
@@ -97,7 +96,7 @@ void initDisplay(void) {
 	SPI_Cmd(SPI1, ENABLE);
 	while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
-	RESET_HI;
+	DISRESET_HI;
 
 	NVIC_InitStruct.NVIC_IRQChannel = SPI1_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 2;
@@ -183,16 +182,27 @@ void setPixel(int x, int y) {
 /*
  * Печать символа шириной width высотой 8 p.
  * x, y - координаты верхнего левого пикселя
- * code - код utf-8 выводимого символа [width] байт
+ * code - код utf-8 выводимого символа 5 байт
  */
-void wrChar_x_8(uint8_t x, uint8_t y, uint8_t width, uint16_t code) {
-	const char* img = getFont5x8( code );//getImg5x8( code );
+void wrChar_5_8(uint8_t x, uint8_t y, uint16_t code) {
+	const char* img = getFont5x8( code );
 	if ( (y%8) == 0 ) {//условие быстрой печати
 		y >>= 3;
-		for ( int dy = 0;  dy < width;  dy++ ) {
+		for ( int dy = 0;  dy < 5;  dy++ ) {
 			coor[x][y] = img[dy];
 			x++;
 		}
+	}
+}
+
+void wrChar_10_16(uint8_t x, uint8_t y, uint16_t code) {
+	const uint16_t* f = getFont10x16( code );
+
+	y >>= 3;
+	for ( int dy = 0;  dy < 10;  dy++ ) {
+		coor[x][y] = 0xff & f[dy];
+		coor[x][y+1] = f[dy] >> 8;
+		x++;
 	}
 }
 
@@ -289,7 +299,7 @@ void disPrint(uint8_t numstr, uint8_t X, const char* s)
 		if ( code == 0 ) { // если конец строки
 			break;
 		}
-		wrChar_x_8( Xcoor, Ycoor, 5, code);
+		wrChar_5_8( Xcoor, Ycoor, code);
 		Xcoor += 6;
 		if ( Xcoor >= 84 ) {
 			break;
@@ -311,7 +321,7 @@ void disPrin(const char* s) {
 		if ( code == 0 ) { // если конец строки
 			break;
 		}
-		wrChar_x_8( Xcoor, Ycoor, 5, code);
+		wrChar_5_8( Xcoor, Ycoor, code);
 		Xcoor += 6;
 		if ( Xcoor >= 84 ) {
 			break;
@@ -344,7 +354,7 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 	y = numstr * 8;
 
 	if (nmb == 0){//если ноль
-		wrChar_x_8( Xcoor, y, 5, '0');
+		wrChar_5_8( Xcoor, y, '0');
 		Xcoor += 6;
 	}else{
 		while (nmb > 0) {
@@ -352,8 +362,42 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 			nmb /=10;
 		}
 		for (j = 0; j < i; ++j) {
-			wrChar_x_8( Xcoor, y, 5, tmp_str [i-j-1]);//перевернем
+			wrChar_5_8( Xcoor, y, tmp_str [i-j-1]);//перевернем
 			Xcoor += 6;
+			if ( Xcoor >= 84 ) {
+				break;
+			}
+		}
+	}
+}
+
+void disUINT32_to_strFONT2 (uint8_t numstr, uint8_t X, uint32_t nmb)
+{
+	char tmp_str [11] = {0,};
+	int i = 0, j;
+	uint8_t y;
+
+	if ( X != 0xFF ) {
+		Xcoor = X;
+	}
+	if ( Xcoor > 77 ) {
+		return;
+	} else if ( numstr > 2 ) {
+		return;
+	}
+	y = numstr * 16;
+
+	if (nmb == 0){//если ноль
+		wrChar_10_16( Xcoor, y, '0');
+		Xcoor += 12;
+	}else{
+		while (nmb > 0) {
+			tmp_str[i++] = (nmb % 10) + '0';
+			nmb /=10;
+		}
+		for (j = 0; j < i; ++j) {
+			wrChar_10_16( Xcoor, y, tmp_str [i-j-1]);//перевернем
+			Xcoor += 12;
 			if ( Xcoor >= 84 ) {
 				break;
 			}
@@ -367,14 +411,14 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 #define DISP_LEN_BITS   4
 #define DISP_LEN_BUF    (1<<DISP_LEN_BITS) // 8 или 2^3 или (1<<3)
 #define DISP_LEN_MASK   (DISP_LEN_BUF-1)   // bits: 0000 0111
-static uint8_t bufEv[DISP_LEN_BUF] = {0};
-static uint8_t tail = 0;
-static uint8_t head = 0;
+static uint8_t dbufEv[DISP_LEN_BUF] = {0};
+static uint8_t dtail = 0;
+static uint8_t dhead = 0;
 /*
  * возвращает 1 если в кольцевом буфере есть свободное место для элемента, иначе 0
  */
 static int dispHasFree(void) {
-	if ( ((tail + 1) & DISP_LEN_MASK) == head ) {
+	if ( ((dhead + 1) & DISP_LEN_MASK) == dtail ) {
 		return 0;//свободного места нет
 	}
 	return 1;//есть свободное место
@@ -388,8 +432,8 @@ int dispPutEv(uint8_t event) {
 		return 1;//событие с нулевым кодом пусть не будет для удобства
 	}
 	if ( dispHasFree() ) {
-		bufEv[head] = event;
-		head = (1 + head) & DISP_LEN_MASK;//инкремент кругового индекса
+		dbufEv[dhead] = event;
+		dhead = (1 + dhead) & DISP_LEN_MASK;//инкремент кругового индекса
 		return 1;
 	} else {
 		return 0;//нет места в буфере
@@ -401,9 +445,9 @@ int dispPutEv(uint8_t event) {
  */
 uint8_t dispGetEv(void) {
 	uint8_t event = 0;
-	if (head != tail) {//если в буфере есть данные
-		event = bufEv[tail];
-		tail = (1 + tail) & DISP_LEN_MASK;//инкремент кругового индекса
+	if (dhead != dtail) {//если в буфере есть данные
+		event = dbufEv[dtail];
+		dtail = (1 + dtail) & DISP_LEN_MASK;//инкремент кругового индекса
 	}
 	return event;
 }

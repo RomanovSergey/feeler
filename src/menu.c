@@ -104,18 +104,19 @@ int dPowerOn(uint8_t ev) {
 
 void dshowV(uint32_t val) { //из dworkScreen()
 	disClear();
-	disPrint(0, 6, "ИЗМЕРЕНИЕ");
-	disPrint(1, 0, "F = ");
-	disUINT32_to_str(1, 0xFF, val );
-	disPrin(" y.e.");
-	//disPrint(2, 6, " u = ");
-	uint16_t microValue = micro( val );
+	disPrint(0, 18, "ИЗМЕРЕНИЕ");
+
+	//disUINT32_to_strFONT2(1, 0, val); // freq
+	disUINT32_to_strFONT2(1, 0, 10345UL);
+	//disUINT32_to_strFONT2(2, 0, 26789UL);
+
+	/*uint16_t microValue = micro( val );
 	if ( microValue == 0xFFFF ) {
-		disPrint(3,24,"Air");
+		disPrint(4,0,"Air");
 	} else {
 		disUINT32_to_str(3, 24, microValue );
 		disPrin(" um");
-	}
+	}*/
 }
 
 /*
@@ -127,8 +128,14 @@ int dworkScreen(uint8_t ev) {
 	case DIS_PUSH_OK:
 		pdisp = dmainM;//на главное меню
 		return 0;
+	case DIS_LONGPUSH_OK:
+//		pwrPutEv( PWR_POWEROFF );
+//		return 0;
+//	case DIS_PULL_OK:
 	case DIS_PUSH_L:
-		//pdisp = dPowerOn;
+	case DIS_PUSH_R:
+	case DIS_LONGPUSH_L:
+	case DIS_LONGPUSH_R:
 		return 0;
 	}
 	dshowV( getFreq() );

@@ -22,7 +22,7 @@ static uint8_t sndhead = 0;
  * возвращает 1 если в кольцевом буфере есть свободное место для элемента, иначе 0
  */
 static int sndHasFree(void) {
-	if ( ((sndtail + 1) & SND_LEN_MASK) == sndhead ) {
+	if ( ((sndhead + 1) & SND_LEN_MASK) == sndtail ) {
 		return 0;//свободного места нет
 	}
 	return 1;//есть свободное место

@@ -81,30 +81,38 @@ void debounce(button_t *b, uint8_t instance) {
  *   1 - есть новое событие
  *   0 - нет новых событий
  */
-int buttonEv(button_t *b, int *push, int *Lpush) {
+int buttonEv(button_t *b, int *push, int *Lpush) //, int *pull)
+{
 	static const int LONGPUSH = 2000; //ms время для генер. события длит. нажатия
 	*push = 0;
 	*Lpush = 0;
 	switch ( b->state ) {
-	case 0:
+	case 0: // ждем первое нажатие кнопки
 		if ( b->current == 1 ) { //первое нажатие кнопки
 			b->state = 1;
 			b->tim = 0;
 			*push = 1;
 			return 1;
 		}
-		break;
-	case 1:
+		return 0;
+	case 1: // ждем первое отпускание кнопки или длительное нажатие
 		if ( b->current == 0 ) { //первое отпускание кнопки
 			b->state = 0;
 			b->tim = 0;
+			//*pull = 1;
+			return 0;//1;
 		}
-		if ( b->tim == LONGPUSH ) {
-			b->tim++;
+		if ( b->tim == LONGPUSH ) { //длительное нажатие кнопки
+			b->tim = 0;
+			b->state = 2;
 			*Lpush = 1;
 			return 1;
-		} else if ( b->tim > LONGPUSH ) {
-			//таймеру нечего больше считать
+		}
+		break;
+	case 2: // здесь состояние дилтельного нажатия, ждем отпускания без генер. события
+		if ( b->current == 0 ) { //первое отпускание кнопки
+			b->state = 0;
+			b->tim = 0;
 			return 0;
 		}
 		break;
@@ -123,24 +131,30 @@ void buttons(void) {
 	static uint32_t timer_ms = 0;
 	static const uint32_t LEFT_TIME_MS = 30000UL;
 	int wasEvent = 0; // для генер. событ. при длит. отсутствий нажатий
-	int pushEv, LpushEv;
+	int pushEv, LpushEv;//, pullEv;
 
 	debounce( &B_OK, READ_B1 );
 	debounce( &B_R, READ_B2 );
 	debounce( &B_L, READ_B3 );
 
-	if ( buttonEv( &B_OK, &pushEv, &LpushEv ) ) {
+	if ( buttonEv( &B_OK, &pushEv, &LpushEv) ) //, &pullEv ) )
+	{
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_OK );
 			sndPutEv( SND_BEEP );
 		}
 		if ( LpushEv ) {
-			dispPutEv( DIS_LONGPUSH_OK );
+			//dispPutEv( DIS_LONGPUSH_OK );
+			pwrPutEv( PWR_POWEROFF );
 		}
+//		if ( pullEv ) {
+//			dispPutEv( DIS_PULL_OK );
+//		}
 	}
 
-	if ( buttonEv( &B_R, &pushEv, &LpushEv ) ) {
+	if ( buttonEv( &B_R, &pushEv, &LpushEv) ) //, &pullEv ) )
+	{
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_R );
@@ -151,7 +165,8 @@ void buttons(void) {
 		}
 	}
 
-	if ( buttonEv( &B_L, &pushEv, &LpushEv ) ) {
+	if ( buttonEv( &B_L, &pushEv, &LpushEv ) ) //, &pullEv ) )
+	{
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_L );
@@ -161,7 +176,7 @@ void buttons(void) {
 			dispPutEv( DIS_LONGPUSH_L );
 		}
 	}
-	// отслеживаем длительность простоя кнопок
+	// если длительно кнопки не нажимать, то выключим питание
 	if ( wasEvent ) {
 		timer_ms = 0;
 	} else {

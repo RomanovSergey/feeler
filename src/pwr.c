@@ -10,6 +10,7 @@
 #include "displayDrv.h"
 #include "pwr.h"
 #include "menu.h"
+#include "buttons.h"
 
 //===========================================================================
 //===========================================================================
@@ -78,7 +79,6 @@ void power(void)
 			BL2_OFF;
 			DISRESET_LOW;
 			pdisp = emptyDisplay;
-			//dispPutEv( DIS_REPAINT );
 			break;
 		case PWR_ALARM_3000:
 			alarm = 3000;
@@ -99,5 +99,6 @@ void power(void)
 		BL1_ON;
 		BL2_ON;
 		dispPutEv( DIS_PAINT );
+		pButton = butWait;
 	}
 }

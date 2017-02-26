@@ -16,7 +16,7 @@
 #define DIS_ALARM        3
 #define DIS_PUSH_OK      10
 #define DIS_LONGPUSH_OK  11
-//#define DIS_PULL_OK      12
+#define DIS_PULL_OK      12
 #define DIS_PUSH_L       20
 #define DIS_LONGPUSH_L   21
 #define DIS_PUSH_R       30

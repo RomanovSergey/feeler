@@ -61,6 +61,7 @@ void initDisplay(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	DISRESET_LOW;//reset display
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;//display Data/Command
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
@@ -68,8 +69,6 @@ void initDisplay(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	DISRESET_LOW;//reset display
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;//display spi2_clk
@@ -470,12 +469,11 @@ void display(void) {
 		}
 	}
 
-	if ( res ) {//если есть данные для отрисовки
-		disDMAsend();
-	}
-
 	if ( SPI1->SR & SPI_I2S_FLAG_BSY ) {
 		return;
+	}
+	if ( res ) {//если есть данные для отрисовки
+		disDMAsend();
 	}
 	if ( 1 == dstat ) {
 		DMA_Cmd(DMA1_Channel3, DISABLE);

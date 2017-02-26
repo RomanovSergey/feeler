@@ -27,6 +27,7 @@ GLOBAL_T g;
 void init(void);
 
 int main(void) {
+	DISRESET_LOW;//reset display
 	init();
 
 	urtPrint("Hello world!\n");
@@ -173,7 +174,6 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
-
 
 	//15====================================================================
 	//COMP1 ================================================================

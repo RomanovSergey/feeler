@@ -10,6 +10,9 @@
 #include "sound.h"
 #include "displayDrv.h"
 #include "pwr.h"
+#include "buttons.h"
+
+pBut_t pButton = butNo;
 
 #define READ_B1     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_8)
 #define READ_B2     GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_5)
@@ -81,9 +84,9 @@ void debounce(button_t *b, uint8_t instance) {
  *   1 - есть новое событие
  *   0 - нет новых событий
  */
-int buttonEv(button_t *b, int *push, int *Lpush) //, int *pull)
+int buttonEv(button_t *b, int *push, int *Lpush, int *pull)
 {
-	static const int LONGPUSH = 2000; //ms время для генер. события длит. нажатия
+	static const int LONGPUSH = 1000; //ms время для генер. события длит. нажатия
 	*push = 0;
 	*Lpush = 0;
 	switch ( b->state ) {
@@ -99,8 +102,8 @@ int buttonEv(button_t *b, int *push, int *Lpush) //, int *pull)
 		if ( b->current == 0 ) { //первое отпускание кнопки
 			b->state = 0;
 			b->tim = 0;
-			//*pull = 1;
-			return 0;//1;
+			*pull = 1;
+			return 1;
 		}
 		if ( b->tim == LONGPUSH ) { //длительное нажатие кнопки
 			b->tim = 0;
@@ -125,69 +128,100 @@ int buttonEv(button_t *b, int *push, int *Lpush) //, int *pull)
 }
 
 /*
- * this function called from main loop every 1 ms
+ * ждем pwr.c пока включится мнимое питание
  */
-void buttons(void) {
-	static uint32_t timer_ms = 0;
-	static const uint32_t LEFT_TIME_MS = 30000UL;
+void butNo(void) {
+	return;
+}
+
+/*
+ * Ждем, пока все кнопку влючения питания отпустят
+ */
+void butWait(void) {
+	if ( B_OK.current != 0 ) {
+		return;
+	}
+//	if ( B_R.current != 0 ) {
+//		return;
+//	}
+//	if ( B_L.current != 0 ) {
+//		return;
+//	}
+	pButton = butProcess;
+}
+
+void butProcess(void)
+{
+	int pushEv, LpushEv, pullEv;
 	int wasEvent = 0; // для генер. событ. при длит. отсутствий нажатий
-	int pushEv, LpushEv;//, pullEv;
 
-	debounce( &B_OK, READ_B1 );
-	debounce( &B_R, READ_B2 );
-	debounce( &B_L, READ_B3 );
+	static uint32_t timer_ms = 0;
+	static const uint32_t LEFT_TIME_MS = 20000UL;
 
-	if ( buttonEv( &B_OK, &pushEv, &LpushEv) ) //, &pullEv ) )
+
+	if ( buttonEv( &B_OK, &pushEv, &LpushEv, &pullEv ) )
 	{
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_OK );
-			sndPutEv( SND_BEEP );
+//			sndPutEv( SND_BEEP );
 		}
 		if ( LpushEv ) {
 			//dispPutEv( DIS_LONGPUSH_OK );
 			pwrPutEv( PWR_POWEROFF );
 		}
-//		if ( pullEv ) {
-//			dispPutEv( DIS_PULL_OK );
-//		}
+		if ( pullEv ) {
+			dispPutEv( DIS_PULL_OK );
+		}
 	}
 
-	if ( buttonEv( &B_R, &pushEv, &LpushEv) ) //, &pullEv ) )
+	if ( buttonEv( &B_R, &pushEv, &LpushEv, &pullEv ) )
 	{
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_R );
-			sndPutEv( SND_BEEP );
+//			sndPutEv( SND_BEEP );
 		}
 		if ( LpushEv ) {
 			dispPutEv( DIS_LONGPUSH_R );
 		}
 	}
 
-	if ( buttonEv( &B_L, &pushEv, &LpushEv ) ) //, &pullEv ) )
+	if ( buttonEv( &B_L, &pushEv, &LpushEv, &pullEv ) )
 	{
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_L );
-			sndPutEv( SND_BEEP );
+//			sndPutEv( SND_BEEP );
 		}
 		if ( LpushEv ) {
 			dispPutEv( DIS_LONGPUSH_L );
 		}
 	}
+
 	// если длительно кнопки не нажимать, то выключим питание
 	if ( wasEvent ) {
 		timer_ms = 0;
 	} else {
 		if ( timer_ms == LEFT_TIME_MS ) {
 			timer_ms++;
-			//to generate event
 			pwrPutEv( PWR_POWEROFF );
 		} else {
 			timer_ms++;
 		}
 	}
+}
+
+/*
+ * this function called from main loop every 1 ms
+ */
+void buttons(void)
+{
+	debounce( &B_OK, READ_B1 );
+	debounce( &B_R, READ_B2 );
+	debounce( &B_L, READ_B3 );
+
+	pButton();
 }
 
 

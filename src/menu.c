@@ -104,10 +104,10 @@ int dPowerOn(uint8_t ev) {
 
 void dshowV(uint32_t val) { //из dworkScreen()
 	disClear();
-	disPrint(0, 18, "ИЗМЕРЕНИЕ");
+	disPrint(0, 0, "ИЗМЕРЕНИЕ");
 
-	//disUINT32_to_strFONT2(1, 0, val); // freq
-	disUINT32_to_strFONT2(1, 0, 10345UL);
+	disUINT32_to_strFONT2(1, 0, val); // freq
+	//disUINT32_to_strFONT2(1, 0, 10345UL);
 	//disUINT32_to_strFONT2(2, 0, 26789UL);
 
 	/*uint16_t microValue = micro( val );
@@ -127,11 +127,10 @@ int dworkScreen(uint8_t ev) {
 	switch (ev) {
 	case DIS_PUSH_OK:
 		pdisp = dmainM;//на главное меню
+		sndPutEv( SND_BEEP );
 		return 0;
-	case DIS_LONGPUSH_OK:
-//		pwrPutEv( PWR_POWEROFF );
-//		return 0;
 //	case DIS_PULL_OK:
+	case DIS_LONGPUSH_OK:
 	case DIS_PUSH_L:
 	case DIS_PUSH_R:
 	case DIS_LONGPUSH_L:
@@ -151,6 +150,7 @@ int dmainM(uint8_t ev) {
 	case DIS_PUSH_OK:
 		if ( curs == 0 ) {        // Наверх
 			pdisp = dworkScreen;
+			sndPutEv( SND_BEEP );
 			curs = 0;
 		} else if ( curs == 1 ) { // Выбор калибровки
 			prev  = dmainM;
@@ -179,6 +179,10 @@ int dmainM(uint8_t ev) {
 			curs = 0;
 		}
 		break;
+	case DIS_MEASURE:
+	case DIS_LONGPUSH_L:
+	case DIS_LONGPUSH_R:
+		return 0;
 	}
 	disClear();
 	disPrint(0,0,"Главное меню");

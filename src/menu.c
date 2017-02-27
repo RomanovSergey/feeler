@@ -107,8 +107,6 @@ void dshowV(uint32_t val) { //из dworkScreen()
 	disPrint(0, 0, "ИЗМЕРЕНИЕ");
 
 	disUINT32_to_strFONT2(1, 0, val); // freq
-	//disUINT32_to_strFONT2(1, 0, 10345UL);
-	//disUINT32_to_strFONT2(2, 0, 26789UL);
 
 	/*uint16_t microValue = micro( val );
 	if ( microValue == 0xFFFF ) {
@@ -128,10 +126,16 @@ int dworkScreen(uint8_t ev) {
 	case DIS_PUSH_OK:
 		pdisp = dmainM;//на главное меню
 		sndPutEv( SND_BEEP );
+		mgPutEv( MG_OFF );
 		return 0;
-//	case DIS_PULL_OK:
-	case DIS_LONGPUSH_OK:
+
 	case DIS_PUSH_L:
+		mgPutEv( MG_ON );
+		break;
+	case DIS_PULL_L:
+		mgPutEv( MG_OFF );
+		break;
+	case DIS_LONGPUSH_OK:
 	case DIS_PUSH_R:
 	case DIS_LONGPUSH_L:
 	case DIS_LONGPUSH_R:

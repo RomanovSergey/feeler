@@ -197,6 +197,9 @@ void butProcess(void)
 		if ( LpushEv ) {
 			dispPutEv( DIS_LONGPUSH_L );
 		}
+		if ( pullEv ) {
+			dispPutEv( DIS_PULL_L );
+		}
 	}
 
 	// если длительно кнопки не нажимать, то выключим питание

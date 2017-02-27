@@ -197,8 +197,10 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_ResetBits(GPIOA,GPIO_Pin_6);
 	//
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_7);
+	GPIOA->MODER |= (((uint32_t)GPIO_Mode_OUT) << (6 * 2)); //PA6 -> gpio func
 
 	//======================================================================
 	//PA0 COMP1_INM ========================================================
@@ -234,7 +236,7 @@ void init(void) {
 	TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);
 	//
 	TIM_SetCounter(TIM3, 0);
-	TIM_Cmd(TIM3, ENABLE);
+	TIM_Cmd(TIM3, DISABLE);
 
 	//======================================================================
 	//timer2 is 32 bit for count time while t3 counts pulse ================
@@ -248,10 +250,11 @@ void init(void) {
 	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
 	//
-	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+	TIM_ClearFlag(TIM2, TIM_FLAG_Update);
+	TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
 	//
 	TIM_SetCounter(TIM2, 0);
-	TIM_Cmd(TIM2, ENABLE);
+	TIM_Cmd(TIM2, DISABLE);
 	//
 	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;//main priority

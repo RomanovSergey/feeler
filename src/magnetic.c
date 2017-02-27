@@ -13,11 +13,12 @@
 static int measureDone = 0;
 static uint32_t irq_freq = 0;
 static uint32_t freq = 0;
+static int magstat = 0; // magnetic status: 0-off; 1-on.
 
 //===========================================================================
 //===========================================================================
-//для кругового буфера событий модуля power
-#define MG_LEN_BITS   3
+//для кругового буфера событий
+#define MG_LEN_BITS   2
 #define MG_LEN_BUF    (1<<MG_LEN_BITS) // 8 или 2^3 или (1<<3)
 #define MG_LEN_MASK   (MG_LEN_BUF-1)   // bits: 0000 0111
 static uint8_t mgbufEv[MG_LEN_BUF] = {0};
@@ -36,7 +37,7 @@ static int mgHasFree(void) {
  * помещает событие в круговой буфер
  * return 1 - успешно; 0 - нет места в буфере
  */
-int mgPutEv(uint8_t event) {
+int mgPutEv(uint8_t event) { // public
 	if (event == 0) {
 		return 1;//событие с нулевым кодом пусть не будет для удобства
 	}
@@ -52,7 +53,7 @@ int mgPutEv(uint8_t event) {
  *  извлекает событие из кругового буфера
  *  если 0 - нет событий
  */
-uint8_t mgGetEv(void) {
+uint8_t mgGetEv(void) { // private
 	uint8_t event = 0;
 	if (mghead != mgtail) {//если в буфере есть данные
 		event = mgbufEv[mgtail];
@@ -85,6 +86,14 @@ uint32_t getFreq(void) {
 }
 
 /*
+ * magGetStat() получить состояние магнита
+ * Return: 0 - magnit is off; 1 - magnit is on.
+ */
+int magGetStat(void) {
+	return magstat;
+}
+
+/*
  * Вызывается из main()
  * для синхронизации переменных (частоты и генерации события)
  * т.к. программа однопоточная, а measureDone устанавливается
@@ -93,20 +102,31 @@ uint32_t getFreq(void) {
 void magnetic(void)
 {
 	uint8_t event;
-
-	if (measureDone == 1) {//для синхронизации с прерыванием
+	if (measureDone == 1) { //для синхронизации с прерыванием
 		measureDone = 0;
 		freq = irq_freq;
-		dispPutEv( DIS_MEASURE );//событие - данные измерения готовы
+		dispPutEv( DIS_MEASURE ); //событие - данные измерения готовы
 	}
-
-	event = mgGetEv();
+	event = mgGetEv(); // заберем событие из кругового буфера событий магнита
 	switch ( event ) {
-	case MG_ON:
-
+	case MG_ON: // включим магнит
+		magstat = 1;
+		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
+		TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+		GPIOA->MODER |= (((uint32_t)GPIO_Mode_AF) << (6 * 2)); //PA6 -> AF
+		TIM_SetCounter(TIM3, 0);
+		TIM_Cmd(TIM3, ENABLE);
+		TIM_SetCounter(TIM2, 0);
+		TIM_Cmd(TIM2, ENABLE);
 		break;
-	case MG_OFF:
-
+	case MG_OFF: // выключим магнит
+		magstat = 0;
+		GPIOA->MODER |= (((uint32_t)GPIO_Mode_OUT) << (6 * 2)); //PA6 -> gpio func
+		TIM_Cmd(TIM3, DISABLE);
+		TIM_Cmd(TIM2, DISABLE);
+		TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
+		freq = 0;
+		irq_freq = 0;
 		break;
 	}
 }

@@ -22,7 +22,8 @@
 #define DISP_X  84
 #define DISP_Y  48
 static uint8_t coor[DISP_X][DISP_Y / 8];//буфер дисплея 84x48 пикселей (1 бит на пиксель)
-static uint8_t dstat = 0;//dma status
+static uint8_t dmaEnd = 0;   //dma status
+static uint8_t dispBusy = 0; //display busy
 static uint8_t Xcoor = 0;//текущая координата Х для разных функций печати на дисплей
 static uint8_t Ycoor = 0;//текущая координата Y для разных функций печати на дисплей
 
@@ -145,7 +146,8 @@ void initDisplay(void) {
  */
 void DMA1_Channel2_3_IRQHandler (void) {
 	if ( SET == DMA_GetFlagStatus(DMA1_FLAG_TC3) ) {
-		dstat = 1;
+		dmaEnd = 1;
+		dispBusy = 0;
 		DMA_ClearITPendingBit(DMA1_IT_TC3);
 	}
 }
@@ -216,7 +218,7 @@ void wrChar_10_16(uint8_t x, uint8_t y, uint16_t code) {
  *   от 0 до 3 - сколько байт занял символ (чтобы вызывающий код
  *   в дальнейшем передвинул указатель строки на столько байт)
  */
-uint16_t getUCode( const char* str, uint16_t *code ) {
+int getUCode( const char* str, uint16_t *code ) {
 	uint32_t abc = 0;
 
 	if ( *str != 0) { // if not NULL symbol
@@ -457,28 +459,28 @@ pdisp_t pdisp = emptyDisplay;
 
 void display(void) {
 	uint8_t event;
-	static pdisp_t pdold = emptyDisplay;//указатель на предыдущую функцию меню
+	static pdisp_t pdold = emptyDisplay; //указатель на предыдущую функцию меню
 	int res = 0;
 
-	if ( SPI1->SR & SPI_I2S_FLAG_BSY ) {
+	if ( dispBusy == 1 ) { // SPI1->SR & SPI_I2S_FLAG_BSY ) {
 		return;
+	}
+	if ( dmaEnd == 1 ) {
+		DMA_Cmd(DMA1_Channel3, DISABLE);
+		CE_HI;
+		dmaEnd = 0;
 	}
 	event = dispGetEv();
 	if ( event != 0 ) {
-		res = pdisp(event);//отобразим функцию меню на экране (единственное место отображения)
+		res = pdisp(event); //отобразим функцию меню на экране (единственное место отображения)
 		if ( pdold != pdisp ) {
 			pdold = pdisp;
-			dispPutEv( DIS_REPAINT );//меню поменялось, надо перерисовать
+			dispPutEv( DIS_REPAINT ); //меню поменялось, надо перерисовать
 		}
 	}
-
-	if ( res ) {//если есть данные для отрисовки
+	if ( res ) { //если есть данные для отрисовки
+		dispBusy = 1;
 		disDMAsend();
-	}
-	if ( 1 == dstat ) {
-		DMA_Cmd(DMA1_Channel3, DISABLE);
-		CE_HI;
-		dstat = 0;
 	}
 }
 

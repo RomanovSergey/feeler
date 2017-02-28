@@ -58,13 +58,13 @@ button_t B_L = {
  */
 void debounce(button_t *b, uint8_t instance) {
 	static const int ANTI_TIME = 20;    //time of debounce
-	if ( instance == 0 ) {//if button is pushed ************************
+	if ( instance == 0 ) { //if button is pushed ************************
 		if ( b->debcount < ANTI_TIME ) {
 			b->debcount++;//filter
 		} else {
 			b->current = 1;
 		}
-	} else {//if button is pulled **************************************
+	} else { //if button is pulled **************************************
 		if ( b->debcount > 0 ) {
 			b->debcount--;//filter
 		} else {

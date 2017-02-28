@@ -18,7 +18,7 @@ static int magstat = 0; // magnetic status: 0-off; 1-on.
 //===========================================================================
 //===========================================================================
 //для кругового буфера событий
-#define MG_LEN_BITS   2
+#define MG_LEN_BITS   4
 #define MG_LEN_BUF    (1<<MG_LEN_BITS) // 8 или 2^3 или (1<<3)
 #define MG_LEN_MASK   (MG_LEN_BUF-1)   // bits: 0000 0111
 static uint8_t mgbufEv[MG_LEN_BUF] = {0};

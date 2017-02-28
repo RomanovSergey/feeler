@@ -79,16 +79,17 @@ void debounce(button_t *b, uint8_t instance) {
  * Params:
  *   *b - указатель на структуру кнопки
  *   *push - событие нажатия
- *   *Lpush - событие длительного нажатия
+ *   *Long - событие длительного нажатия
+ *   *pull - событие отпускания кнопки
  * Return:
  *   1 - есть новое событие
  *   0 - нет новых событий
  */
-int buttonEv(button_t *b, int *push, int *Lpush, int *pull)
+int buttonEv(button_t *b, int *push, int *Long, int *pull)
 {
 	static const int LONGPUSH = 1000; //ms время для генер. события длит. нажатия
 	*push = 0;
-	*Lpush = 0;
+	*Long = 0;
 	switch ( b->state ) {
 	case 0: // ждем первое нажатие кнопки
 		if ( b->current == 1 ) { //первое нажатие кнопки
@@ -108,15 +109,16 @@ int buttonEv(button_t *b, int *push, int *Lpush, int *pull)
 		if ( b->tim == LONGPUSH ) { //длительное нажатие кнопки
 			b->tim = 0;
 			b->state = 2;
-			*Lpush = 1;
+			*Long = 1;
 			return 1;
 		}
 		break;
-	case 2: // здесь состояние дилтельного нажатия, ждем отпускания без генер. события
+	case 2: // здесь состояние дилтельного нажатия, ждем отпускания
 		if ( b->current == 0 ) { //первое отпускание кнопки
 			b->state = 0;
 			b->tim = 0;
-			return 0;
+			*pull = 1;
+			return 1;
 		}
 		break;
 	default:
@@ -152,22 +154,21 @@ void butWait(void) {
 
 void butProcess(void)
 {
-	int pushEv, LpushEv, pullEv;
+	int pushEv, LongpushEv, pullEv;
 	int wasEvent = 0; // для генер. событ. при длит. отсутствий нажатий
 
 	static uint32_t timer_ms = 0;
 	static const uint32_t LEFT_TIME_MS = 20000UL;
 
 
-	if ( buttonEv( &B_OK, &pushEv, &LpushEv, &pullEv ) )
+	if ( buttonEv( &B_OK, &pushEv, &LongpushEv, &pullEv ) )
 	{
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_OK );
 //			sndPutEv( SND_BEEP );
 		}
-		if ( LpushEv ) {
-			//dispPutEv( DIS_LONGPUSH_OK );
+		if ( LongpushEv ) {
 			pwrPutEv( PWR_POWEROFF );
 		}
 		if ( pullEv ) {
@@ -175,26 +176,26 @@ void butProcess(void)
 		}
 	}
 
-	if ( buttonEv( &B_R, &pushEv, &LpushEv, &pullEv ) )
+	if ( buttonEv( &B_R, &pushEv, &LongpushEv, &pullEv ) )
 	{
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_R );
 //			sndPutEv( SND_BEEP );
 		}
-		if ( LpushEv ) {
+		if ( LongpushEv ) {
 			dispPutEv( DIS_LONGPUSH_R );
 		}
 	}
 
-	if ( buttonEv( &B_L, &pushEv, &LpushEv, &pullEv ) )
+	if ( buttonEv( &B_L, &pushEv, &LongpushEv, &pullEv ) )
 	{
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_L );
 //			sndPutEv( SND_BEEP );
 		}
-		if ( LpushEv ) {
+		if ( LongpushEv ) {
 			dispPutEv( DIS_LONGPUSH_L );
 		}
 		if ( pullEv ) {

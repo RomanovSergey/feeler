@@ -460,6 +460,9 @@ void display(void) {
 	static pdisp_t pdold = emptyDisplay;//указатель на предыдущую функцию меню
 	int res = 0;
 
+	if ( SPI1->SR & SPI_I2S_FLAG_BSY ) {
+		return;
+	}
 	event = dispGetEv();
 	if ( event != 0 ) {
 		res = pdisp(event);//отобразим функцию меню на экране (единственное место отображения)
@@ -469,9 +472,6 @@ void display(void) {
 		}
 	}
 
-	if ( SPI1->SR & SPI_I2S_FLAG_BSY ) {
-		return;
-	}
 	if ( res ) {//если есть данные для отрисовки
 		disDMAsend();
 	}

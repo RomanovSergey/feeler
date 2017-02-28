@@ -13,7 +13,8 @@
 
 int mgPutEv(uint8_t event);
 
-void magnetic(void);
+int magGetStat(void);
 uint32_t getFreq(void);
+void magnetic(void);
 
 #endif /* MAGNETIC_H_ */

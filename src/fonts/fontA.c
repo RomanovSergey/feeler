@@ -6,6 +6,9 @@
  * https://ru.wikipedia.org/wiki/UTF-8
  * http://www.intuit.ru/studies/courses/648/504/lecture/11466 (бинарный поиск)
  *
+ * Programs: KCharSelect
+ * apt-get install gucharmap
+ *
  *  Created on: 20 февр. 2017 г.
  *      Author: se
  */

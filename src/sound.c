@@ -92,7 +92,7 @@ void sound(void)
 	switch ( event ) {
 	case SND_BEEP:
 		mstime = 0;
-		pSnd = sndBeepState;//NULL;//
+		pSnd = NULL;//sndBeepState;//
 		break;
 	case SND_PERMIT:
 		canSound = 1;

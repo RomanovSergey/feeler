@@ -105,6 +105,9 @@ int dPowerOn(uint8_t ev) {
 void dshowV(uint32_t val) { //из dworkScreen()
 	disClear();
 	disPrint(0, 0, "ИЗМЕРЕНИЕ");
+	if ( magGetStat() ) {
+		disPrin(" *");
+	}
 
 	disUINT32_to_strFONT2(1, 0, val); // freq
 
@@ -131,12 +134,12 @@ int dworkScreen(uint8_t ev) {
 
 	case DIS_PUSH_L:
 		mgPutEv( MG_ON );
-		break;
+		return 0;
 	case DIS_PULL_L:
 		mgPutEv( MG_OFF );
-		break;
+		return 0;
+//	case DIS_PUSH_R:
 	case DIS_LONGPUSH_OK:
-	case DIS_PUSH_R:
 	case DIS_LONGPUSH_L:
 	case DIS_LONGPUSH_R:
 		return 0;

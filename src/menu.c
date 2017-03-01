@@ -128,7 +128,6 @@ int dworkScreen(uint8_t ev) {
 	switch (ev) {
 	case DIS_PUSH_OK:
 		pdisp = dmainM;//на главное меню
-		sndPutEv( SND_BEEP );
 		mgPutEv( MG_OFF );
 		return 0;
 
@@ -157,7 +156,6 @@ int dmainM(uint8_t ev) {
 	case DIS_PUSH_OK:
 		if ( curs == 0 ) {        // Наверх
 			pdisp = dworkScreen;
-			sndPutEv( SND_BEEP );
 			curs = 0;
 		} else if ( curs == 1 ) { // Выбор калибровки
 			prev  = dmainM;
@@ -214,6 +212,7 @@ int duserCalib(uint8_t ev) {
 			curs = 2;
 		}
 		break;
+	case DIS_PULL_L:
 	case DIS_PUSH_R:
 		curs++;
 		if ( curs > 2 ) {

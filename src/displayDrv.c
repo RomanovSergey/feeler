@@ -444,7 +444,7 @@ int dispPutEv(uint8_t event) {
  *  извлекает событие из кругового буфера
  *  если 0 - нет событий
  */
-uint8_t dispGetEv(void) {
+static uint8_t dispGetEv(void) {
 	uint8_t event = 0;
 	if (dhead != dtail) {//если в буфере есть данные
 		event = dbufEv[dtail];

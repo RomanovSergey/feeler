@@ -78,9 +78,9 @@ void debounce(button_t *b, uint8_t instance) {
  * чтобы вызывающий софт генерировал нужные события нужным устрйствам
  * Params:
  *   *b - указатель на структуру кнопки
- *   *push - событие нажатия
- *   *Long - событие длительного нажатия
- *   *pull - событие отпускания кнопки
+ *   *push - событие нажатия (изначально должен быть нулем)
+ *   *Long - событие длительного нажатия (изначально должен быть нулем)
+ *   *pull - событие отпускания кнопки (изначально должен быть нулем)
  * Return:
  *   1 - есть новое событие
  *   0 - нет новых событий
@@ -88,8 +88,7 @@ void debounce(button_t *b, uint8_t instance) {
 int buttonEv(button_t *b, int *push, int *Long, int *pull)
 {
 	static const int LONGPUSH = 1000; //ms время для генер. события длит. нажатия
-	*push = 0;
-	*Long = 0;
+
 	switch ( b->state ) {
 	case 0: // ждем первое нажатие кнопки
 		if ( b->current == 1 ) { //первое нажатие кнопки
@@ -143,62 +142,46 @@ void butWait(void) {
 	if ( B_OK.current != 0 ) {
 		return;
 	}
-//	if ( B_R.current != 0 ) {
-//		return;
-//	}
-//	if ( B_L.current != 0 ) {
-//		return;
-//	}
 	pButton = butProcess;
 }
 
 void butProcess(void)
 {
-	int pushEv, LongpushEv, pullEv;
+	int pushEv = 0;
+	int LongpushEv = 0;
+	int pullEv = 0;
 	int wasEvent = 0; // для генер. событ. при длит. отсутствий нажатий
 
 	static uint32_t timer_ms = 0;
 	static const uint32_t LEFT_TIME_MS = 20000UL;
 
-
-	if ( buttonEv( &B_OK, &pushEv, &LongpushEv, &pullEv ) )
-	{
+	if ( buttonEv( &B_OK, &pushEv, &LongpushEv, &pullEv ) ) {
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_OK );
-//			sndPutEv( SND_BEEP );
-		}
-		if ( LongpushEv ) {
+		} else if ( LongpushEv ) {
 			pwrPutEv( PWR_POWEROFF );
-		}
-		if ( pullEv ) {
+		} else if ( pullEv ) {
 			dispPutEv( DIS_PULL_OK );
 		}
 	}
 
-	if ( buttonEv( &B_R, &pushEv, &LongpushEv, &pullEv ) )
-	{
+	if ( buttonEv( &B_R, &pushEv, &LongpushEv, &pullEv ) ) {
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_R );
-//			sndPutEv( SND_BEEP );
-		}
-		if ( LongpushEv ) {
+		} else if ( LongpushEv ) {
 			dispPutEv( DIS_LONGPUSH_R );
 		}
 	}
 
-	if ( buttonEv( &B_L, &pushEv, &LongpushEv, &pullEv ) )
-	{
+	if ( buttonEv( &B_L, &pushEv, &LongpushEv, &pullEv ) ) {
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_L );
-//			sndPutEv( SND_BEEP );
-		}
-		if ( LongpushEv ) {
+		} else if ( LongpushEv ) {
 			dispPutEv( DIS_LONGPUSH_L );
-		}
-		if ( pullEv ) {
+		} else if ( pullEv ) {
 			dispPutEv( DIS_PULL_L );
 		}
 	}
@@ -225,7 +208,7 @@ void buttons(void)
 	debounce( &B_R, READ_B2 );
 	debounce( &B_L, READ_B3 );
 
-	pButton();
+	pButton(); //указатель на функцию
 }
 
 

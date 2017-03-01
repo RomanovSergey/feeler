@@ -9,6 +9,7 @@
 #include "main.h"
 #include "displayDrv.h"
 #include "magnetic.h"
+#include "sound.h"
 
 static int measureDone = 0;
 static uint32_t irq_freq = 0;
@@ -122,13 +123,14 @@ void magnetic(void)
 		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 		GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 		GPIO_Init(GPIOA, &GPIO_InitStructure);
-		GPIO_ResetBits(GPIOA,GPIO_Pin_6);
+		//GPIO_ResetBits(GPIOA,GPIO_Pin_6);
 		GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_7);  //PA6 -> AF
 
 		TIM_SetCounter(TIM3, 0);
 		TIM_Cmd(TIM3, ENABLE);
 		TIM_SetCounter(TIM2, 0);
 		TIM_Cmd(TIM2, ENABLE);
+		dispPutEv( DIS_MEASURE );
 		break;
 	case MG_OFF: // выключим магнит
 		magstat = 0;
@@ -147,6 +149,7 @@ void magnetic(void)
 		freq = 0;
 		irq_freq = 0;
 		dispPutEv( DIS_MEASURE );
+		sndPutEv( SND_BEEP ); // пикнем динамиком
 		break;
 	}
 }

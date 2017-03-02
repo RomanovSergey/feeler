@@ -130,14 +130,13 @@ int dworkScreen(uint8_t ev) {
 		pdisp = dmainM;//на главное меню
 		mgPutEv( MG_OFF );
 		return 0;
-
 	case DIS_PUSH_L:
 		mgPutEv( MG_ON );
 		return 0;
 	case DIS_PULL_L:
 		mgPutEv( MG_OFF );
 		return 0;
-//	case DIS_PUSH_R:
+	case DIS_PUSH_R:
 	case DIS_LONGPUSH_OK:
 	case DIS_LONGPUSH_L:
 	case DIS_LONGPUSH_R:
@@ -212,7 +211,6 @@ int duserCalib(uint8_t ev) {
 			curs = 2;
 		}
 		break;
-	case DIS_PULL_L:
 	case DIS_PUSH_R:
 		curs++;
 		if ( curs > 2 ) {

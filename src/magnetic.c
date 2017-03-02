@@ -149,7 +149,6 @@ void magnetic(void)
 		freq = 0;
 		irq_freq = 0;
 		dispPutEv( DIS_MEASURE );
-		sndPutEv( SND_BEEP ); // пикнем динамиком
 		break;
 	}
 }

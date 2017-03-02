@@ -11,6 +11,7 @@
 #include "pwr.h"
 #include "menu.h"
 #include "buttons.h"
+#include "magnetic.h"
 
 //===========================================================================
 //===========================================================================
@@ -82,6 +83,11 @@ void power(void)
 			break;
 		case PWR_ALARM_3000:
 			alarm = 3000;
+			break;
+		case PWR_OVERTIME:
+			if ( !magGetStat() ) {
+				pwrPutEv( PWR_POWEROFF );
+			}
 			break;
 		}
 

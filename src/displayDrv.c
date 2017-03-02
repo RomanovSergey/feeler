@@ -342,7 +342,6 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 {
 	char tmp_str [11] = {0,};
 	int i = 0, j;
-	uint8_t y;
 
 	if ( X != 0xFF ) {
 		Xcoor = X;
@@ -352,10 +351,10 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 	} else if ( numstr > 5 ) {
 		return;
 	}
-	y = numstr * 8;
+	Ycoor = numstr * 8;
 
 	if (nmb == 0){//если ноль
-		wrChar_5_8( Xcoor, y, '0');
+		wrChar_5_8( Xcoor, Ycoor, '0');
 		Xcoor += 6;
 	}else{
 		while (nmb > 0) {
@@ -363,7 +362,7 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 			nmb /=10;
 		}
 		for (j = 0; j < i; ++j) {
-			wrChar_5_8( Xcoor, y, tmp_str [i-j-1]);//перевернем
+			wrChar_5_8( Xcoor, Ycoor, tmp_str [i-j-1]);//перевернем
 			Xcoor += 6;
 			if ( Xcoor >= 84 ) {
 				break;

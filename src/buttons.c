@@ -78,9 +78,9 @@ void debounce(button_t *b, uint8_t instance) {
  * чтобы вызывающий софт генерировал нужные события нужным устрйствам
  * Params:
  *   *b - указатель на структуру кнопки
- *   *push - событие нажатия (изначально должен быть нулем)
- *   *Long - событие длительного нажатия (изначально должен быть нулем)
- *   *pull - событие отпускания кнопки (изначально должен быть нулем)
+ *   *push - событие нажатия
+ *   *Long - событие длительного нажатия
+ *   *pull - событие отпускания кнопки
  * Return:
  *   1 - есть новое событие
  *   0 - нет новых событий
@@ -88,6 +88,9 @@ void debounce(button_t *b, uint8_t instance) {
 int buttonEv(button_t *b, int *push, int *Long, int *pull)
 {
 	static const int LONGPUSH = 1000; //ms время для генер. события длит. нажатия
+	*push = 0;
+	*Long = 0;
+	*pull = 0;
 
 	switch ( b->state ) {
 	case 0: // ждем первое нажатие кнопки
@@ -147,39 +150,39 @@ void butWait(void) {
 
 void butProcess(void)
 {
-	int pushEv = 0;
-	int LongpushEv = 0;
-	int pullEv = 0;
+	int pushEv;
+	int LongEv;
+	int pullEv;
 	int wasEvent = 0; // для генер. событ. при длит. отсутствий нажатий
 
 	static uint32_t timer_ms = 0;
 	static const uint32_t LEFT_TIME_MS = 20000UL;
 
-	if ( buttonEv( &B_OK, &pushEv, &LongpushEv, &pullEv ) ) {
+	if ( buttonEv( &B_OK, &pushEv, &LongEv, &pullEv ) ) {
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_OK );
-		} else if ( LongpushEv ) {
+		} else if ( LongEv ) {
 			pwrPutEv( PWR_POWEROFF );
 		} else if ( pullEv ) {
 			dispPutEv( DIS_PULL_OK );
 		}
 	}
 
-	if ( buttonEv( &B_R, &pushEv, &LongpushEv, &pullEv ) ) {
+	if ( buttonEv( &B_R, &pushEv, &LongEv, &pullEv ) ) {
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_R );
-		} else if ( LongpushEv ) {
+		} else if ( LongEv ) {
 			dispPutEv( DIS_LONGPUSH_R );
 		}
 	}
 
-	if ( buttonEv( &B_L, &pushEv, &LongpushEv, &pullEv ) ) {
+	if ( buttonEv( &B_L, &pushEv, &LongEv, &pullEv ) ) {
 		wasEvent = 1;
 		if ( pushEv ) {
 			dispPutEv( DIS_PUSH_L );
-		} else if ( LongpushEv ) {
+		} else if ( LongEv ) {
 			dispPutEv( DIS_LONGPUSH_L );
 		} else if ( pullEv ) {
 			dispPutEv( DIS_PULL_L );
@@ -191,8 +194,8 @@ void butProcess(void)
 		timer_ms = 0;
 	} else {
 		if ( timer_ms == LEFT_TIME_MS ) {
-			timer_ms++;
-			pwrPutEv( PWR_POWEROFF );
+			timer_ms = 0;
+			pwrPutEv( PWR_OVERTIME );
 		} else {
 			timer_ms++;
 		}

@@ -22,12 +22,10 @@
 #define BEEP_OFF     GPIO_ResetBits(GPIOB,GPIO_Pin_7)
 
 
-typedef struct {
-	uint32_t air;//air's frequency on power on
-	//uint32_t alarm;//будильник для отсчета времени отображения временного меню
-} GLOBAL_T;
-
-extern GLOBAL_T g;
+//typedef struct {
+//	uint32_t air;//air's frequency on power on
+//} GLOBAL_T;
+//extern GLOBAL_T g;
 
 #define NULL ((void *)0)
 

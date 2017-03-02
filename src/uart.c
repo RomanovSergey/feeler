@@ -53,7 +53,7 @@ int urtPut(uint8_t d) {
  *  если -1 - нет данных
  */
 int urtGet(void) {
-	uint8_t d = -1;
+	int d = -1;
 	if (urthead != urttail) {//если в буфере есть данные
 		d = urtbufEv[urttail];
 		urttail = (1 + urttail) & URT_LEN_MASK;//инкремент кругового индекса

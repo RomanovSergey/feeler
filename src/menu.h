@@ -16,6 +16,9 @@ int dworkScreen(uint8_t event);
 int dmainM(uint8_t ev);
 int duserCalib(uint8_t ev);
 
+int dcalibDone(uint8_t ev);
+int dcalibFe(uint8_t ev);
+int dcalibAl(uint8_t ev);
 
 //===========================================================================
 //===========================================================================

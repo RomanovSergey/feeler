@@ -22,7 +22,7 @@
 #include "sound.h"
 #include "pwr.h"
 
-GLOBAL_T g;
+//GLOBAL_T g;
 
 void init(void);
 
@@ -56,7 +56,7 @@ void init(void) {
 	TIM_OCInitTypeDef        TIM_OCInitStruct;
 	USART_InitTypeDef        USART_InitStruct;
 	NVIC_InitTypeDef         NVIC_InitStruct;
-	////ADC_InitTypeDef          ADC_InitStruct;
+	//ADC_InitTypeDef          ADC_InitStruct;
 
 	initCalib();
 

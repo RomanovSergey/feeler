@@ -20,6 +20,9 @@ int dcalibDone(uint8_t ev);
 int dcalibFe(uint8_t ev);
 int dcalibAl(uint8_t ev);
 
+int dflashDebug(uint8_t ev);
+int dflashShow(uint8_t ev);
+
 //===========================================================================
 //===========================================================================
 

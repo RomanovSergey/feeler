@@ -157,7 +157,7 @@ int dmainM(uint8_t ev) {
 			curs = 0;
 		} else if ( curs == 1 ) { // Выбор калибровки
 			prev  = dmainM;
-			pdisp = dnotDone;
+			pdisp = dflashDebug;//dnotDone;
 		} else if ( curs == 2 ) { // Польз. калибр.
 			pdisp = duserCalib;
 		} else if ( curs == 3 ) { // Просмотр таб.
@@ -333,16 +333,77 @@ int dcalibAl(uint8_t ev) {
 	return calib(ev, 1);
 }
 
+/*
+ * Эксперименты с флэш памятью
+ */
+int dflashDebug(uint8_t ev)
+{
+	static uint8_t curs = 0;
+
+	switch (ev) {
+	case DIS_PUSH_L:
+		if ( curs > 0 ) {
+			curs--;
+		} else {
+			curs = 3;
+		}
+		break;
+	case DIS_PUSH_R:
+		curs++;
+		if ( curs > 3 ) {
+			curs = 0;
+		}
+		break;
+	case DIS_PUSH_OK:
+		if ( curs == 0 ) { // Наверх
+			pdisp = dmainM;
+			curs = 0;
+		} else if ( curs == 1 ) { // Железо
+			//pdisp  = dcalibFe;
+		} else if ( curs == 2 ) { // Алюминий
+			//pdisp  = dcalibAl;
+		} else {
+			//prev  = duserCalib;
+			//pdisp = dmessageError1;
+			//curs = 0;
+		}
+		return 0;
+	}
+	disClear();
+	disPrint(0,0,"Flash Debug");
+	disPrint(1,6,  "Наверх");
+	disPrint(2,6,  "Show");
+	disPrint(3,6,  "Write inc");
+	disPrint(4,6,  "Zero  inc");
+	disPrint( curs + 1, 0, "→");
+	return 1;
+}
+
+/*
+ * Выводит начало содержимого последней страницы
+ */
+int dflashShow(uint8_t ev)
+{
+	switch (ev) {
+	case DIS_PUSH_L:
+		pdisp = dflashDebug;
+		break;
+	}
+	disClear();
+	disPrint(0,0,"Show Flash");
+	return 1;
+}
+
 //===========================================================================
 //===========================================================================
 ///*
 // * Фикирует измеренное значение, пока нажата кнопка
 // */
-//int keepValM(uint8_t ev) {
+//int dkeepVal(uint8_t ev) {
 //	static uint32_t keepVal = 0;
 //	switch (ev) {
-//	case Eb1Pull:
-//		pmenu = workScreenM;
+//	case DIS_PULL_L:
+//		pdisp = workScreenM;
 //		keepVal = 0;
 //		return 0;
 //	case Eb1Long:

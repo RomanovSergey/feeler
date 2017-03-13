@@ -14,6 +14,7 @@
 #include "displayDrv.h"
 #include "pwr.h"
 #include "sound.h"
+#include "flash.h"
 
 static pdisp_t prev = NULL;
 
@@ -391,6 +392,17 @@ int dflashShow(uint8_t ev)
 	}
 	disClear();
 	disPrint(0,0,"Show Flash");
+	{
+		uint32_t addr = 0x0800F800;
+		uint16_t val;
+		for ( int i = 0; i < 5; i++ ) { // 5 строчек
+			for ( int k = 0; k < 3; k++) {
+				val = fread16( addr );
+				addr += 2;
+				disHexHalfWord( i, k*5*6, val );
+			}
+		}
+	}
 	return 1;
 }
 

@@ -405,6 +405,50 @@ void disUINT32_to_strFONT2 (uint8_t numstr, uint8_t X, uint32_t nmb)
 	}
 }
 
+/**
+ * Convert char to hex string
+ */
+void char_to_strHex(uint8_t V, uint8_t *d)
+{
+	if ((V >> 4) < 10)
+	{
+		*d++ = '0' + (V >> 4);
+	}else
+	{
+		*d++ = (V >> 4) - 10 + 'A';
+	}
+	if ((V & 0x0F) < 10)
+	{
+		*d++ = '0' + (V & 0x0F);
+	}else
+	{
+		*d++ = (V & 0x0F) - 10 + 'A';
+	}
+}
+
+void disHexHalfWord (uint8_t numstr, uint8_t X, uint16_t nmb)
+{
+	uint8_t str[10];
+
+	if ( X != 0xFF ) {
+		Xcoor = X;
+	}
+	if ( Xcoor > 77 ) {
+		return;
+	} else if ( numstr > 2 ) {
+		return;
+	}
+	Ycoor = numstr * 16;
+
+	char_to_strHex(nmb & 0xFF, &str[0]);
+	char_to_strHex(nmb >> 8,   &str[4]);
+
+	for ( int i = 0; i < 4; i++ ) {
+		wrChar_5_8( Xcoor, Ycoor, str[i] );
+		Xcoor += 6;
+	}
+}
+
 //===========================================================================
 //===========================================================================
 //для кругового буфера событий

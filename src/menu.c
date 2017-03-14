@@ -346,12 +346,12 @@ int dflashDebug(uint8_t ev)
 		if ( curs > 0 ) {
 			curs--;
 		} else {
-			curs = 3;
+			curs = 4;
 		}
 		break;
 	case DIS_PUSH_R:
 		curs++;
-		if ( curs > 3 ) {
+		if ( curs > 4 ) {
 			curs = 0;
 		}
 		break;
@@ -359,10 +359,10 @@ int dflashDebug(uint8_t ev)
 		if ( curs == 0 ) { // Наверх
 			pdisp = dmainM;
 			curs = 0;
-		} else if ( curs == 1 ) { // Железо
-			//pdisp  = dcalibFe;
-		} else if ( curs == 2 ) { // Алюминий
-			//pdisp  = dcalibAl;
+		} else if ( curs == 1 ) { // Show
+			pdisp  = dflashShow;
+		} else if ( curs == 2 ) { // Write inc
+			//pdisp  = ;
 		} else {
 			//prev  = duserCalib;
 			//pdisp = dmessageError1;
@@ -376,6 +376,7 @@ int dflashDebug(uint8_t ev)
 	disPrint(2,6,  "Show");
 	disPrint(3,6,  "Write inc");
 	disPrint(4,6,  "Zero  inc");
+	disPrint(5,6,  "Erase page");
 	disPrint( curs + 1, 0, "→");
 	return 1;
 }
@@ -395,7 +396,7 @@ int dflashShow(uint8_t ev)
 	{
 		uint32_t addr = 0x0800F800;
 		uint16_t val;
-		for ( int i = 0; i < 5; i++ ) { // 5 строчек
+		for ( int i = 1; i < 6; i++ ) { // 5 строчек
 			for ( int k = 0; k < 3; k++) {
 				val = fread16( addr );
 				addr += 2;

@@ -10,6 +10,7 @@
 
 #define PWR_POWEROFF    1
 #define PWR_OVERTIME    2
+#define PWR_ALARM_1000  10
 #define PWR_ALARM_3000  30
 
 int pwrPutEv(uint8_t event);

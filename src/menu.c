@@ -15,8 +15,11 @@
 #include "pwr.h"
 #include "sound.h"
 #include "flash.h"
+#include <string.h>
 
 static pdisp_t prev = NULL;
+
+static FLASH_Status fstat;
 
 /*
  * Не существующее меню
@@ -66,10 +69,8 @@ int dmessageError1(uint8_t ev) {
 		break;
 	}
 	disClear();
-	disPrint(0,0,"Error error!!!");
-	disPrint(1,0,"Вы сделали");
-	disPrint(2,0,"что то не");
-	disPrint(3,0,"хорошее");
+	disPrint(0,18,"Error!");
+	disPrint(3,12,"Ошибка!");
 	return 1;
 }
 
@@ -340,6 +341,7 @@ int dcalibAl(uint8_t ev) {
 int dflashDebug(uint8_t ev)
 {
 	static uint8_t curs = 0;
+	static uint16_t hw = 0x0A01;
 
 	switch (ev) {
 	case DIS_PUSH_L:
@@ -362,11 +364,18 @@ int dflashDebug(uint8_t ev)
 		} else if ( curs == 1 ) { // Show
 			pdisp  = dflashShow;
 		} else if ( curs == 2 ) { // Write inc
-			//pdisp  = ;
-		} else {
-			//prev  = duserCalib;
-			//pdisp = dmessageError1;
-			//curs = 0;
+			fstat = fwriteInc( hw );
+			hw++;
+			prev = dflashDebug;
+			pdisp  = dstatusFlash;
+		} else if ( curs == 3 ) { // Zero  inc
+			fstat = fzeroInc();
+			prev = dflashDebug;
+			pdisp  = dstatusFlash;
+		} else if ( curs == 4 ) { // Erase page
+			fstat = ferasePage();
+			prev = dflashDebug;
+			pdisp  = dstatusFlash;
 		}
 		return 0;
 	}
@@ -404,6 +413,56 @@ int dflashShow(uint8_t ev)
 			}
 		}
 	}
+	return 1;
+}
+
+/*
+ * пишет статус операции записи - для отладки
+ */
+int dstatusFlash(uint8_t ev)
+{
+	switch (ev) {
+	case DIS_ALARM://сработал будильник
+		if ( prev != NULL ) {
+			pdisp = prev;
+			prev = NULL;
+		} else {
+			pdisp = dworkScreen;
+		}
+		return 0;
+	case DIS_MEASURE:
+		return 0;
+	case DIS_REPAINT:
+		pwrPutEv( PWR_ALARM_1000 );//заведем будильник отображения данного сообщения
+		break;
+	}
+	char str[28];
+	disClear();
+	disPrint(0,0,"Status Flash");
+	switch (fstat) {
+	case FLASH_BUSY:
+		strcpy(str, "BUSY");
+		break;
+	case FLASH_ERROR_WRP:
+		strcpy(str, "ERROR_WRP");
+		break;
+	case FLASH_ERROR_PROGRAM:
+		strcpy(str, "ERR_PROGRAM");
+		break;
+	case FLASH_COMPLETE:
+		strcpy(str, "COMPLETE");
+		break;
+	case FLASH_TIMEOUT:
+		strcpy(str, "TIMEOUT");
+		break;
+	default:
+		if ( fstat == 0 ) {
+			strcpy(str, "NO SPACE");
+		} else {
+			strcpy(str, "UNKNOWN");
+		}
+	}
+	disPrint(2,0, str);
 	return 1;
 }
 

@@ -81,6 +81,9 @@ void power(void)
 			DISRESET_LOW;
 			pdisp = emptyDisplay;
 			break;
+		case PWR_ALARM_1000:
+			alarm = 1000;
+			break;
 		case PWR_ALARM_3000:
 			alarm = 3000;
 			break;

@@ -117,3 +117,39 @@ FLASH_Status ferasePage( void )
 	return fstat;
 }
 
+//=====================================================
+
+typedef struct {
+	uint16_t   id;  // айди записи
+	uint16_t   len; // длина записи = id + len + ptr + xor (вся запись)
+	uint16_t*  ptr;
+	uint16_t   xor;
+} ImageInfo_t;
+
+
+/*
+ * Находит адрес во флэш, доступную для записи
+ */
+uint32_t fFindAddrToWrite()
+{
+	uint32_t addr = PAGE62;
+	uint16_t data;
+	do {
+		data = fread16( addr );
+		if ( data == 0xFFFF ) {
+			return addr;
+		}
+		//uint16_t id = data;
+		uint16_t len = fread16( addr + 2 );
+		addr += len;
+	} while ( 1 );
+	return 0;
+}
+
+/*
+ * Сохраняет образ на флэш
+ */
+void fsaveImage( uint8_t ID, uint8_t* buf, uint8_t len )
+{
+
+}

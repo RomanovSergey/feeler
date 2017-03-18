@@ -157,27 +157,57 @@ typedef struct {
 	uint16_t   xor;
 } ImageInfo_t;
 
+static const uint32_t PAGE_SIZE = 1024;
 static const uint16_t START = 0xABCD;
+static const uint16_t MIN_LEN = 10;
+static const uint16_t MAX_LEN = 160;
 
 /*
- * Находит запись во флэш с заданным ID
- * Если вернул 0, то ID не найден
+ * Производит поиск записи во флэш с заданным ID
+ * Params:
+ *   ID - номер ID которую хотим найти
+ *   addr - указатель на переменную, куда сохранится адрес записи
+ * Return:
+ *   0 - ID найден, *addr указывает на старт записи
+ *   1 - не нашли ID, дошли до пустой ячейки
+ *   2 - нет старта данных - критическая ошибка
+ *   3 - длина записи меньше минимально допустимой
+ *   4 - длина записи больше максимально допустимой
+ *   5 - выход за пределы страницы
  */
-uint32_t fFindIDaddr( uint16_t ID )
+int fFindIDaddr( uint16_t ID, uint32_t *addr )
 {
-	uint32_t addr = PAGE62;
 	uint16_t data;
+	uint16_t len;
+	uint16_t id;
+	*addr = PAGE62;
 	do {
-		data = fread16( addr );
+		data = fread16( *addr );
 		if ( data == START ) {
-
-
-			return addr;
+			id = fread16( *addr + 2 ); // смотрим ID
+			if ( ID == id ) {
+				return 0; // нашли!
+			} else {
+				// смотрим LEN
+				len = fread16( *addr + 4 );
+				if ( len < MIN_LEN ) {
+					return 3; // длина записи меньше минимально допустимой
+				} else if ( len > MAX_LEN ) {
+					return 4; // длина записи больше максимально допустимой
+				} else {
+					*addr += len; // перейдем на следующую запись
+					if ( (*addr - PAGE62) > PAGE_SIZE ) {
+						return 5; // выход за пределы страницы
+					}
+				}
+			}
+		} else if ( data == 0xFFFF ) {
+			return 1; // дошли до пустой ячейки
+		} else {
+			return 2; // нет старта данных
 		}
-		uint16_t len = fread16( addr + 4 );
-		addr += len;
 	} while ( 1 );
-	return 0;
+	return -1; // не достижимая инструкция
 }
 
 /*

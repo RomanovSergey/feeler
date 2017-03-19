@@ -36,6 +36,7 @@ void disPrin(const char* s);
 void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb);
 void disUINT32_to_strFONT2 (uint8_t numstr, uint8_t X, uint32_t nmb);
 void disHexHalfWord (uint8_t numstr, uint8_t X, uint16_t nmb);
+void disShowImg( const uint8_t *img );
 
 int dispPutEv(uint8_t event);
 

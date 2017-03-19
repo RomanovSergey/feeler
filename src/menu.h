@@ -23,6 +23,8 @@ int dcalibAl(uint8_t ev);
 int dflashDebug(uint8_t ev);
 int dflashShow(uint8_t ev);
 int dstatusFlash(uint8_t ev);
+
+int dimageShtrih(uint8_t ev);
 //===========================================================================
 //===========================================================================
 

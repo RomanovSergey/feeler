@@ -15,6 +15,7 @@
 #include "pwr.h"
 #include "sound.h"
 #include "flash.h"
+#include "fonts/img_shtrih.h"
 #include <string.h>
 
 static pdisp_t prev = NULL;
@@ -163,8 +164,7 @@ int dmainM(uint8_t ev) {
 		} else if ( curs == 2 ) { // Польз. калибр.
 			pdisp = duserCalib;
 		} else if ( curs == 3 ) { // Просмотр таб.
-			prev  = dmainM;
-			pdisp = dnotDone;
+			pdisp = dimageShtrih;
 		} else {
 			prev  = dmainM;
 			pdisp = dnotDone;
@@ -463,6 +463,21 @@ int dstatusFlash(uint8_t ev)
 		}
 	}
 	disPrint(2,0, str);
+	return 1;
+}
+
+/*
+ * Рисует картирку
+ */
+int dimageShtrih(uint8_t ev)
+{
+	switch (ev) {
+	case DIS_PUSH_L:
+		pdisp = dmainM;
+		break;
+	}
+	disClear();
+	disShowImg( (const uint8_t*)imgShtrih );
 	return 1;
 }
 

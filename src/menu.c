@@ -15,7 +15,7 @@
 #include "pwr.h"
 #include "sound.h"
 #include "flash.h"
-#include "fonts/img_shtrih.h"
+#include "fonts/img.h"
 #include <string.h>
 
 static pdisp_t prev = NULL;
@@ -471,13 +471,24 @@ int dstatusFlash(uint8_t ev)
  */
 int dimageShtrih(uint8_t ev)
 {
+	static int count = 0;
 	switch (ev) {
 	case DIS_PUSH_L:
 		pdisp = dmainM;
 		break;
+	case DIS_PUSH_OK:
+		count++;
+		if ( count > 1 ) {
+			count = 0;
+		}
+		break;
 	}
 	disClear();
-	disShowImg( (const uint8_t*)imgShtrih );
+	if ( count == 0 ) {
+		disShowImg( (const uint8_t*)imgShtrih );
+	} else {
+		disShowImg( (const uint8_t*)imgCar );
+	}
 	return 1;
 }
 

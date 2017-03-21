@@ -15,107 +15,91 @@
 #include "stm32f0xx_flash.h"
 #include "flash.h"
 
-//FLASH_Status FLASH_ProgramWord(uint32_t Address, uint32_t Data);
-
+#define PAGE60  0x0800F000
+#define PAGE61  0x0800F400
 #define PAGE62  0x0800F800
+#define PAGE63  0x0800FC00
 
-/*
- * Чтение 2х байтного значения с флэш по заданому адресу
- * Return: 1 - succes; 0 - fail.
- */
-uint16_t fread16(uint32_t Address)
-{
-	return *(__IO uint16_t*)Address;
-}
-
-/*
- * fFindEmptyAddr() - для отладки
- * находит адрес пустой 16и битной ячейки (0xFFFF)
- * начиная с начала 62й страницы
- *   Return: адрес пустой ячейки
- *   или 0 - адрес не найден
- */
-uint32_t fFindEmptyAddr(void)
-{
-	uint32_t addr = PAGE62;
-	for ( int i = 0; i < 5*3; i++ ) {
-		if ( fread16(addr) == 0xFFFF ) {
-			return addr;
-		}
-		addr += 2;
-	}
-	return 0;
-}
-
-/*
- * fwriteInc() - функция для отладки
- * находит пустой элемент, и записывает
- * на его место hw
- *   Return FLASH_Status
- */
-FLASH_Status fwriteInc( uint16_t hw )
-{
-	uint32_t addr = fFindEmptyAddr();
-	if ( addr == 0 ) {
-		return 0;
-	}
-	FLASH_Unlock();
-	FLASH_Status fstat = FLASH_ProgramHalfWord( addr, hw );
-	FLASH_Lock();
-
-	return fstat;
-}
-
-/*
- * fFindFilledAddr() - для отладки
- * находит адрес записанной 16и битной ячейки
- * (не равной 0xFFFF или 0х0000)
- * начиная с начала 62й страницы
- *   Return: адрес записанной ячейки
- *   или 0 - адрес не найден
- */
-uint32_t fFindFilledAddr(void)
-{
-	uint32_t addr = PAGE62;
-	uint16_t data;
-	for ( int i = 0; i < 5*3; i++ ) {
-		data = fread16( addr );
-		if ( data == 0xFFFF ) {
-			return 0;
-		}
-		if ( data != 0 ) {
-			return addr;
-		}
-		addr += 2;
-	}
-	return 0;
-}
-
-/*
- * fzeroInc() - функция для отладки
- * находит записаный элемент, и записывает
- * на его место 0
- *   Return FLASH_Status
- */
-FLASH_Status fzeroInc( void )
-{
-	uint32_t addr = fFindFilledAddr();
-	if ( addr == 0 ) {
-		return 0;
-	}
-	FLASH_Unlock();
-	FLASH_Status fstat = FLASH_ProgramHalfWord( addr, 0 );
-	FLASH_Lock();
-	return fstat;
-}
-
-FLASH_Status ferasePage( void )
-{
-	FLASH_Unlock();
-	FLASH_Status fstat =  FLASH_ErasePage( PAGE62 );
-	FLASH_Lock();
-	return fstat;
-}
+///*
+// * fFindEmptyAddr() - для отладки
+// * находит адрес пустой 16и битной ячейки (0xFFFF)
+// * начиная с начала 62й страницы
+// *   Return: адрес пустой ячейки
+// *   или 0 - адрес не найден
+// */
+//uint32_t fFindEmptyAddr(void)
+//{
+//	uint32_t addr = PAGE60;
+//	for ( int i = 0; i < 5*3; i++ ) {
+//		if ( fread16(addr) == 0xFFFF ) {
+//			return addr;
+//		}
+//		addr += 2;
+//	}
+//	return 0;
+//}
+//
+///*
+// * fwriteInc() - функция для отладки
+// * находит пустой элемент, и записывает
+// * на его место hw
+// *   Return FLASH_Status
+// */
+//FLASH_Status fwriteInc( uint16_t hw )
+//{
+//	uint32_t addr = fFindEmptyAddr();
+//	if ( addr == 0 ) {
+//		return 0;
+//	}
+//	FLASH_Unlock();
+//	FLASH_Status fstat = FLASH_ProgramHalfWord( addr, hw );
+//	FLASH_Lock();
+//
+//	return fstat;
+//}
+//
+///*
+// * fFindFilledAddr() - для отладки
+// * находит адрес записанной 16и битной ячейки
+// * (не равной 0xFFFF или 0х0000)
+// * начиная с начала 62й страницы
+// *   Return: адрес записанной ячейки
+// *   или 0 - адрес не найден
+// */
+//uint32_t fFindFilledAddr(void)
+//{
+//	uint32_t addr = PAGE60;
+//	uint16_t data;
+//	for ( int i = 0; i < 5*3; i++ ) {
+//		data = fread16( addr );
+//		if ( data == 0xFFFF ) {
+//			return 0;
+//		}
+//		if ( data != 0 ) {
+//			return addr;
+//		}
+//		addr += 2;
+//	}
+//	return 0;
+//}
+//
+///*
+// * fzeroInc() - функция для отладки
+// * находит записаный элемент, и записывает
+// * на его место 0
+// *   Return FLASH_Status
+// */
+//FLASH_Status fzeroInc( void )
+//{
+//	uint32_t addr = fFindFilledAddr();
+//	if ( addr == 0 ) {
+//		return 0;
+//	}
+//	FLASH_Unlock();
+//	FLASH_Status fstat = FLASH_ProgramHalfWord( addr, 0 );
+//	FLASH_Lock();
+//	return fstat;
+//}
 
 //=====================================================
 /*
@@ -150,53 +134,54 @@ FLASH_Status ferasePage( void )
  * хватает места для записи - записываем.
  */
 
-typedef struct {
-	uint16_t   id;  // айди записи
-	uint16_t   len; // длина записи = id + len + ptr + xor (вся запись)
-	uint16_t*  ptr;
-	uint16_t   xor;
-} ImageInfo_t;
-
 static const uint32_t PAGE_SIZE = 1024;
 static const uint16_t START = 0xABCD;
 static const uint16_t MIN_LEN = 10;
 static const uint16_t MAX_LEN = 160;
 
 /*
+ * Чтение 2х байтного значения с флэш по заданому адресу
+ */
+uint16_t fread16(uint32_t Address)
+{
+	return *(__IO uint16_t*)Address;
+}
+
+/*
  * Производит поиск записи во флэш с заданным ID
  * Params:
  *   ID - номер ID которую хотим найти
- *   addr - указатель на переменную, куда сохранится адрес записи
+ *   *padr - указатель, куда сохранится адрес записи
  * Return:
  *   0 - ID найден, *addr указывает на старт записи
- *   1 - не нашли ID, дошли до пустой ячейки
- *   2 - нет старта данных - критическая ошибка
+ *   1 - не нашли ID, дошли до пустой ячейки, paddr на пустую ячейку
+ *   2 - нет старта данных, ошибка
  *   3 - длина записи меньше минимально допустимой
  *   4 - длина записи больше максимально допустимой
  *   5 - выход за пределы страницы
  */
-int fFindIDaddr( uint16_t ID, uint32_t *addr )
+int fFindIDaddr( uint16_t ID, uint32_t *padr )
 {
 	uint16_t data;
 	uint16_t len;
 	uint16_t id;
-	*addr = PAGE62;
+	*padr = PAGE60;
 	do {
-		data = fread16( *addr );
+		data = fread16( *padr );
 		if ( data == START ) {
-			id = fread16( *addr + 2 ); // смотрим ID
+			id = fread16( *padr + 2 ); // смотрим ID
 			if ( ID == id ) {
 				return 0; // нашли!
 			} else {
 				// смотрим LEN
-				len = fread16( *addr + 4 );
+				len = fread16( *padr + 4 );
 				if ( len < MIN_LEN ) {
 					return 3; // длина записи меньше минимально допустимой
 				} else if ( len > MAX_LEN ) {
 					return 4; // длина записи больше максимально допустимой
 				} else {
-					*addr += len; // перейдем на следующую запись
-					if ( (*addr - PAGE62) > PAGE_SIZE ) {
+					*padr += len; // перейдем на следующую запись
+					if ( (*padr - PAGE60) > PAGE_SIZE ) {
 						return 5; // выход за пределы страницы
 					}
 				}
@@ -211,9 +196,125 @@ int fFindIDaddr( uint16_t ID, uint32_t *addr )
 }
 
 /*
- * Сохраняет образ на флэш
+ * Удаляет запись под данным адресом
+ *   Return:
+ *    0 - Ok
+ *    1 - нет старта записи
+ *    2 - ID записи не соответствует адресу
+ *    3 - ошибка удаления записи
  */
-void fsaveImage( uint8_t ID, uint8_t* buf, uint8_t len )
-{
+int fdeleteID( uint16_t ID, uint32_t adr ) {
+	uint16_t data;
+	data = fread16( adr );
+	if ( data != START ) {
+		return 1;
+	}
+	adr += 2;
+	data = fread16( adr );
+	if ( data != ID ) {
+		return 2;
+	}
+	FLASH_Unlock();
+	FLASH_Status fstat = FLASH_ProgramHalfWord( adr, 0 );
+	FLASH_Lock();
+	if ( fstat != FLASH_COMPLETE ) {
+		return 3;
+	}
+	return 0;
+}
 
+/*
+ * Стирает флэш страницу
+ *   Return:
+ *     0 - Ok
+ *     1 - не правильный адрес
+ *     2 - ошибка стирания страницы
+ */
+int ferasePage( uint32_t adr )
+{
+	if ( adr != PAGE60 ) {
+		return 1;
+	}
+	FLASH_Unlock();
+	FLASH_Status fstat =  FLASH_ErasePage( PAGE60 );
+	FLASH_Lock();
+	if ( fstat != FLASH_COMPLETE ) {
+		return 2;
+	}
+	return 0;
+}
+
+typedef struct {
+	uint16_t   id;  // айди записи
+	uint16_t   len; // длина записи = id + len + ptr + xor (вся запись)
+	uint16_t*  ptr;
+	uint16_t   xor;
+} ImageInfo_t;
+
+/*
+ * Сохраняет запись с уникальным ID на флэш
+ * , где *buf указатель на данные длиной len.
+ *   Return:
+ *     0 - Ok
+ *     1 - ошибка удаления старой записи
+ *     2 - не дошли до пустой ячейки или прочая ошибка
+ *     3 - не достаточно свободного места для новой записи
+ *     4 - ошибка во время записи
+ */
+int fsaveImage( uint16_t ID, uint8_t* buf, uint8_t len )
+{
+	int res;
+	FLASH_Status fstat;
+	uint32_t adr = PAGE60;
+
+	res = fFindIDaddr( ID, &adr );
+	if ( res == 0 ) { // если запись уже существует
+		int r;
+		r = fdeleteID( ID, adr ); // удалим старую запись
+		if ( r != 0 ) {
+			return 1;
+		}
+		res = fFindIDaddr( ID, &adr ); // снова ищем
+	}
+	if ( res != 1 ) {
+		return 2;
+	}
+	// теперь adr указывает на пустую ячейку
+	// определим объем оставшейся памяти
+	uint32_t free = PAGE61 - adr;
+	uint16_t LEN = len + 8;
+	if ( free < LEN ) {
+		return 3;
+	}
+
+	FLASH_Unlock();
+
+	// запишем старт признак записи
+	fstat = FLASH_ProgramHalfWord( adr, START );
+	if ( fstat != FLASH_COMPLETE ) {
+		FLASH_Lock();
+		return 4;
+	}
+	adr += 2;
+	// запишем ID записи
+	fstat = FLASH_ProgramHalfWord( adr, ID );
+	if ( fstat != FLASH_COMPLETE ) {
+		FLASH_Lock();
+		return 4;
+	}
+	adr += 2;
+	// запишем LEN - длину всей записи
+	fstat = FLASH_ProgramHalfWord( adr, LEN );
+	if ( fstat != FLASH_COMPLETE ) {
+		FLASH_ProgramHalfWord( adr - 2, 0 ); // стерём ID
+		FLASH_Lock();
+		return 4;
+	}
+	adr += 2;
+	// запишем данные
+
+	// запишем XOR
+
+	FLASH_Lock();
+	return -1;
 }

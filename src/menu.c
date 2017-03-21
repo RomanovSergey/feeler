@@ -20,7 +20,7 @@
 
 static pdisp_t prev = NULL;
 
-static FLASH_Status fstat;
+//static FLASH_Status fstat;
 
 /*
  * Не существующее меню
@@ -160,7 +160,7 @@ int dmainM(uint8_t ev) {
 			curs = 0;
 		} else if ( curs == 1 ) { // Выбор калибровки
 			prev  = dmainM;
-			pdisp = dflashDebug;//dnotDone;
+			pdisp = dnotDone;//dflashDebug;
 		} else if ( curs == 2 ) { // Польз. калибр.
 			pdisp = duserCalib;
 		} else if ( curs == 3 ) { // Просмотр таб.
@@ -337,7 +337,7 @@ int dcalibAl(uint8_t ev) {
 
 /*
  * Эксперименты с флэш памятью
- */
+
 int dflashDebug(uint8_t ev)
 {
 	static uint8_t curs = 0;
@@ -388,11 +388,11 @@ int dflashDebug(uint8_t ev)
 	disPrint(5,6,  "Erase page");
 	disPrint( curs + 1, 0, "→");
 	return 1;
-}
+} */
 
 /*
  * Выводит начало содержимого последней страницы
- */
+
 int dflashShow(uint8_t ev)
 {
 	switch (ev) {
@@ -414,11 +414,11 @@ int dflashShow(uint8_t ev)
 		}
 	}
 	return 1;
-}
+} */
 
 /*
  * пишет статус операции записи - для отладки
- */
+
 int dstatusFlash(uint8_t ev)
 {
 	switch (ev) {
@@ -464,7 +464,7 @@ int dstatusFlash(uint8_t ev)
 	}
 	disPrint(2,0, str);
 	return 1;
-}
+} */
 
 /*
  * Рисует картирку

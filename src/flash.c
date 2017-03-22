@@ -261,7 +261,7 @@ typedef struct {
  *     3 - не достаточно свободного места для новой записи
  *     4 - ошибка во время записи
  */
-int fsaveImage( uint16_t ID, uint8_t* buf, uint8_t len )
+int fsaveImage( const uint16_t ID, uint8_t* buf, uint16_t len )
 {
 	int res;
 	FLASH_Status fstat;
@@ -282,7 +282,7 @@ int fsaveImage( uint16_t ID, uint8_t* buf, uint8_t len )
 	// теперь adr указывает на пустую ячейку
 	// определим объем оставшейся памяти
 	uint32_t free = PAGE61 - adr;
-	uint16_t LEN = len + 8;
+	uint16_t LEN = len/2 + len%2 + 8;// = len + 8;
 	if ( free < LEN ) {
 		return 3;
 	}
@@ -296,6 +296,7 @@ int fsaveImage( uint16_t ID, uint8_t* buf, uint8_t len )
 		return 4;
 	}
 	adr += 2;
+
 	// запишем ID записи
 	fstat = FLASH_ProgramHalfWord( adr, ID );
 	if ( fstat != FLASH_COMPLETE ) {
@@ -303,6 +304,7 @@ int fsaveImage( uint16_t ID, uint8_t* buf, uint8_t len )
 		return 4;
 	}
 	adr += 2;
+
 	// запишем LEN - длину всей записи
 	fstat = FLASH_ProgramHalfWord( adr, LEN );
 	if ( fstat != FLASH_COMPLETE ) {
@@ -311,10 +313,44 @@ int fsaveImage( uint16_t ID, uint8_t* buf, uint8_t len )
 		return 4;
 	}
 	adr += 2;
+
 	// запишем данные
+	uint16_t *data = (uint16_t*)buf;
+	for ( int i = 0; i < LEN - 8; i++ ) {
+		FLASH_ProgramHalfWord( adr, *data );
+		adr++;
+		data++;
+	}
 
 	// запишем XOR
+	// потом
 
 	FLASH_Lock();
+	return 0;
+}
+
+/*
+ * Загружает данные с указанным ID
+ * , где *buf указатель на данные длиной len.
+ *   Return:
+ *     0 - Ok
+ *     1 - нашли данные, но len не совпадает
+ */
+int floadImage( const uint16_t ID, uint8_t* buf, uint16_t len )
+{
+	int res;
+	//FLASH_Status fstat;
+	uint32_t adr = PAGE60;
+
+	res = fFindIDaddr( ID, &adr );
+	if ( res == 0 ) {
+		// нашли запись
+		if ( fread16( adr + 4 ) != len ) {
+			return 1; //нашли данные, но len не совпадает
+		}
+		buf = (uint8_t*)(adr + 6);
+		return 0;
+	}
 	return -1;
 }
+

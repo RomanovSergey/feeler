@@ -20,6 +20,11 @@
 #define PAGE62  0x0800F800
 #define PAGE63  0x0800FC00
 
+uint16_t fcalcXOR( const uint16_t *buf )
+{
+	return 0;
+}
+
 ///*
 // * fFindEmptyAddr() - для отладки
 // * находит адрес пустой 16и битной ячейки (0xFFFF)
@@ -105,21 +110,21 @@
 /*
  * Алгоритм записи и чтения информации во флэш.
  *
- * Минимальная операция записи - 2 байта (16 бит), записать можно только
+ *   Минимальная операция записи - 2 байта (16 бит), записать можно только
  * в стертую ячеку (0xFFFF - проверяется флэш контроллером),
  * исключение - если записываемые данные имеют все биты нули (0х0000).
- * Адрес записи должен быть выровнен по четным адресам.
+ *   Адрес записи должен быть выровнен по четным адресам.
  * Стирать можно только страницу целиком (1 кБ на данном контроллере), посте стирания
  * все данные страницы переведутся в 0xFF.
  *
- * В качестве формата записи данных во флэше примем пока следующий вид:
+ *   В качестве формата записи данных во флэше примем пока следующий вид:
  * START, ID, LEN, DATA[], XOR
  * ,где
  *     START - признак старта данных, 16 бит: 0xABCD (чтобы распознать ошибку)
  *     ID - идентификатор записи, 16 бит, если 0 - то запись стерта
  *     LEN - длина всей записи, начиная от START и заканчивая XOR, в байтах
- *     DATA[] - сами данные, по 16 бит, имеют длину = LEN - 8
- *     XOR - контрольная сумма
+ *     DATA[] - сами данные, по 16 бит, имеют длину = LEN - 8 байт
+ *     XOR - контрольная сумма DATA[] данных
  *
  * - Запись данных во флэше должна быть уникальной, то есть записи с
  * одинаковыми ID повторятся не должны.
@@ -244,28 +249,28 @@ int ferasePage( uint32_t adr )
 	return 0;
 }
 
-typedef struct {
-	uint16_t   id;  // айди записи
-	uint16_t   len; // длина записи = id + len + ptr + xor (вся запись)
-	uint16_t*  ptr;
-	uint16_t   xor;
-} ImageInfo_t;
-
 /*
  * Сохраняет запись с уникальным ID на флэш
- * , где *buf указатель на данные длиной len.
- *   Return:
- *     0 - Ok
- *     1 - ошибка удаления старой записи
- *     2 - не дошли до пустой ячейки или прочая ошибка
- *     3 - не достаточно свободного места для новой записи
- *     4 - ошибка во время записи
+ * , где
+ *  *buf - указатель на 16 битные данные длиной len байт.
+ *   len - должно быть четным числом (т.к. данные 16 битные)
+ * Return:
+ *   0 - Ok
+ *   1 - ошибка удаления старой записи
+ *   2 - не дошли до пустой ячейки или прочая ошибка
+ *   3 - не достаточно свободного места для новой записи
+ *   4 - ошибка во время записи
+ *   5 - len не является четным числом
  */
-int fsaveImage( const uint16_t ID, uint8_t* buf, uint16_t len )
+int fsaveImage( const uint16_t ID, const uint16_t* const buf, const uint16_t len )
 {
 	int res;
 	FLASH_Status fstat;
 	uint32_t adr = PAGE60;
+
+	if ( len%2 != 0) {
+		return 5; // len is not even
+	}
 
 	res = fFindIDaddr( ID, &adr );
 	if ( res == 0 ) { // если запись уже существует
@@ -282,7 +287,7 @@ int fsaveImage( const uint16_t ID, uint8_t* buf, uint16_t len )
 	// теперь adr указывает на пустую ячейку
 	// определим объем оставшейся памяти
 	uint32_t free = PAGE61 - adr;
-	uint16_t LEN = len/2 + len%2 + 8;// = len + 8;
+	uint16_t LEN = len + 8; // длина всей записи
 	if ( free < LEN ) {
 		return 3;
 	}
@@ -295,62 +300,85 @@ int fsaveImage( const uint16_t ID, uint8_t* buf, uint16_t len )
 		FLASH_Lock();
 		return 4;
 	}
-	adr += 2;
 
 	// запишем ID записи
-	fstat = FLASH_ProgramHalfWord( adr, ID );
+	fstat = FLASH_ProgramHalfWord( adr + 2, ID );
 	if ( fstat != FLASH_COMPLETE ) {
 		FLASH_Lock();
 		return 4;
 	}
-	adr += 2;
 
 	// запишем LEN - длину всей записи
-	fstat = FLASH_ProgramHalfWord( adr, LEN );
+	fstat = FLASH_ProgramHalfWord( adr + 4, LEN );
 	if ( fstat != FLASH_COMPLETE ) {
-		FLASH_ProgramHalfWord( adr - 2, 0 ); // стерём ID
+		FLASH_ProgramHalfWord( adr + 2, 0 ); // стерём ID
 		FLASH_Lock();
 		return 4;
 	}
-	adr += 2;
 
 	// запишем данные
-	uint16_t *data = (uint16_t*)buf;
-	for ( int i = 0; i < LEN - 8; i++ ) {
-		FLASH_ProgramHalfWord( adr, *data );
-		adr++;
+	const uint16_t *data = buf; // чтобы не инкрементировать buf
+	for ( uint16_t i = 0 ; i < len; i += 2 ) {
+		fstat = FLASH_ProgramHalfWord( adr + 6 + i, *data );
+		if ( fstat != FLASH_COMPLETE ) {
+			FLASH_ProgramHalfWord( adr + 2, 0 ); // стерём ID
+			FLASH_Lock();
+			return 4;
+		}
 		data++;
 	}
 
 	// запишем XOR
-	// потом
+	uint16_t xor = fcalcXOR( buf );
+	fstat = FLASH_ProgramHalfWord( adr + 6 + len, xor );
+	if ( fstat != FLASH_COMPLETE ) {
+		FLASH_ProgramHalfWord( adr + 2, 0 ); // стерём ID
+		FLASH_Lock();
+		return 4;
+	}
 
 	FLASH_Lock();
 	return 0;
 }
 
 /*
- * Загружает данные с указанным ID
- * , где *buf указатель на данные длиной len.
- *   Return:
- *     0 - Ok
- *     1 - нашли данные, но len не совпадает
+ * Загружает данные с указанным ID, где
+ *  *buf    - указатель на 16 битные данные
+ *   maxLen - максимальный объем буфера buf в байтах
+ *   rlen    - считанное количество байт (всегда четное)
+ * Return:
+ *   0 - Ok, данные в buf записались
+ *   1 - объем буфер buf не достаточен для записи
+ *   2 - данные в buf записали, но xor не совпадает
  */
-int floadImage( const uint16_t ID, uint8_t* buf, uint16_t len )
+int floadImage( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_t *rlen )
 {
 	int res;
-	//FLASH_Status fstat;
 	uint32_t adr = PAGE60;
+	uint16_t dataLen;
 
 	res = fFindIDaddr( ID, &adr );
 	if ( res == 0 ) {
 		// нашли запись
-		if ( fread16( adr + 4 ) != len ) {
-			return 1; //нашли данные, но len не совпадает
+		dataLen = fread16( adr + 4 );
+		if ( dataLen > maxLen ) {
+			return 1; // нашли данные, но len не совпадает
 		}
-		buf = (uint8_t*)(adr + 6);
+		adr += 6; // теперь адрес указывает на данные
+
+		// прочитаем данные и запишем их в буфер
+		for ( uint16_t i = 0 ; i < dataLen; i += 2 ) {
+			*buf = fread16( adr );
+			adr += 2;
+			buf++;
+		}
+		*rlen = dataLen;
+		uint16_t xor = fcalcXOR( buf );
+		if ( xor != fread16( adr ) ) {
+			return 2;
+		}
 		return 0;
 	}
-	return -1;
+	return res;
 }
 

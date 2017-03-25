@@ -242,7 +242,6 @@ int getUCode( const char* str, uint16_t *code ) {
 			return 2;
 		}
 		if ( (*str & 0xF0) == 0xE0 ) { // if 3 bytes 0b1110..
-			urtPrint("0b1110\n");
 			abc = *str; // first byte
 			abc <<= 8;
 			str++;
@@ -266,9 +265,9 @@ int getUCode( const char* str, uint16_t *code ) {
 			*code |= abc & 0x0FC0;
 			abc >>= 2;
 			*code |= abc & 0xF000;
-			urtPrint("get code: ");
-			urt_uint16_to_5str( *code );
-			urtPrint("\n");
+			//urtPrint("get code: ");
+			//urt_uint16_to_5str( *code );
+			//urtPrint("\n");
 			return 3;
 		}
 	}

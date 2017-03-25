@@ -268,6 +268,35 @@ int dcalibDone(uint8_t ev) {
 	return 1;
 }
 
+int dcalibFeDone(uint8_t ev) {
+	int res;
+
+	switch (ev) {
+	case DIS_MEASURE:
+		return 0;
+	case DIS_PUSH_L:
+		initCalib();
+		pdisp = duserCalib;
+		return 0;
+	case DIS_PUSH_OK:
+		res = microSaveFe();
+		if ( res == 0 ) {
+			pdisp = dcalibDone;
+		} else {
+			pdisp = dmessageError1;
+			prev = duserCalib;
+		}
+		return 0;
+	}
+	disClear();
+	disPrint(0,0, "Клаибровка:");
+	disPrint(1,12, "Сохранить");
+	disPrint(2,0, "калибровочные");
+	disPrint(3,18,  "данные?");
+	disPrint(5,0, "L-Отм 0k-Сохр");
+	return 1;
+}
+
 int calib(uint8_t ev, int metall) {
 	static const uint16_t thickness[] = {0,100,200,300,500,1000,2000,3000};
 	static int index = 0;
@@ -299,6 +328,10 @@ int calib(uint8_t ev, int metall) {
 		if ( index == sizeof(thickness)/(sizeof(uint16_t)) ) {
 			index = 0;
 			mgPutEv( MG_OFF );
+			if ( metall == 0 ) { // если железо
+				pdisp = dcalibFeDone;
+				return 0;
+			}
 			pdisp = dcalibDone;
 			return 0;
 		}

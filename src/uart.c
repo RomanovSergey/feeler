@@ -117,7 +117,6 @@ void urt_uint32_to_str (uint32_t nmb)
 			urtPut( tmp_str [i-j-1] ); //перевернем
 		}
 	}
-	//urtPut( 0 );//null terminator
 }
 
 /**

@@ -30,7 +30,8 @@ int main(void) {
 	DISRESET_LOW;//reset display
 	init();
 
-	urtPrint("Hello world!\n");
+	urtPrint("Start\n");
+	initCalib();
 	mgPutEv( MG_OFF );
 	while (1) {
 		magnetic();
@@ -57,8 +58,6 @@ void init(void) {
 	USART_InitTypeDef        USART_InitStruct;
 	NVIC_InitTypeDef         NVIC_InitStruct;
 	//ADC_InitTypeDef          ADC_InitStruct;
-
-	initCalib();
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс

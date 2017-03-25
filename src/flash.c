@@ -348,8 +348,15 @@ int fsaveImage( const uint16_t ID, const uint16_t* const buf, const uint16_t len
  *   rlen    - считанное количество байт (всегда четное)
  * Return:
  *   0 - Ok, данные в buf записались
- *   1 - объем буфер buf не достаточен для записи
- *   2 - данные в buf записали, но xor не совпадает
+ *
+ *   1 - не нашли ID, дошли до пустой ячейки, paddr на пустую ячейку
+ *   2 - нет старта данных, ошибка
+ *   3 - длина записи меньше минимально допустимой
+ *   4 - длина записи больше максимально допустимой
+ *   5 - выход за пределы страницы
+ *
+ *   11 - объем буфер buf не достаточен для записи
+ *   12 - данные в buf записали, но xor не совпадает
  */
 int floadImage( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_t *rlen )
 {
@@ -361,8 +368,9 @@ int floadImage( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_
 	if ( res == 0 ) {
 		// нашли запись
 		dataLen = fread16( adr + 4 );
+		dataLen -= 8;
 		if ( dataLen > maxLen ) {
-			return 1; // нашли данные, но len не совпадает
+			return 11; // объем буфер buf не достаточен для записи
 		}
 		adr += 6; // теперь адрес указывает на данные
 
@@ -375,7 +383,7 @@ int floadImage( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_
 		*rlen = dataLen;
 		uint16_t xor = fcalcXOR( buf );
 		if ( xor != fread16( adr ) ) {
-			return 2;
+			return 12;
 		}
 		return 0;
 	}

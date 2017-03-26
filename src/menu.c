@@ -289,7 +289,36 @@ int dcalibFeDone(uint8_t ev) {
 		return 0;
 	}
 	disClear();
-	disPrint(0,0, "Клаибровка:");
+	disPrint(0,0, "Клаибровка Fe:");
+	disPrint(1,12, "Сохранить");
+	disPrint(2,0, "калибровочные");
+	disPrint(3,18,  "данные?");
+	disPrint(5,0, "L-Отм 0k-Сохр");
+	return 1;
+}
+
+int dcalibAlDone(uint8_t ev) {
+	int res;
+
+	switch (ev) {
+	case DIS_MEASURE:
+		return 0;
+	case DIS_PUSH_L:
+		initCalib();
+		pdisp = duserCalib;
+		return 0;
+	case DIS_PUSH_OK:
+		res = microSaveAl();
+		if ( res == 0 ) {
+			pdisp = dcalibDone;
+		} else {
+			pdisp = dmessageError1;
+			prev = duserCalib;
+		}
+		return 0;
+	}
+	disClear();
+	disPrint(0,0, "Клаибровка Al:");
 	disPrint(1,12, "Сохранить");
 	disPrint(2,0, "калибровочные");
 	disPrint(3,18,  "данные?");
@@ -332,7 +361,7 @@ int calib(uint8_t ev, int metall) {
 				pdisp = dcalibFeDone;
 				return 0;
 			}
-			pdisp = dcalibDone;
+			pdisp = dcalibAlDone; // если алюминий
 			return 0;
 		}
 		break;

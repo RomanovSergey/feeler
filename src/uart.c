@@ -12,6 +12,7 @@
 #include "main.h"
 #include "micro.h"
 #include "uart.h"
+#include "displayDrv.h"
 #include "menu.h"
 
 //===========================================================================
@@ -120,14 +121,28 @@ void urt_uint32_to_str (uint32_t nmb)
 }
 
 /**
- * Преобразует 16 битное число в 5и символьную строку + ноль на конце
+ * Преобразует 16 битное число в 5и символьную строку
  */
 void urt_uint16_to_bin(uint16_t n)
 {
 	for (int i = 15; i >= 0; i--) {
 		urtPut( ( n & (1<<i) )?'1':'0' );
 	}
-	urtPut( 0 ); //null terminator
+	//urtPut( 0 ); //null terminator
+}
+
+void urt_uint32_to_hex(uint32_t nmb)
+{
+	uint8_t str[10];
+
+	char_to_strHex( nmb >> 24, &str[0] );
+	char_to_strHex( nmb >> 16, &str[2] );
+	char_to_strHex( nmb >> 8,  &str[4] );
+	char_to_strHex( nmb,       &str[6] );
+
+	for ( int i = 0; i < 8; i++ ) {
+		urtPut( str[i] );
+	}
 }
 
 /**

@@ -18,6 +18,7 @@ int duserCalib(uint8_t ev);
 
 int dcalibDone(uint8_t ev);
 int dcalibFeDone(uint8_t ev);
+int dcalibAlDone(uint8_t ev);
 int dcalibFe(uint8_t ev);
 int dcalibAl(uint8_t ev);
 

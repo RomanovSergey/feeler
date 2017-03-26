@@ -14,6 +14,7 @@
 #include "stm32f0xx.h"
 #include "stm32f0xx_flash.h"
 #include "flash.h"
+#include "uart.h"
 
 #define PAGE60  0x0800F000
 #define PAGE61  0x0800F400
@@ -142,7 +143,7 @@ uint16_t fcalcXOR( const uint16_t *buf )
 static const uint32_t PAGE_SIZE = 1024;
 static const uint16_t START = 0xABCD;
 static const uint16_t MIN_LEN = 10;
-static const uint16_t MAX_LEN = 160;
+static const uint16_t MAX_LEN = 200;
 
 /*
  * Чтение 2х байтного значения с флэш по заданому адресу
@@ -176,13 +177,18 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr )
 		if ( data == START ) {
 			id = fread16( *padr + 2 ); // смотрим ID
 			if ( ID == id ) {
+				urtPrint("Find ID: ");
+				urt_uint32_to_str(ID);
+				urtPrint(", at adr: ");
+				urt_uint32_to_hex( *padr );
+				urtPrint("\n");
 				return 0; // нашли!
 			} else {
 				// смотрим LEN
 				len = fread16( *padr + 4 );
 				if ( len < MIN_LEN ) {
 					return 3; // длина записи меньше минимально допустимой
-				} else if ( len > MAX_LEN ) {
+				} else if ( len + 8 > MAX_LEN ) {
 					return 4; // длина записи больше максимально допустимой
 				} else {
 					*padr += len; // перейдем на следующую запись

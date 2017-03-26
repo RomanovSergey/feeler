@@ -439,8 +439,8 @@ void disHexHalfWord (uint8_t numstr, uint8_t X, uint16_t nmb)
 	}
 	Ycoor = numstr * 8;
 
-	char_to_strHex(nmb & 0xFF, &str[0]);
-	char_to_strHex(nmb >> 8,   &str[2]);
+	char_to_strHex(nmb >> 8,   &str[0]);
+	char_to_strHex(nmb & 0xFF, &str[2]);
 
 	for ( int i = 0; i < 4; i++ ) {
 		wrChar_5_8( Xcoor, Ycoor, str[i] );

@@ -307,7 +307,6 @@ void disPrint(uint8_t numstr, uint8_t X, const char* s)
 	}
 }
 
-
 void disPrin(const char* s) {
 	uint16_t code;
 
@@ -330,7 +329,7 @@ void disPrin(const char* s) {
 }
 
 /**
- * Преобразует 32 битное число в строку с нулем на конце
+ * Преобразует 32 битное число в строку и выводит на дисплей
  * Параметры:
  *   numstr - номер строки 0..5
  *   X - горизонтальная координата 0..84 (до 13 символов)
@@ -370,6 +369,54 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 	}
 }
 
+void disHexHalfWord (uint8_t numstr, uint8_t X, uint16_t nmb)
+{
+	uint8_t str[10];
+
+	if ( X != 0xFF ) {
+		Xcoor = X;
+	}
+	if ( Xcoor > 77 ) {
+		return;
+	} else if ( numstr > 5 ) {
+		return;
+	}
+	Ycoor = numstr * 8;
+
+	char_to_strHex(nmb >> 8,   &str[0]);
+	char_to_strHex(nmb & 0xFF, &str[2]);
+
+	for ( int i = 0; i < 4; i++ ) {
+		wrChar_5_8( Xcoor, Ycoor, str[i] );
+		Xcoor += 6;
+	}
+}
+
+void disPrintFONT2(uint8_t numstr, uint8_t X, const char* s)
+{
+	uint16_t code;
+
+	Xcoor = X;
+	if ( Xcoor > 77 ) {
+		return;
+	} else if ( numstr > 2 ) {
+		return;
+	}
+	Ycoor = numstr * 16;
+
+	while (1) {
+		s += getUCode( s, &code );
+		if ( code == 0 ) { // если конец строки
+			break;
+		}
+		wrChar_10_16( Xcoor, Ycoor, code);
+		Xcoor += 12;
+		if ( Xcoor >= 84 ) {
+			break;
+		}
+	}
+}
+
 void disUINT32_to_strFONT2 (uint8_t numstr, uint8_t X, uint32_t nmb)
 {
 	char tmp_str [11] = {0,};
@@ -404,6 +451,55 @@ void disUINT32_to_strFONT2 (uint8_t numstr, uint8_t X, uint32_t nmb)
 	}
 }
 
+void disUINT16_4digit_to_strFONT2 (uint8_t numstr, uint8_t X, uint16_t nmb)
+{
+	char tmp_str [6] = {0,};
+	int i = 0, j;
+	uint8_t y;
+
+	if ( X != 0xFF ) {
+		Xcoor = X;
+	}
+	if ( Xcoor > 77 ) {
+		return;
+	} else if ( numstr > 2 ) {
+		return;
+	}
+	y = numstr * 16;
+
+	if ( nmb > 10000 ) { // only 4 digits allow
+		strcpy(tmp_str, " Err");
+		for ( int i = 0; i < 4; i++ ) {
+			wrChar_10_16( Xcoor, y, tmp_str [i]); //перевернем
+			Xcoor += 12;
+			if ( Xcoor >= 84 ) {
+				break;
+			}
+		}
+		return;
+	}
+
+	if ( nmb == 0 ) { // если ноль
+		wrChar_10_16( Xcoor, y, '0');
+		Xcoor += 12;
+	} else {
+		while (nmb > 0) {
+			tmp_str[i++] = (nmb % 10) + '0';
+			nmb /= 10;
+		}
+		while ( i < 4 ) {
+			tmp_str[i++] = '0';
+		}
+		for (j = 0; j < i; ++j) {
+			wrChar_10_16( Xcoor, y, tmp_str [i-j-1]); //перевернем
+			Xcoor += 12;
+			if ( Xcoor >= 84 ) {
+				break;
+			}
+		}
+	}
+}
+
 /**
  * Convert char to hex string
  */
@@ -422,29 +518,6 @@ void char_to_strHex(uint8_t V, uint8_t *d)
 	}else
 	{
 		*d++ = (V & 0x0F) - 10 + 'A';
-	}
-}
-
-void disHexHalfWord (uint8_t numstr, uint8_t X, uint16_t nmb)
-{
-	uint8_t str[10];
-
-	if ( X != 0xFF ) {
-		Xcoor = X;
-	}
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( numstr > 5 ) {
-		return;
-	}
-	Ycoor = numstr * 8;
-
-	char_to_strHex(nmb >> 8,   &str[0]);
-	char_to_strHex(nmb & 0xFF, &str[2]);
-
-	for ( int i = 0; i < 4; i++ ) {
-		wrChar_5_8( Xcoor, Ycoor, str[i] );
-		Xcoor += 6;
 	}
 }
 

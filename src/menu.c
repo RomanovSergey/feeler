@@ -107,19 +107,21 @@ int dPowerOn(uint8_t ev) {
 
 void dshowV(uint32_t val) { //из dworkScreen()
 	disClear();
-	disPrint(0, 0, "ИЗМЕРЕНИЕ");
+	disPrint(0, 0, "Измерение");
 	if ( magGetStat() ) {
 		disPrin(" *");
 	}
-	disUINT32_to_strFONT2(1, 0, val); // freq
 
 	uint16_t microValue = micro( val );
 	if ( microValue == 0xFFFF ) {
-		disPrint(4,0,"Air");
+		disPrintFONT2(1,0," Air");
 	} else {
-		disUINT32_to_str(5, 0, microValue );
+		//disUINT32_to_str(5, 0, microValue );
+		disUINT16_4digit_to_strFONT2(1,0, microValue);
 		disPrin(" um");
-	}/**/
+	}
+
+	disUINT32_to_str(4, 0, val); // freq
 }
 
 /*

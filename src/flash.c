@@ -9,106 +9,7 @@
  *  при ее заполнении.
  *  Запись и чтение осуществляется пакетами, заданной длины.
  *
- */
-
-#include "stm32f0xx.h"
-#include "stm32f0xx_flash.h"
-#include "flash.h"
-#include "uart.h"
-
-#define PAGE60  0x0800F000
-#define PAGE61  0x0800F400
-#define PAGE62  0x0800F800
-#define PAGE63  0x0800FC00
-
-uint16_t fcalcXOR( const uint16_t *buf )
-{
-	return 0;
-}
-
-///*
-// * fFindEmptyAddr() - для отладки
-// * находит адрес пустой 16и битной ячейки (0xFFFF)
-// * начиная с начала 62й страницы
-// *   Return: адрес пустой ячейки
-// *   или 0 - адрес не найден
-// */
-//uint32_t fFindEmptyAddr(void)
-//{
-//	uint32_t addr = PAGE60;
-//	for ( int i = 0; i < 5*3; i++ ) {
-//		if ( fread16(addr) == 0xFFFF ) {
-//			return addr;
-//		}
-//		addr += 2;
-//	}
-//	return 0;
-//}
-//
-///*
-// * fwriteInc() - функция для отладки
-// * находит пустой элемент, и записывает
-// * на его место hw
-// *   Return FLASH_Status
-// */
-//FLASH_Status fwriteInc( uint16_t hw )
-//{
-//	uint32_t addr = fFindEmptyAddr();
-//	if ( addr == 0 ) {
-//		return 0;
-//	}
-//	FLASH_Unlock();
-//	FLASH_Status fstat = FLASH_ProgramHalfWord( addr, hw );
-//	FLASH_Lock();
-//
-//	return fstat;
-//}
-//
-///*
-// * fFindFilledAddr() - для отладки
-// * находит адрес записанной 16и битной ячейки
-// * (не равной 0xFFFF или 0х0000)
-// * начиная с начала 62й страницы
-// *   Return: адрес записанной ячейки
-// *   или 0 - адрес не найден
-// */
-//uint32_t fFindFilledAddr(void)
-//{
-//	uint32_t addr = PAGE60;
-//	uint16_t data;
-//	for ( int i = 0; i < 5*3; i++ ) {
-//		data = fread16( addr );
-//		if ( data == 0xFFFF ) {
-//			return 0;
-//		}
-//		if ( data != 0 ) {
-//			return addr;
-//		}
-//		addr += 2;
-//	}
-//	return 0;
-//}
-//
-///*
-// * fzeroInc() - функция для отладки
-// * находит записаный элемент, и записывает
-// * на его место 0
-// *   Return FLASH_Status
-// */
-//FLASH_Status fzeroInc( void )
-//{
-//	uint32_t addr = fFindFilledAddr();
-//	if ( addr == 0 ) {
-//		return 0;
-//	}
-//	FLASH_Unlock();
-//	FLASH_Status fstat = FLASH_ProgramHalfWord( addr, 0 );
-//	FLASH_Lock();
-//	return fstat;
-//}
-
-//=====================================================
-/*
+ *====================================================================================
  * Алгоритм записи и чтения информации во флэш.
  *
  *   Минимальная операция записи - 2 байта (16 бит), записать можно только
@@ -140,10 +41,34 @@ uint16_t fcalcXOR( const uint16_t *buf )
  * хватает места для записи - записываем.
  */
 
+#include "stm32f0xx.h"
+#include "stm32f0xx_flash.h"
+#include "flash.h"
+#include "uart.h"
+
+#define PAGE60  0x0800F000
+#define PAGE61  0x0800F400
+#define PAGE62  0x0800F800
+#define PAGE63  0x0800FC00
+
 static const uint32_t PAGE_SIZE = 1024;
 static const uint16_t START = 0xABCD;
-static const uint16_t MIN_LEN = 10;
+static const uint16_t MIN_LEN = 10;  //минимальная длина записи (данные + 8 служ. байт)
 static const uint16_t MAX_LEN = 200;
+
+
+/*
+ * расчет контрольной суммы
+ */
+uint16_t fcalcXOR( const uint16_t *buf, uint16_t len )
+{
+	uint16_t xor = 0;
+	len = len >> 1;
+	for ( int i = 0; i < len; i++ ) {
+		xor ^= buf[i];
+	}
+	return xor;
+}
 
 /*
  * Чтение 2х байтного значения с флэш по заданому адресу
@@ -268,7 +193,7 @@ int ferasePage( uint32_t adr )
  *   4 - ошибка во время записи
  *   5 - len не является четным числом
  */
-int fsaveImage( const uint16_t ID, const uint16_t* const buf, const uint16_t len )
+int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t len )
 {
 	int res;
 	FLASH_Status fstat;
@@ -335,7 +260,7 @@ int fsaveImage( const uint16_t ID, const uint16_t* const buf, const uint16_t len
 	}
 
 	// запишем XOR
-	uint16_t xor = fcalcXOR( buf );
+	uint16_t xor = fcalcXOR( buf, len );
 	fstat = FLASH_ProgramHalfWord( adr + 6 + len, xor );
 	if ( fstat != FLASH_COMPLETE ) {
 		FLASH_ProgramHalfWord( adr + 2, 0 ); // стерём ID
@@ -364,7 +289,7 @@ int fsaveImage( const uint16_t ID, const uint16_t* const buf, const uint16_t len
  *   11 - объем буфер buf не достаточен для записи
  *   12 - данные в buf записали, но xor не совпадает
  */
-int floadImage( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_t *rlen )
+int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_t *rlen )
 {
 	int res;
 	uint32_t adr = PAGE60;
@@ -387,7 +312,7 @@ int floadImage( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_
 			buf++;
 		}
 		*rlen = dataLen;
-		uint16_t xor = fcalcXOR( buf );
+		uint16_t xor = fcalcXOR( buf, dataLen );
 		if ( xor != fread16( adr ) ) {
 			return 12;
 		}

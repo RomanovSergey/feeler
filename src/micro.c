@@ -41,7 +41,7 @@ void initCalib(void) {
 	uint16_t *pTabl;
 
 	pTabl = (uint16_t*)table[0]; // Fe
-	res = floadImage( FID_FE_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t), &rlen );
+	res = floadRecord( FID_FE_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t), &rlen );
 	if ( res == 0 ) {
 		urtPrint("Fe loaded, rlen=");
 		urt_uint32_to_str (rlen);
@@ -52,7 +52,7 @@ void initCalib(void) {
 		urtPrint(" \n");
 	}
 	pTabl = (uint16_t*)table[1]; // Al
-	res = floadImage( FID_AL_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t), &rlen );
+	res = floadRecord( FID_AL_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t), &rlen );
 	if ( res == 0 ) {
 		urtPrint("Al loaded, rlen=");
 		urt_uint32_to_str (rlen);
@@ -69,7 +69,7 @@ int microSaveFe(void)
 	int res;
 	uint16_t *pTabl;
 	pTabl = (uint16_t*)table[0];
-	res = fsaveImage( FID_FE_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t) );
+	res = fsaveRecord( FID_FE_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t) );
 	if ( res == 0 ) {
 		return 0;
 	}
@@ -84,7 +84,7 @@ int microSaveAl(void)
 	int res;
 	uint16_t *pTabl;
 	pTabl = (uint16_t*)table[1];
-	res = fsaveImage( FID_AL_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t) );
+	res = fsaveRecord( FID_AL_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t) );
 	if ( res == 0 ) {
 		return 0;
 	}

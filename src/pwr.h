@@ -9,9 +9,8 @@
 #define PWR_H_
 
 #define PWR_POWEROFF    1
-#define PWR_OVERTIME    2
+#define PWR_INACTIVE    2
 #define PWR_BUTACTIV    3
-#define PWR_POWER_HALF  4
 #define PWR_ALARM_1000  10
 #define PWR_ALARM_3000  30
 

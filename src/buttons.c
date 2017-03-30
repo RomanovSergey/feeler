@@ -156,7 +156,7 @@ void butProcess(void)
 	int wasEvent = 0; // для генер. событ. при длит. отсутствий нажатий
 
 	static uint32_t timer_ms = 0;
-	static const uint32_t LEFT_TIME_MS = 20000UL;
+	static const uint32_t LEFT_TIME_MS = 5000UL;
 
 	if ( buttonEv( &B_OK, &pushEv, &LongEv, &pullEv ) ) {
 		wasEvent = 1;
@@ -196,7 +196,7 @@ void butProcess(void)
 	} else {
 		if ( timer_ms == LEFT_TIME_MS ) {
 			timer_ms = 0;
-			pwrPutEv( PWR_OVERTIME );
+			pwrPutEv( PWR_INACTIVE );
 		} else {
 			timer_ms++;
 		}

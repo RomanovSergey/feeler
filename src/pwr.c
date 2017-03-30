@@ -66,7 +66,7 @@ void power(void)
 {
 	static const uint16_t CTIM = 1000; // const for startTime
 	static int startTime = 0;
-	static int butActivTim = 0;
+	static int Inactivity = 0;
 
 	if ( startTime > CTIM ) { // working mode
 		static uint32_t alarm = 0;
@@ -75,9 +75,6 @@ void power(void)
 		event = pwrGetEv();
 
 		switch ( event ) {
-		case PWR_POWER_HALF:
-			BL2_OFF;
-			break;
 		case PWR_POWEROFF:
 			PWR_OFF;
 			BL1_OFF;
@@ -85,24 +82,29 @@ void power(void)
 			DISRESET_LOW;
 			pdisp = emptyDisplay;
 			break;
+		case PWR_INACTIVE: // событие простоя кнопок
+			if ( magGetStat() ) {
+				Inactivity = 0;
+				break;
+			}
+			Inactivity++;
+			if ( Inactivity == 4 ) {
+				BL2_OFF;
+			} else if ( Inactivity > 4 ) {
+				pwrPutEv( PWR_POWEROFF );
+			}
+			break;
+		case PWR_BUTACTIV: // нажали какую то кнопку
+			Inactivity = 0;
+			if ( pdisp != emptyDisplay ) {
+				BL2_ON;
+			}
+			break;
 		case PWR_ALARM_1000:
 			alarm = 1000;
 			break;
 		case PWR_ALARM_3000:
 			alarm = 3000;
-			break;
-		case PWR_OVERTIME:
-			if ( !magGetStat() ) {
-				if ( butActivTim == 0 ) {
-					pwrPutEv( PWR_POWER_HALF );
-				} else {
-					pwrPutEv( PWR_POWEROFF );
-				}
-			}
-			break;
-		case PWR_BUTACTIV:
-			butActivTim = 0;
-			BL2_ON;
 			break;
 		}
 

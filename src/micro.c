@@ -40,7 +40,7 @@ void initCalib(void) {
 	uint16_t rlen;
 	uint16_t *pTabl;
 
-	pTabl = (uint16_t*)table[0]; // Fe
+	pTabl = (uint16_t*)&table[0][0]; // Fe
 	res = floadRecord( FID_FE_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t), &rlen );
 	if ( res == 0 ) {
 		urtPrint("Fe loaded, rlen=");
@@ -51,7 +51,7 @@ void initCalib(void) {
 		urt_uint32_to_str (res);
 		urtPrint(" \n");
 	}
-	pTabl = (uint16_t*)table[1]; // Al
+	pTabl = (uint16_t*)&table[1][0]; // Al
 	res = floadRecord( FID_AL_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t), &rlen );
 	if ( res == 0 ) {
 		urtPrint("Al loaded, rlen=");

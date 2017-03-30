@@ -62,12 +62,12 @@ static const uint16_t MAX_LEN = 200;
  */
 uint16_t fcalcXOR( const uint16_t *buf, uint16_t len )
 {
-	uint16_t xor = 0;
+	uint16_t vxor = 0;
 	len = len >> 1;
 	for ( int i = 0; i < len; i++ ) {
-		xor ^= buf[i];
+		vxor ^= buf[i];
 	}
-	return xor;
+	return vxor;
 }
 
 /*
@@ -260,8 +260,8 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
 	}
 
 	// запишем XOR
-	uint16_t xor = fcalcXOR( buf, len );
-	fstat = FLASH_ProgramHalfWord( adr + 6 + len, xor );
+	uint16_t vxor = fcalcXOR( buf, len );
+	fstat = FLASH_ProgramHalfWord( adr + 6 + len, vxor );
 	if ( fstat != FLASH_COMPLETE ) {
 		FLASH_ProgramHalfWord( adr + 2, 0 ); // стерём ID
 		FLASH_Lock();
@@ -306,10 +306,9 @@ int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16
 		adr += 6; // теперь адрес указывает на данные
 
 		// прочитаем данные и запишем их в буфер
-		for ( uint16_t i = 0 ; i < dataLen; i += 2 ) {
-			*buf = fread16( adr );
+		for ( uint16_t i = 0 ; i < dataLen; i++ ) {
+			buf[i] = fread16( adr );
 			adr += 2;
-			buf++;
 		}
 		*rlen = dataLen;
 		uint16_t xor = fcalcXOR( buf, dataLen );

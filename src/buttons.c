@@ -192,6 +192,7 @@ void butProcess(void)
 	// если длительно кнопки не нажимать, то выключим питание
 	if ( wasEvent ) {
 		timer_ms = 0;
+		pwrPutEv( PWR_BUTACTIV );
 	} else {
 		if ( timer_ms == LEFT_TIME_MS ) {
 			timer_ms = 0;

@@ -480,8 +480,10 @@ void disUINT16_4digit_to_strFONT2 (uint8_t numstr, uint8_t X, uint16_t nmb)
 	}
 
 	if ( nmb == 0 ) { // если ноль
-		wrChar_10_16( Xcoor, y, '0');
-		Xcoor += 12;
+		for ( int k = 0; k < 4; k++ ) {
+			wrChar_10_16( Xcoor, y, '0');
+			Xcoor += 12;
+		}
 	} else {
 		while (nmb > 0) {
 			tmp_str[i++] = (nmb % 10) + '0';

@@ -118,7 +118,7 @@ void dshowV(uint32_t val) { //из dworkScreen()
 	} else {
 		//disUINT32_to_str(5, 0, microValue );
 		disUINT16_4digit_to_strFONT2(1,0, microValue);
-		disPrin(" um");
+		disPrint(3, 48, " um");
 	}
 
 	disUINT32_to_str(4, 0, val); // freq
@@ -174,11 +174,13 @@ int dmainM(uint8_t ev) {
 		}
 		return 0;
 	case DIS_PUSH_L:
-		if ( curs > 0 ) {
-			curs--;
-		} else {
-			curs = 3;
-		}
+		pdisp = dworkScreen; // Наверх
+		curs = 0;
+//		if ( curs > 0 ) {
+//			curs--;
+//		} else {
+//			curs = 3;
+//		}
 		break;
 	case DIS_PUSH_R:
 		curs++;
@@ -208,11 +210,13 @@ int duserCalib(uint8_t ev) {
 	static uint8_t curs = 0;
 	switch (ev) {
 	case DIS_PUSH_L:
-		if ( curs > 0 ) {
-			curs--;
-		} else {
-			curs = 2;
-		}
+		pdisp = dmainM; // Наверх
+		curs = 0;
+//		if ( curs > 0 ) {
+//			curs--;
+//		} else {
+//			curs = 2;
+//		}
 		break;
 	case DIS_PUSH_R:
 		curs++;

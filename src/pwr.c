@@ -64,8 +64,9 @@ uint8_t pwrGetEv(void) {
 
 void power(void)
 {
-	static const uint16_t CTIM = 1000;
+	static const uint16_t CTIM = 1000; // const for startTime
 	static int startTime = 0;
+	static int butActivTim = 0;
 
 	if ( startTime > CTIM ) { // working mode
 		static uint32_t alarm = 0;
@@ -74,6 +75,9 @@ void power(void)
 		event = pwrGetEv();
 
 		switch ( event ) {
+		case PWR_POWER_HALF:
+			BL2_OFF;
+			break;
 		case PWR_POWEROFF:
 			PWR_OFF;
 			BL1_OFF;
@@ -89,8 +93,16 @@ void power(void)
 			break;
 		case PWR_OVERTIME:
 			if ( !magGetStat() ) {
-				pwrPutEv( PWR_POWEROFF );
+				if ( butActivTim == 0 ) {
+					pwrPutEv( PWR_POWER_HALF );
+				} else {
+					pwrPutEv( PWR_POWEROFF );
+				}
 			}
+			break;
+		case PWR_BUTACTIV:
+			butActivTim = 0;
+			BL2_ON;
 			break;
 		}
 

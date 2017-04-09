@@ -100,20 +100,19 @@
 #include "flash.h"
 #include "uart.h"
 
-//#define PAGE60  0x0800F000 // первая половина блока А
-//#define PAGE61  0x0800F400 // вторая половина блока А
-//#define PAGE62  0x0800F800 // первая половина блока В
-//#define PAGE63  0x0800FC00 // вторая половина блока В
+#define PAGE60     0x0800F000
+#define PAGE61     0x0800F400
+#define PAGE62     0x0800F800
+#define PAGE63     0x0800FC00
+#define PAGE_SIZE  1024
 
-static const uint32_t PAGE60 = 0x0800F000;
-static const uint32_t PAGE61 = 0x0800F400;
-static const uint32_t PAGE62 = 0x0800F800;
-static const uint32_t PAGE63 = 0x0800FC00;
+static const uint32_t BLOCK_A     = PAGE60;
+static const uint32_t BLOCK_B     = PAGE62;
+static const uint32_t BLOCK_SIZE  = PAGE_SIZE * 2;
 
-static const uint32_t PAGE_SIZE  = 1024;
-static const uint32_t BLOCK_A    = PAGE60;
-static const uint32_t BLOCK_B    = PAGE62;
-static const uint32_t BLOCK_SIZE = PAGE_SIZE * 2;
+static const uint16_t BLOCK_EMPTY = 0xFFFF; // пустой блок
+static const uint16_t BLOCK_CURR  = 0xBBBB; // текущий блок
+static const uint16_t BLOCK_SHIFT = 0x0000; // в процессе переключения
 
 static const uint16_t START = 0xABCD; // признак старта записи
 static const uint16_t MIN_LEN = 10;   // минимальная длина записи (данные + 8 служ. байт)
@@ -145,9 +144,25 @@ uint16_t fcalcXOR( const uint16_t *buf, uint16_t len )
 /*
  * Чтение 2х байтного значения с флэш по заданому адресу
  */
-uint16_t fread16(uint32_t Address)
+inline uint16_t fread16(uint32_t Address)
 {
 	return *(__IO uint16_t*)Address;
+}
+
+/*
+ * Возвращает ID записи согласно начальному адресу
+ */
+inline uint16_t fgetId( uint32_t startAdr )
+{
+	return fread16( startAdr + 2 );
+}
+
+/*
+ * Возвращает длину записи согласно начальному адресу
+ */
+inline uint16_t fgetLen( uint32_t startAdr )
+{
+	return fread16( startAdr + 4 );
 }
 
 /*
@@ -172,7 +187,8 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr )
 	do {
 		data = fread16( *padr );
 		if ( data == START ) {
-			id = fread16( *padr + 2 ); // смотрим ID
+			//id = fread16( *padr + 2 ); // смотрим ID
+			id = fgetId( *padr ); // смотрим ID
 			if ( ID == id ) {
 				urtPrint("Find ID: ");
 				urt_uint32_to_str(ID);
@@ -182,7 +198,8 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr )
 				return 0; // нашли!
 			} else {
 				// смотрим LEN
-				len = fread16( *padr + 4 );
+				//len = fread16( *padr + 4 );
+				len = fgetLen( *padr );
 				if ( len < MIN_LEN ) {
 					return 3; // длина записи меньше минимально допустимой
 				} else if ( len + 8 > MAX_LEN ) {
@@ -408,6 +425,70 @@ int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16
 }
 
 /*
+ * Найти текущий блок, один блок должен быть текущим
+ *   а другой блок должен быть пустым.
+ *   *curBlock - куда запишется адрес текущего блока
+ *   *empBlock - куда запишется адрес пустого блока
+ * Return:
+ *   0 - ok
+ *   1 - not found
+ */
+int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
+{
+	uint16_t blockStat;
+	blockStat = fread16( BLOCK_A );
+	if ( blockStat == BLOCK_CURR ) {
+		*curBlock = BLOCK_A;
+		blockStat = fread16( BLOCK_B );
+		if ( blockStat == BLOCK_EMPTY ) {
+			*empBlock = BLOCK_B;
+			return 0;
+		}
+		return 1;
+	}
+	blockStat = fread16( BLOCK_B );
+	if ( blockStat == BLOCK_CURR ) {
+		*curBlock = BLOCK_B;
+		blockStat = fread16( BLOCK_A );
+		if ( blockStat == BLOCK_EMPTY ) {
+			*empBlock = BLOCK_A;
+			return 0;
+		}
+		return 1;
+	}
+	return 1;
+}
+
+/*
+ * Копирование записи
+ * Return:
+ *   0 - ok
+ *   1 - no record at adrCur
+ *   2 - error
+ */
+int fmoveBlock( uint32_t *adrCur, uint32_t *adrEmp )
+{
+	uint16_t data;
+	while ( 1 ) {
+		data = fread16( *adrCur );
+		if ( data == 0xFFFF ) {
+			return 1;
+		}
+		if ( data != START ) {
+			return 2;
+		}
+		data = fgetId( *adrCur );
+		if ( data == 0 ) {
+			data = fgetLen( *adrCur );
+			*adrCur += data;
+			continue;
+		}
+		// copy
+	}
+	return 0;
+}
+
+/*
  * Процесс переключения блока происходит следующим образом:
  *   - в статус блока записываются 0x0000
  *   - другой блок должен быть пустым
@@ -415,16 +496,19 @@ int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16
  *   - проверяется запись в новом блоке
  *   - удаляется запись в старом блоке
  *   - после копирования всех записей, новый блок помечается как текущий а старый стираем
- *   #define PAGE60  0x0800F000 // первая половина блока А
- *   #define PAGE61  0x0800F400 // вторая половина блока А
- *   #define PAGE62  0x0800F800 // первая половина блока В
- *   #define PAGE63  0x0800FC00 // вторая половина блока В
  */
-void changeBank(void)
+void fchangeBank(void)
 {
-	uint16_t blockStat;
-	blockStat = fread16( BLOCK_A );
-	if ( blockStat == 0 ) {
-
+	FLASH_Status fstat;
+	uint32_t adrCur, adrEmp;
+	if ( fFindCurrBlock( &adrCur, &adrEmp ) != 0 ) {
+		urtPrint("Err: can't find cur block\n");
+		return; // ToDo to handle this case
 	}
+	FLASH_Unlock();
+	fstat = FLASH_ProgramHalfWord( adrCur, BLOCK_SHIFT ); // в статус блока записываются 0x0000
+	FLASH_Lock();
+	adrCur += 2;
+	adrEmp += 2;
+	fmoveBlock( &adrCur, &adrEmp );
 }

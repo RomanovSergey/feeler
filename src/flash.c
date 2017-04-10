@@ -104,7 +104,7 @@
 #define PAGE61     0x0800F400
 #define PAGE62     0x0800F800
 #define PAGE63     0x0800FC00
-#define PAGE_SIZE  1024
+#define PAGE_SIZE  (PAGE61-PAGE60)
 
 static const uint32_t BLOCK_A     = PAGE60;
 static const uint32_t BLOCK_B     = PAGE62;
@@ -112,11 +112,14 @@ static const uint32_t BLOCK_SIZE  = PAGE_SIZE * 2;
 
 static const uint16_t BLOCK_EMPTY = 0xFFFF; // пустой блок
 static const uint16_t BLOCK_CURR  = 0xBBBB; // текущий блок
-static const uint16_t BLOCK_SHIFT = 0x0000; // в процессе переключения
+static const uint16_t BLOCK_SHIFT  = 0x0000; // в процессе переключения
 
 static const uint16_t START = 0xABCD; // признак старта записи
-static const uint16_t MIN_LEN = 10;   // минимальная длина записи (данные + 8 служ. байт)
-static const uint16_t MAX_LEN = 200;  // максимальная длина записи
+
+#define MIN_LEN   10   // минимальная длина записи (данные + 8 служ. байт)
+#define MAX_LEN   200  // максимальная длина записи, в байтах
+
+static uint16_t flashBuf[MAX_LEN << 2];
 
 typedef struct {
 	uint8_t   page; // номер текущего блока: 0 или 1
@@ -460,6 +463,60 @@ int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
 }
 
 /*
+ * Копирует запись adrRec в буфер flashBuf
+ *   запись должна быть уже проверенной на
+ *   наличие START ID LEN
+ * Return:
+ *   0 - ok
+ *   1 - error: record's length is not correct
+ */
+int fcopyRecToBuf( uint32_t adrRec )
+{
+	uint16_t len;
+	len = fgetLen( adrRec );
+	if ( (len < MIN_LEN) || (len > MAX_LEN) ) {
+		urtPrint("Err: fcopyRecToBuf len false\n");
+		return 1;
+	}
+	for ( int a = 0; a < len; a += 2 ) {
+		flashBuf[a] = fread16( adrRec + a );
+	}
+	return 0;
+}
+
+/*
+ * Производит запись содержимого буфера flashBuf
+ *   по указанному адресу
+ * Return:
+ *   0 - ok
+ *   1 - Error start or Id in flashBuf
+ *   2 - Error lenght in flashBuf
+ *   3 - Error while flash write half word
+ */
+int fwriteRecFromBuf( uint32_t adr )
+{
+	FLASH_Status fstat;
+	uint16_t len;
+	if ( (flashBuf[0] != START) || (flashBuf[1] == 0) ) {
+		return 1;
+	}
+	len = flashBuf[2];
+	if ( (len < MIN_LEN) || (len > MAX_LEN) ) {
+		return 2;
+	}
+	FLASH_Unlock();
+	for ( int i = 0; i < len; i++ ) {
+		fstat = FLASH_ProgramHalfWord( adr + (i<<1), flashBuf[i] );
+		if ( fstat != FLASH_COMPLETE ) {
+			FLASH_Lock();
+			return 3;
+		}
+	}
+	FLASH_Lock();
+	return 0;
+}
+
+/*
  * Копирование записи
  * Return:
  *   0 - ok
@@ -468,22 +525,30 @@ int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
  */
 int fmoveBlock( uint32_t *adrCur, uint32_t *adrEmp )
 {
+	FLASH_Status fstat;
 	uint16_t data;
+	uint16_t id;
+	uint16_t len;
 	while ( 1 ) {
 		data = fread16( *adrCur );
-		if ( data == 0xFFFF ) {
+		if ( data == 0xFFFF ) { // если дошли до пустой ячейки
 			return 1;
 		}
-		if ( data != START ) {
-			return 2;
+		if ( data != START ) { // если какой то левый байт
+			return 2; // нужно ли как то обрабатывать?
 		}
-		data = fgetId( *adrCur );
-		if ( data == 0 ) {
-			data = fgetLen( *adrCur );
-			*adrCur += data;
+		id = fgetId( *adrCur );
+		if ( id == 0 ) { // если запись пустая
+			len = fgetLen( *adrCur );
+			*adrCur += len;
 			continue;
 		}
-		// copy
+		// здесь *adrCur указывает на запись которую нужно скопировать в *adrEmp
+		fcopyRecToBuf( *adrCur ); // скопируем запись *adrCur в буфер
+		fwriteRecFromBuf( *adrEmp ); // запишем содержимое буфера в новый блок
+
+
+		break;
 	}
 	return 0;
 }
@@ -499,16 +564,16 @@ int fmoveBlock( uint32_t *adrCur, uint32_t *adrEmp )
  */
 void fchangeBank(void)
 {
-	FLASH_Status fstat;
+//	FLASH_Status fstat;
 	uint32_t adrCur, adrEmp;
 	if ( fFindCurrBlock( &adrCur, &adrEmp ) != 0 ) {
 		urtPrint("Err: can't find cur block\n");
 		return; // ToDo to handle this case
 	}
-	FLASH_Unlock();
-	fstat = FLASH_ProgramHalfWord( adrCur, BLOCK_SHIFT ); // в статус блока записываются 0x0000
-	FLASH_Lock();
-	adrCur += 2;
-	adrEmp += 2;
+//	FLASH_Unlock();
+//	fstat = FLASH_ProgramHalfWord( adrCur, BLOCK_SHIFT ); // в статус блока записываются 0x0000
+//	FLASH_Lock();
+	adrCur += 2; // адрес на первую запись
+	adrEmp += 2; // куда будем писать
 	fmoveBlock( &adrCur, &adrEmp );
 }

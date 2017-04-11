@@ -112,7 +112,7 @@ static const uint32_t BLOCK_SIZE  = PAGE_SIZE * 2;
 
 static const uint16_t BLOCK_EMPTY = 0xFFFF; // пустой блок
 static const uint16_t BLOCK_CURR  = 0xBBBB; // текущий блок
-static const uint16_t BLOCK_SHIFT  = 0x0000; // в процессе переключения
+static const uint16_t BLOCK_SHIFT = 0x0000; // в процессе переключения
 
 static const uint16_t START = 0xABCD; // признак старта записи
 
@@ -166,6 +166,24 @@ inline uint16_t fgetId( uint32_t startAdr )
 inline uint16_t fgetLen( uint32_t startAdr )
 {
 	return fread16( startAdr + 4 );
+}
+
+/*
+ * Пишет полуслово - hw во флэш по адресу - adr
+ * Return:
+ *   0 - ok
+ *   1 - error
+ */
+int fwriteHalfWord( uint32_t adr, uint16_t hw )
+{
+	FLASH_Status fstat;
+	FLASH_Unlock();
+	fstat = FLASH_ProgramHalfWord( adr, hw ); // в статус блока записываются 0x0000
+	FLASH_Lock();
+	if ( fstat != FLASH_COMPLETE ) {
+		return 1;
+	}
+	return 0;
 }
 
 /*
@@ -323,8 +341,7 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
 	}
 	// теперь adr указывает на пустую ячейку
 	// определим объем оставшейся памяти
-	//uint32_t free = PAGE61 - adr;
-	uint32_t free = BLOCK_B - adr;
+	uint32_t free = (BLOCK_B - 2) - adr; // в конце всегда пустая ячейка
 	uint16_t LEN = len + 8; // длина всей записи
 	if ( free < LEN ) {
 		return 3;
@@ -520,35 +537,31 @@ int fwriteRecFromBuf( uint32_t adr )
  * Копирование записи
  * Return:
  *   0 - ok
- *   1 - no record at adrCur
- *   2 - error
+ *   1,2 - error
  */
-int fmoveBlock( uint32_t *adrCur, uint32_t *adrEmp )
+int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
 {
-	FLASH_Status fstat;
-	uint16_t data;
-	uint16_t id;
-	uint16_t len;
+	uint16_t head;
 	while ( 1 ) {
-		data = fread16( *adrCur );
-		if ( data == 0xFFFF ) { // если дошли до пустой ячейки
-			return 1;
+		head = fread16( adrCur );
+		if ( head == 0xFFFF ) { // если дошли до пустой ячейки
+			return 0;
 		}
-		if ( data != START ) { // если какой то левый байт
-			return 2; // нужно ли как то обрабатывать?
+		if ( head != START ) { // если какой то левый байт
+			return 1; // нужно ли как то обрабатывать?
 		}
-		id = fgetId( *adrCur );
-		if ( id == 0 ) { // если запись пустая
-			len = fgetLen( *adrCur );
-			*adrCur += len;
+		if ( fgetId( adrCur ) == 0 ) { // если запись пустая
+			adrCur += fgetLen( adrCur );
 			continue;
 		}
 		// здесь *adrCur указывает на запись которую нужно скопировать в *adrEmp
-		fcopyRecToBuf( *adrCur ); // скопируем запись *adrCur в буфер
-		fwriteRecFromBuf( *adrEmp ); // запишем содержимое буфера в новый блок
-
-
-		break;
+		fcopyRecToBuf( adrCur ); // скопируем запись *adrCur в буфер
+		if ( fwriteRecFromBuf( adrEmp ) != 0 ) { // запишем содержимое буфера в новый блок
+			return 2;
+		}
+		adrEmp += fgetLen( adrEmp );
+		adrCur += fgetLen( adrCur );
+		continue;
 	}
 	return 0;
 }
@@ -557,23 +570,40 @@ int fmoveBlock( uint32_t *adrCur, uint32_t *adrEmp )
  * Процесс переключения блока происходит следующим образом:
  *   - в статус блока записываются 0x0000
  *   - другой блок должен быть пустым
- *   - копируется первая запись в новый блок
- *   - проверяется запись в новом блоке
- *   - удаляется запись в старом блоке
+ *   - копируются все записи в новый блок
  *   - после копирования всех записей, новый блок помечается как текущий а старый стираем
+ * Return:
+ *   0 - ok
+ *   1 - can't find current block
+ *   2 - error flash write
+ *   3 - can't errase block
  */
-void fchangeBank(void)
+int fchangeBank(void)
 {
-//	FLASH_Status fstat;
 	uint32_t adrCur, adrEmp;
 	if ( fFindCurrBlock( &adrCur, &adrEmp ) != 0 ) {
-		urtPrint("Err: can't find cur block\n");
-		return; // ToDo to handle this case
+		urtPrint("Err: fchangeBank: can't find cur block\n");
+		return 1; // handle this case
 	}
-//	FLASH_Unlock();
-//	fstat = FLASH_ProgramHalfWord( adrCur, BLOCK_SHIFT ); // в статус блока записываются 0x0000
-//	FLASH_Lock();
+	if ( fwriteHalfWord( adrCur, BLOCK_SHIFT ) != 0 ) {
+		urtPrint("Err: fchangeBank: can't BLOCK_SHIFT\n");
+		return 2;
+	}
 	adrCur += 2; // адрес на первую запись
 	adrEmp += 2; // куда будем писать
-	fmoveBlock( &adrCur, &adrEmp );
+	// скопируем активные записи в пустой блок
+	if ( fmoveBlock( adrCur, adrEmp ) != 0 ) {
+		urtPrint("Err: in fchangeBank while fmoveBlock \n");
+	}
+	// пометим новый блок как текущий
+	if ( fwriteHalfWord( adrEmp - 2, BLOCK_CURR ) != 0 ) {
+		urtPrint("Err: fchangeBank: can't make BLOCK_CURR\n");
+		return 2;
+	}
+	// сотрем старый блок
+	if ( feraseBlock ( adrEmp - 2 ) != 0 ) {
+		urtPrint("Err: fchangeBank: can't erase old block\n");
+		return 3;
+	}
+	return 0;
 }

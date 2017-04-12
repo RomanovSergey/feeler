@@ -310,7 +310,8 @@ int feraseBlock ( uint32_t block )
  *   *empBlock - куда запишется адрес пустого блока
  * Return:
  *   0 - ok
- *   1 - not found
+ *   1 - Error: curBlock found but embBlock not found
+ *   2 - Error: non cubBlock and non empBlock
  */
 int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
 {
@@ -335,7 +336,8 @@ int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
 		}
 		return 1;
 	}
-	return 1;
+	urtPrint("Err:fFindCurrBlock: no cur emp block\n");
+	return 2;
 }
 
 /*
@@ -483,83 +485,70 @@ int fchangeBank(void)
  *   3 - не достаточно свободного места для новой записи
  *   4 - ошибка во время записи
  *   5 - len не является четным числом
+ *   6 - не нашли текущий блок
  */
 int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t len )
 {
 	int res;
-	FLASH_Status fstat;
-	uint32_t adr = BLOCK_A; //PAGE60;
+	uint32_t adr;
+	uint32_t doomy;
+
+	res = fFindCurrBlock( &adr, &doomy );
+	if ( res != 0 ) {
+		//urtPrint("Err: fsaveRecord: not found cur Block\n");
+		return 6;
+	}
+	doomy = adr + BLOCK_SIZE;
 
 	if ( len%2 != 0) {
 		return 5; // len is not even
 	}
 
 	res = fFindIDaddr( ID, &adr );
-	if ( res == 0 ) { // если запись уже существует
+	if ( res == 0 ) { // if old record with same ID exist
 		int r;
-		r = fdeleteID( ID, adr ); // удалим старую запись
+		r = fdeleteID( ID, adr ); // delete old record
 		if ( r != 0 ) {
 			return 1;
 		}
-		res = fFindIDaddr( ID, &adr ); // снова ищем
+		res = fFindIDaddr( ID, &adr ); // look for again
 	}
 	if ( res != 1 ) {
 		return 2;
 	}
-	// теперь adr указывает на пустую ячейку
-	// определим объем оставшейся памяти
-	uint32_t free = (BLOCK_B - 2) - adr; // в конце всегда пустая ячейка
-	uint16_t LEN = len + 8; // длина всей записи
+
+	// and now adr is points to the empty cell
+	// to calculate a volume of the free memory
+	uint32_t free = (doomy - 2) - adr; // at end must be always empty hw
+	uint16_t LEN = len + 8; // length of the entire record
 	if ( free < LEN ) {
 		return 3;
 	}
 
-	FLASH_Unlock();
-
 	// запишем старт признак записи
-	fstat = FLASH_ProgramHalfWord( adr, START );
-	if ( fstat != FLASH_COMPLETE ) {
-		FLASH_Lock();
+	if ( fwriteHalfWord( adr, START ) != 0 ) {
 		return 4;
 	}
-
 	// запишем ID записи
-	fstat = FLASH_ProgramHalfWord( adr + 2, ID );
-	if ( fstat != FLASH_COMPLETE ) {
-		FLASH_Lock();
+	if ( fwriteHalfWord( adr + 2, ID ) != 0 ) {
 		return 4;
 	}
-
 	// запишем LEN - длину всей записи
-	fstat = FLASH_ProgramHalfWord( adr + 4, LEN );
-	if ( fstat != FLASH_COMPLETE ) {
-		FLASH_ProgramHalfWord( adr + 2, 0 ); // стерём ID
-		FLASH_Lock();
+	if ( fwriteHalfWord( adr + 4, LEN ) != 0 ) {
 		return 4;
 	}
-
 	// запишем данные
 	const uint16_t *data = buf; // чтобы не инкрементировать buf
-	for ( uint16_t i = 0 ; i < len; i += 2 ) {
-		fstat = FLASH_ProgramHalfWord( adr + 6 + i, *data );
-		if ( fstat != FLASH_COMPLETE ) {
-			FLASH_ProgramHalfWord( adr + 2, 0 ); // стерём ID
-			FLASH_Lock();
+	for ( uint16_t i = 0 ; i < len/2; i++ ) {
+		if ( fwriteHalfWord( adr + 6 + i*2, *(data + i) ) != 0 ) {
 			return 4;
 		}
-		data++;
 	}
-
 	// запишем XOR
 	uint16_t vxor = fcalcXOR( buf, len );
-	fstat = FLASH_ProgramHalfWord( adr + 6 + len, vxor );
-	if ( fstat != FLASH_COMPLETE ) {
-		FLASH_ProgramHalfWord( adr + 2, 0 ); // стерём ID
-		FLASH_Lock();
+	if ( fwriteHalfWord( adr + 6 + len, vxor ) != 0 ) {
 		return 4;
 	}
-
-	FLASH_Lock();
 	return 0;
 }
 

@@ -121,16 +121,6 @@ static const uint16_t START = 0xABCD; // признак старта запис�
 
 static uint16_t flashBuf[MAX_LEN << 2];
 
-typedef struct {
-	uint8_t   page; // номер текущего блока: 0 или 1
-	uint8_t   pageState; // состояние блока:
-	uint16_t  freeBytes; // свободное число байт для записей в блоке
-	uint16_t  usedBytes; // рабочее число байт в блоке
-	uint16_t  zeroBytes; // число байт в удаленных записях
-	uint16_t  records;   // общее число записей
-} finfo_t;
-
-
 /*
  * расчет контрольной суммы
  */
@@ -280,13 +270,14 @@ int ferasePage( uint32_t adr )
 {
 	if ( (adr != PAGE60) && (adr != PAGE61) && (adr != PAGE62) && (adr != PAGE63) )
 	{
-		urtPrint("Err: ferasePage: 1\n");
+		urtPrint("Err: ferasePage: adr not correct\n");
 		return 1;
 	}
 	FLASH_Unlock();
 	FLASH_Status fstat =  FLASH_ErasePage( adr );
 	FLASH_Lock();
 	if ( fstat != FLASH_COMPLETE ) {
+		urtPrint("Err: ferasePage: cant erase\n");
 		return 2;
 	}
 	return 0;
@@ -301,8 +292,184 @@ int ferasePage( uint32_t adr )
  */
 int feraseBlock ( uint32_t block )
 {
+	int ret = 0;
+	uint32_t page = block;
+	for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
+		ret = ferasePage( page + i * PAGE_SIZE );
+		if ( ret != 0) {
+			break;
+		}
+	}
+	return ret;
+}
+
+/*
+ * Найти текущий блок, один блок должен быть текущим
+ *   а другой блок должен быть пустым.
+ *   *curBlock - куда запишется адрес текущего блока
+ *   *empBlock - куда запишется адрес пустого блока
+ * Return:
+ *   0 - ok
+ *   1 - not found
+ */
+int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
+{
+	uint16_t blockStat;
+	blockStat = fread16( BLOCK_A );
+	if ( blockStat == BLOCK_CURR ) {
+		*curBlock = BLOCK_A;
+		blockStat = fread16( BLOCK_B );
+		if ( blockStat == BLOCK_EMPTY ) {
+			*empBlock = BLOCK_B;
+			return 0;
+		}
+		return 1;
+	}
+	blockStat = fread16( BLOCK_B );
+	if ( blockStat == BLOCK_CURR ) {
+		*curBlock = BLOCK_B;
+		blockStat = fread16( BLOCK_A );
+		if ( blockStat == BLOCK_EMPTY ) {
+			*empBlock = BLOCK_A;
+			return 0;
+		}
+		return 1;
+	}
 	return 1;
 }
+
+/*
+ * Копирует запись adrRec в буфер flashBuf
+ *   запись должна быть уже проверенной на
+ *   наличие START ID LEN
+ * Return:
+ *   0 - ok
+ *   1 - error: record's length is not correct
+ */
+int fcopyRecToBuf( uint32_t adrRec )
+{
+	uint16_t len;
+	len = fgetLen( adrRec );
+	if ( (len < MIN_LEN) || (len > MAX_LEN) ) {
+		urtPrint("Err: fcopyRecToBuf len false\n");
+		return 1;
+	}
+	for ( int a = 0; a < len; a += 2 ) {
+		flashBuf[a] = fread16( adrRec + a );
+	}
+	return 0;
+}
+
+/*
+ * Производит запись содержимого буфера flashBuf
+ *   по указанному адресу
+ * Return:
+ *   0 - ok
+ *   1 - Error start or Id in flashBuf
+ *   2 - Error lenght in flashBuf
+ *   3 - Error while flash write half word
+ */
+int fwriteRecFromBuf( uint32_t adr )
+{
+	FLASH_Status fstat;
+	uint16_t len;
+	if ( (flashBuf[0] != START) || (flashBuf[1] == 0) ) {
+		return 1;
+	}
+	len = flashBuf[2];
+	if ( (len < MIN_LEN) || (len > MAX_LEN) ) {
+		return 2;
+	}
+	FLASH_Unlock();
+	for ( int i = 0; i < len; i++ ) {
+		fstat = FLASH_ProgramHalfWord( adr + (i<<1), flashBuf[i] );
+		if ( fstat != FLASH_COMPLETE ) {
+			FLASH_Lock();
+			return 3;
+		}
+	}
+	FLASH_Lock();
+	return 0;
+}
+
+/*
+ * Копирование активных записей начная с адреса adrCur
+ *   в пустое пространство с адреса adrEmp
+ * Return:
+ *   0 - ok
+ *   1,2 - error
+ */
+int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
+{
+	uint16_t head;
+	while ( 1 ) {
+		head = fread16( adrCur );
+		if ( head == 0xFFFF ) { // если дошли до пустой ячейки
+			return 0;
+		}
+		if ( head != START ) { // если какой то левый байт
+			return 1; // нужно ли как то обрабатывать?
+		}
+		if ( fgetId( adrCur ) == 0 ) { // если запись аннулированная
+			adrCur += fgetLen( adrCur );
+			continue;
+		}
+		// здесь *adrCur указывает на запись которую нужно скопировать в *adrEmp
+		fcopyRecToBuf( adrCur ); // скопируем запись *adrCur в буфер
+		if ( fwriteRecFromBuf( adrEmp ) != 0 ) { // запишем содержимое буфера в новый блок
+			return 2;
+		}
+		adrEmp += fgetLen( adrEmp );
+		adrCur += fgetLen( adrCur );
+		continue;
+	}
+	return 0;
+}
+
+/*
+ * Процесс переключения блока происходит следующим образом:
+ *   - в статус блока записываются 0x0000
+ *   - другой блок должен быть пустым
+ *   - копируются все записи в новый блок
+ *   - после копирования всех записей, новый блок помечается как текущий а старый стираем
+ * Return:
+ *   0 - ok
+ *   1 - can't find current block
+ *   2 - error flash write
+ *   3 - can't errase block
+ */
+int fchangeBank(void)
+{
+	uint32_t adrCur; // будет указывать на адрес текущего блока
+	uint32_t adrEmp; // будет указывать на адрес пустого блока
+	if ( fFindCurrBlock( &adrCur, &adrEmp ) != 0 ) {
+		urtPrint("Err: fchangeBank: can't find cur block\n");
+		return 1; // handle this case
+	}
+	// текущий блок пометим как в режиме переключения
+	if ( fwriteHalfWord( adrCur, BLOCK_SHIFT ) != 0 ) {
+		urtPrint("Err: fchangeBank: can't BLOCK_SHIFT\n");
+		return 2;
+	}
+	// скопируем активные записи в пустой блок
+	if ( fmoveBlock( adrCur + 2, adrEmp + 2 ) != 0 ) {
+		urtPrint("Err: in fchangeBank while fmoveBlock \n");
+	}
+	// пометим новый блок как текущий
+	if ( fwriteHalfWord( adrEmp, BLOCK_CURR ) != 0 ) {
+		urtPrint("Err: fchangeBank: can't make BLOCK_CURR\n");
+		return 2;
+	}
+	// сотрем старый текущий блок который находится в режиме переключенияb
+	if ( feraseBlock ( adrCur ) != 0 ) {
+		urtPrint("Err: fchangeBank: can't erase old block\n");
+		return 3;
+	}
+	return 0;
+}
+
+// =======================================================================================
+// ======================== interface functions ==========================================
 
 /*
  * Сохраняет запись с уникальным ID на флэш
@@ -444,166 +611,3 @@ int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16
 	return res;
 }
 
-/*
- * Найти текущий блок, один блок должен быть текущим
- *   а другой блок должен быть пустым.
- *   *curBlock - куда запишется адрес текущего блока
- *   *empBlock - куда запишется адрес пустого блока
- * Return:
- *   0 - ok
- *   1 - not found
- */
-int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
-{
-	uint16_t blockStat;
-	blockStat = fread16( BLOCK_A );
-	if ( blockStat == BLOCK_CURR ) {
-		*curBlock = BLOCK_A;
-		blockStat = fread16( BLOCK_B );
-		if ( blockStat == BLOCK_EMPTY ) {
-			*empBlock = BLOCK_B;
-			return 0;
-		}
-		return 1;
-	}
-	blockStat = fread16( BLOCK_B );
-	if ( blockStat == BLOCK_CURR ) {
-		*curBlock = BLOCK_B;
-		blockStat = fread16( BLOCK_A );
-		if ( blockStat == BLOCK_EMPTY ) {
-			*empBlock = BLOCK_A;
-			return 0;
-		}
-		return 1;
-	}
-	return 1;
-}
-
-/*
- * Копирует запись adrRec в буфер flashBuf
- *   запись должна быть уже проверенной на
- *   наличие START ID LEN
- * Return:
- *   0 - ok
- *   1 - error: record's length is not correct
- */
-int fcopyRecToBuf( uint32_t adrRec )
-{
-	uint16_t len;
-	len = fgetLen( adrRec );
-	if ( (len < MIN_LEN) || (len > MAX_LEN) ) {
-		urtPrint("Err: fcopyRecToBuf len false\n");
-		return 1;
-	}
-	for ( int a = 0; a < len; a += 2 ) {
-		flashBuf[a] = fread16( adrRec + a );
-	}
-	return 0;
-}
-
-/*
- * Производит запись содержимого буфера flashBuf
- *   по указанному адресу
- * Return:
- *   0 - ok
- *   1 - Error start or Id in flashBuf
- *   2 - Error lenght in flashBuf
- *   3 - Error while flash write half word
- */
-int fwriteRecFromBuf( uint32_t adr )
-{
-	FLASH_Status fstat;
-	uint16_t len;
-	if ( (flashBuf[0] != START) || (flashBuf[1] == 0) ) {
-		return 1;
-	}
-	len = flashBuf[2];
-	if ( (len < MIN_LEN) || (len > MAX_LEN) ) {
-		return 2;
-	}
-	FLASH_Unlock();
-	for ( int i = 0; i < len; i++ ) {
-		fstat = FLASH_ProgramHalfWord( adr + (i<<1), flashBuf[i] );
-		if ( fstat != FLASH_COMPLETE ) {
-			FLASH_Lock();
-			return 3;
-		}
-	}
-	FLASH_Lock();
-	return 0;
-}
-
-/*
- * Копирование записи
- * Return:
- *   0 - ok
- *   1,2 - error
- */
-int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
-{
-	uint16_t head;
-	while ( 1 ) {
-		head = fread16( adrCur );
-		if ( head == 0xFFFF ) { // если дошли до пустой ячейки
-			return 0;
-		}
-		if ( head != START ) { // если какой то левый байт
-			return 1; // нужно ли как то обрабатывать?
-		}
-		if ( fgetId( adrCur ) == 0 ) { // если запись пустая
-			adrCur += fgetLen( adrCur );
-			continue;
-		}
-		// здесь *adrCur указывает на запись которую нужно скопировать в *adrEmp
-		fcopyRecToBuf( adrCur ); // скопируем запись *adrCur в буфер
-		if ( fwriteRecFromBuf( adrEmp ) != 0 ) { // запишем содержимое буфера в новый блок
-			return 2;
-		}
-		adrEmp += fgetLen( adrEmp );
-		adrCur += fgetLen( adrCur );
-		continue;
-	}
-	return 0;
-}
-
-/*
- * Процесс переключения блока происходит следующим образом:
- *   - в статус блока записываются 0x0000
- *   - другой блок должен быть пустым
- *   - копируются все записи в новый блок
- *   - после копирования всех записей, новый блок помечается как текущий а старый стираем
- * Return:
- *   0 - ok
- *   1 - can't find current block
- *   2 - error flash write
- *   3 - can't errase block
- */
-int fchangeBank(void)
-{
-	uint32_t adrCur, adrEmp;
-	if ( fFindCurrBlock( &adrCur, &adrEmp ) != 0 ) {
-		urtPrint("Err: fchangeBank: can't find cur block\n");
-		return 1; // handle this case
-	}
-	if ( fwriteHalfWord( adrCur, BLOCK_SHIFT ) != 0 ) {
-		urtPrint("Err: fchangeBank: can't BLOCK_SHIFT\n");
-		return 2;
-	}
-	adrCur += 2; // адрес на первую запись
-	adrEmp += 2; // куда будем писать
-	// скопируем активные записи в пустой блок
-	if ( fmoveBlock( adrCur, adrEmp ) != 0 ) {
-		urtPrint("Err: in fchangeBank while fmoveBlock \n");
-	}
-	// пометим новый блок как текущий
-	if ( fwriteHalfWord( adrEmp - 2, BLOCK_CURR ) != 0 ) {
-		urtPrint("Err: fchangeBank: can't make BLOCK_CURR\n");
-		return 2;
-	}
-	// сотрем старый блок
-	if ( feraseBlock ( adrEmp - 2 ) != 0 ) {
-		urtPrint("Err: fchangeBank: can't erase old block\n");
-		return 3;
-	}
-	return 0;
-}

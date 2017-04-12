@@ -12,8 +12,6 @@
 #define FID_FE_DEF   1
 #define FID_AL_DEF   2
 
-
-int ferasePage( uint32_t adr );
 int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t len );
 int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_t *rlen );
 

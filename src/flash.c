@@ -187,18 +187,17 @@ int fwriteHalfWord( uint32_t adr, uint16_t hw )
  *   2 - нет старта данных, ошибка
  *   3 - длина записи меньше минимально допустимой
  *   4 - длина записи больше максимально допустимой
- *   5 - выход за пределы страницы
+ *   5 - out of block range
  */
-int fFindIDaddr( uint16_t ID, uint32_t *padr )
+int fFindIDaddr( uint16_t ID, uint32_t *padr, uint32_t endAdr )
 {
 	uint16_t data;
 	uint16_t len;
 	uint16_t id;
-	*padr = BLOCK_A; //PAGE60;
+	//*padr = BLOCK_A; //PAGE60;
 	do {
 		data = fread16( *padr );
 		if ( data == START ) {
-			//id = fread16( *padr + 2 ); // смотрим ID
 			id = fgetId( *padr ); // смотрим ID
 			if ( ID == id ) {
 				urtPrint("Find ID: ");
@@ -209,7 +208,6 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr )
 				return 0; // нашли!
 			} else {
 				// смотрим LEN
-				//len = fread16( *padr + 4 );
 				len = fgetLen( *padr );
 				if ( len < MIN_LEN ) {
 					return 3; // длина записи меньше минимально допустимой
@@ -217,8 +215,8 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr )
 					return 4; // длина записи больше максимально допустимой
 				} else {
 					*padr += len; // перейдем на следующую запись
-					if ( (*padr - BLOCK_A) > BLOCK_SIZE ) {
-						return 5; // выход за пределы блока
+					if ( *padr >= endAdr ) {
+						return 5; // out of block range
 					}
 				}
 			}
@@ -474,18 +472,18 @@ int fchangeBank(void)
 // ======================== interface functions ==========================================
 
 /*
- * Сохраняет запись с уникальным ID на флэш
- * , где
- *  *buf - указатель на 16 битные данные длиной len байт.
- *   len - должно быть четным числом (т.к. данные 16 битные)
+ * Saves the record with ID to the flash
+ * , where
+ *  *buf - points to the 16 bits data with lenght len bytes.
+ *   len - must be even number (because can write only 16 bits)
  * Return:
  *   0 - Ok
- *   1 - ошибка удаления старой записи
- *   2 - не дошли до пустой ячейки или прочая ошибка
- *   3 - не достаточно свободного места для новой записи
- *   4 - ошибка во время записи
- *   5 - len не является четным числом
- *   6 - не нашли текущий блок
+ *   1 - error delete of an old record
+ *   2 - don't find the empty cell or other mistake
+ *   3 - not enough free space for new record
+ *   4 - error while writing to flash
+ *   5 - len is not an even number
+ *   6 - current block is not found
  */
 int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t len )
 {
@@ -504,14 +502,14 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
 		return 5; // len is not even
 	}
 
-	res = fFindIDaddr( ID, &adr );
+	res = fFindIDaddr( ID, &adr, doomy );
 	if ( res == 0 ) { // if old record with same ID exist
 		int r;
 		r = fdeleteID( ID, adr ); // delete old record
 		if ( r != 0 ) {
 			return 1;
 		}
-		res = fFindIDaddr( ID, &adr ); // look for again
+		res = fFindIDaddr( ID, &adr, doomy ); // look for again
 	}
 	if ( res != 1 ) {
 		return 2;
@@ -525,26 +523,25 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
 		return 3;
 	}
 
-	// запишем старт признак записи
+	// write START attribute
 	if ( fwriteHalfWord( adr, START ) != 0 ) {
 		return 4;
 	}
-	// запишем ID записи
+	// write ID
 	if ( fwriteHalfWord( adr + 2, ID ) != 0 ) {
 		return 4;
 	}
-	// запишем LEN - длину всей записи
+	// write LEN
 	if ( fwriteHalfWord( adr + 4, LEN ) != 0 ) {
 		return 4;
 	}
-	// запишем данные
-	const uint16_t *data = buf; // чтобы не инкрементировать buf
+	// write data
 	for ( uint16_t i = 0 ; i < len/2; i++ ) {
-		if ( fwriteHalfWord( adr + 6 + i*2, *(data + i) ) != 0 ) {
+		if ( fwriteHalfWord( adr + 6 + i*2, *(buf + i) ) != 0 ) {
 			return 4;
 		}
 	}
-	// запишем XOR
+	// calculate and write XOR
 	uint16_t vxor = fcalcXOR( buf, len );
 	if ( fwriteHalfWord( adr + 6 + len, vxor ) != 0 ) {
 		return 4;
@@ -553,18 +550,19 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
 }
 
 /*
- * Загружает данные с указанным ID, где
- *  *buf    - указатель на 16 битные данные
- *   maxLen - максимальный объем буфера buf в байтах
- *   rlen    - считанное количество байт (всегда четное)
+ * Loads data with the specified ID, where:
+ *  *buf    - points to the 16 bits data
+ *   maxLen - max volume of the buffer buf, in bytes
+ *   rlen   - The number of bytes read (alwayes even)
  * Return:
- *   0 - Ok, данные в buf записались
+ *   0 - Ok, data was written to flash
  *
  *   1 - не нашли ID, дошли до пустой ячейки, paddr на пустую ячейку
  *   2 - нет старта данных, ошибка
  *   3 - длина записи меньше минимально допустимой
  *   4 - длина записи больше максимально допустимой
- *   5 - выход за пределы страницы
+ *   5 - out of block range
+ *   6 - current block is not found
  *
  *   11 - объем буфер buf не достаточен для записи
  *   12 - данные в buf записали, но xor не совпадает
@@ -572,21 +570,29 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
 int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_t *rlen )
 {
 	int res;
-	uint32_t adr = BLOCK_A; //PAGE60;
 	uint16_t dataLen;
+	uint32_t adr;
+	uint32_t doomy;
 
-	res = fFindIDaddr( ID, &adr );
+	res = fFindCurrBlock( &adr, &doomy );
+	if ( res != 0 ) {
+		return 6;
+	}
+	doomy = adr + BLOCK_SIZE;
+	adr += 2;
+
+	res = fFindIDaddr( ID, &adr, doomy );
 	if ( res == 0 ) {
 		// нашли запись
-		dataLen = fread16( adr + 4 );
+		dataLen = fgetLen( adr );
 		dataLen -= 8;
 		if ( dataLen > maxLen ) {
 			return 11; // объем буфер buf не достаточен для записи
 		}
-		adr += 6; // теперь адрес указывает на данные
+		adr += 6; // now adr points to the data
 
-		// прочитаем данные и запишем их в буфер
-		for ( uint16_t i = 0 ; i < dataLen; i++ ) {
+		// read data and write its to buf
+		for ( uint16_t i = 0 ; i < dataLen/2; i++ ) {
 			buf[i] = fread16( adr );
 			adr += 2;
 		}

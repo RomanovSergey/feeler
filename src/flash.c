@@ -12,15 +12,15 @@
  *====================================================================================
  * Алгоритм записи и чтения информации во флэш.
  *
- *   Минимальная операция записи контроллером - 2 байта (16 бит), записать можно
- * только в стертую ячеку (0xFFFF - проверяется флэш контроллером),
- * исключение - если записываемые данные имеют все биты нули (0х0000).
- *   Адрес записи должен быть выровнен по четным адресам.
- * Стирать можно только страницу целиком (1 кБ на данном контроллере), посте стирания
- * все данные страницы переведутся в 0xFF.
+ * Минимальная операция записи контроллером - 2 байта (16 бит), записать можно
+ *   только в стертую ячеку (0xFFFF - проверяется флэш контроллером),
+ *   исключение - если записываемые данные имеют все биты нули (0х0000).
+ * Адрес записи должен быть выровнен по четным адресам.
+ *   Стирать можно только страницу целиком (1 кБ на данном контроллере), посте стирания
+ *   все данные страницы переведутся в 0xFF.
  *
- *   В качестве формата пакета данных (record) во флэше примем следующий вид:
- * START, ID, LEN, DATA[], XOR
+ * В качестве формата пакета данных (record) во флэше примем следующий вид:
+ *   START, ID, LEN, DATA[], XOR
  * ,где
  *     START  - признак старта записи, 16 бит: 0xABCD (чтобы распознать ошибку)
  *     ID     - идентификатор записи, 16 бит, если 0 - то запись стерта
@@ -41,26 +41,26 @@
  * хватает места для записи - записываем.
  *
  *====================================================================================
- *   В качестве блока будем использовать 2 смежные страницы памяти - для увеличения
- * объема хранилища.
+ * В качестве блока будем использовать 2 смежные страницы памяти - для увеличения
+ *   объема хранилища.
  * В блоке будем различать:
  *   - свободное пространство : после стирания (имеет 0xFFFF полуслова);
  *   - рабочее пространство   : записанная полезная информация (запись);
  *   - удаленное пространство : запись с обнуленным ID
  *
- *   Будем использовать 2 блока. Один из них будем держать свободным (после стирания)
- * другой блок текущим. Назовем блоки A и B.
- *   Переключение с блока A на блок B:
- * Как только блок А заполнится (т.е. свободного пространства окажется не достаточным
- * для новой записи), копируем из блока А рабочие записи в блок B.
- * После этого блок A стираем, а запись новой информации будем вести в блоке B.
- * Переключение с блока B на блок A - аналогично.
+ * Будем использовать 2 блока. Один из них будем держать свободным (после стирания)
+ *   другой блок текущим. Назовем блоки A и B.
+ * Переключение с блока A на блок B:
+ *   Как только блок А заполнится (т.е. свободного пространства окажется не достаточным
+ *   для новой записи), копируем из блока А рабочие записи в блок B.
+ *   После этого блок A стираем, а запись новой информации будем вести в блоке B.
+ *   Переключение с блока B на блок A - аналогично.
  *
- *   Число записей с различными ID должно быть ограничено, иначе после переключения
- * с одного блока на другой, свободного пространства может стать вновь не достаточным.
+ * Число записей с различными ID должно быть ограничено, иначе после переключения
+ *   с одного блока на другой, свободного пространства может стать вновь не достаточным.
  *
- *   Под начало блока забираем 2 байта - статус блока, в которой будет хранится
- * следующая информация:
+ * Под начало блока забираем 2 байта - статус блока, в которой будет хранится
+ *   следующая информация:
  *   - 0xFFFF : пустой блок
  *   - 0xBBBB : текущий блок
  *   - 0x0000 : в процессе переключения с данного блока на пустой блок
@@ -68,13 +68,12 @@
  * Процесс переключения блока происходит следующим образом:
  *   - в статус блока записываются 0x0000
  *   - другой блок должен быть пустым
- *   - копируется первая запись в новый блок
- *   - проверяется запись в новом блоке
+ *   - копируются все актуальные записи в новый блок
  *   - удаляется запись в старом блоке
  *   - после копирования всех записей, новый блок помечается как текущий а старый стираем
  *
- *   Если перед операцией чтения или записи текущий блок не найден, то необходимо
- * его создать. Для этого проверяются текуще блоки.
+ * Если перед операцией чтения или записи текущий блок не найден, то необходимо
+ *   его создать. Для этого проверяются текуще блоки.
  *   - помечен ли какой либо блок как в процессе переключения
  *   - если да продолжим процедуру переключения
  *   - если блоков в процессе переключения тоже нет, выбираем младший по адресу блок
@@ -110,19 +109,19 @@ static const uint32_t BLOCK_A     = PAGE60;
 static const uint32_t BLOCK_B     = PAGE62;
 static const uint32_t BLOCK_SIZE  = PAGE_SIZE * 2;
 
-static const uint16_t BLOCK_EMPTY = 0xFFFF; // пустой блок
-static const uint16_t BLOCK_CURR  = 0xBBBB; // текущий блок
-static const uint16_t BLOCK_SHIFT = 0x0000; // в процессе переключения
+static const uint16_t BLOCK_EMPTY = 0xFFFF; // empty block
+static const uint16_t BLOCK_CURR  = 0xBBBB; // current block
+static const uint16_t BLOCK_SHIFT = 0x0000; // in the process of switching
 
-static const uint16_t START = 0xABCD; // признак старта записи
+static const uint16_t START = 0xABCD; // start record tag
 
-#define MIN_LEN   10   // минимальная длина записи (данные + 8 служ. байт)
-#define MAX_LEN   200  // максимальная длина записи, в байтах
+#define MIN_LEN   10   // Minimum record length (data + 8 service bytes)
+#define MAX_LEN   200  // Maximum record length, in bytes
 
 static uint16_t flashBuf[MAX_LEN << 2];
 
 /*
- * расчет контрольной суммы
+ * calculates xor summ
  */
 uint16_t fcalcXOR( const uint16_t *buf, uint16_t len )
 {
@@ -135,7 +134,7 @@ uint16_t fcalcXOR( const uint16_t *buf, uint16_t len )
 }
 
 /*
- * Чтение 2х байтного значения с флэш по заданому адресу
+ * Reads 2 bytes from flash by Address
  */
 inline uint16_t fread16(uint32_t Address)
 {
@@ -143,7 +142,7 @@ inline uint16_t fread16(uint32_t Address)
 }
 
 /*
- * Возвращает ID записи согласно начальному адресу
+ * Reads ID data from base startAdr record's address
  */
 inline uint16_t fgetId( uint32_t startAdr )
 {
@@ -151,7 +150,7 @@ inline uint16_t fgetId( uint32_t startAdr )
 }
 
 /*
- * Возвращает длину записи согласно начальному адресу
+ * Reads Len data from base startAdr record's address
  */
 inline uint16_t fgetLen( uint32_t startAdr )
 {
@@ -159,7 +158,7 @@ inline uint16_t fgetLen( uint32_t startAdr )
 }
 
 /*
- * Пишет полуслово - hw во флэш по адресу - adr
+ * Writes half word to flash at adr address
  * Return:
  *   0 - ok
  *   1 - error
@@ -177,16 +176,17 @@ int fwriteHalfWord( uint32_t adr, uint16_t hw )
 }
 
 /*
- * Производит поиск записи во флэш с заданным ID
+ * Looking for record on flash with ID
  * Params:
- *   ID - номер ID которую хотим найти
- *   *padr - указатель, куда сохранится адрес записи
+ *   ID     - record's ID which we want to find
+ *   *padr  - pointer from wich begin looking for, result will be also here
+ *   endAdr - end address of the current block
  * Return:
- *   0 - ID найден, *addr указывает на старт записи
- *   1 - не нашли ID, дошли до пустой ячейки, paddr на пустую ячейку
- *   2 - нет старта данных, ошибка
- *   3 - длина записи меньше минимально допустимой
- *   4 - длина записи больше максимально допустимой
+ *   0 - ok: ID is found, *addr points to the base record's address
+ *   1 - not found ID, catch empty cell
+ *   2 - error: no START tag
+ *   3 - record's lenght is less then allowable
+ *   4 - record's lenght is greater then allowable
  *   5 - out of block range
  */
 int fFindIDaddr( uint16_t ID, uint32_t *padr, uint32_t endAdr )
@@ -194,48 +194,48 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr, uint32_t endAdr )
 	uint16_t data;
 	uint16_t len;
 	uint16_t id;
-	//*padr = BLOCK_A; //PAGE60;
+
 	do {
 		data = fread16( *padr );
 		if ( data == START ) {
-			id = fgetId( *padr ); // смотрим ID
+			id = fgetId( *padr ); // loock at the ID
 			if ( ID == id ) {
 				urtPrint("Find ID: ");
 				urt_uint32_to_str(ID);
 				urtPrint(", at adr: ");
 				urt_uint32_to_hex( *padr );
 				urtPrint("\n");
-				return 0; // нашли!
+				return 0; // founded!
 			} else {
-				// смотрим LEN
+				// look at the LEN
 				len = fgetLen( *padr );
 				if ( len < MIN_LEN ) {
-					return 3; // длина записи меньше минимально допустимой
+					return 3; // record's lenght is less then allowable
 				} else if ( len + 8 > MAX_LEN ) {
-					return 4; // длина записи больше максимально допустимой
+					return 4; // record's lenght is greater then allowable
 				} else {
-					*padr += len; // перейдем на следующую запись
+					*padr += len; // will go to the next record
 					if ( *padr >= endAdr ) {
 						return 5; // out of block range
 					}
 				}
 			}
 		} else if ( data == 0xFFFF ) {
-			return 1; // дошли до пустой ячейки
+			return 1; // catch empty cell
 		} else {
-			return 2; // нет старта данных
+			return 2; // no start tag
 		}
 	} while ( 1 );
-	return -1; // не достижимая инструкция
+	return -1; // unreachable instruction
 }
 
 /*
- * Удаляет запись под данным адресом
- *   Return:
- *    0 - Ok
- *    1 - нет старта записи
- *    2 - ID записи не соответствует адресу
- *    3 - ошибка удаления записи
+ * To delete recort with ID at base recor's address adr
+ * Return:
+ *   0 - Ok
+ *   1 - no START tag
+ *   2 - the record's ID doesn't match the address
+ *   3 - error while remove the old record
  */
 int fdeleteID( uint16_t ID, uint32_t adr ) {
 	uint16_t data;
@@ -258,21 +258,41 @@ int fdeleteID( uint16_t ID, uint32_t adr ) {
 }
 
 /*
- * Стирает флэш страницу
- *   Return:
- *     0 - Ok
- *     1 - не правильный адрес
- *     2 - ошибка стирания страницы
+ * Erase page flash
+ * Return:
+ *   0 - Ok
+ *   1 - address is not correct
+ *   2 - error during erasing
  */
 int ferasePage( uint32_t adr )
 {
-	if ( (adr != PAGE60) && (adr != PAGE61) && (adr != PAGE62) && (adr != PAGE63) )
-	{
+	uint32_t adrPage = 0;
+
+	if ( adr < BLOCK_B ) {
+		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
+			if ( adr == BLOCK_A + i * PAGE_SIZE ) {
+				adrPage = adr;
+			}
+		}
+	} else {
+		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
+			if ( adr == BLOCK_B + i * PAGE_SIZE ) {
+				adrPage = adr;
+			}
+		}
+	}
+
+	if ( adrPage == 0 ) {
 		urtPrint("Err: ferasePage: adr not correct\n");
 		return 1;
 	}
+//	if ( (adr != PAGE60) && (adr != PAGE61) && (adr != PAGE62) && (adr != PAGE63) )
+//	{
+//		urtPrint("Err: ferasePage: adr not correct\n");
+//		return 1;
+//	}
 	FLASH_Unlock();
-	FLASH_Status fstat =  FLASH_ErasePage( adr );
+	FLASH_Status fstat =  FLASH_ErasePage( adrPage );
 	FLASH_Lock();
 	if ( fstat != FLASH_COMPLETE ) {
 		urtPrint("Err: ferasePage: cant erase\n");
@@ -282,11 +302,11 @@ int ferasePage( uint32_t adr )
 }
 
 /*
- * Стирает блок
- *   Return:
- *     0 - Ok
- *     1 - не правильный адрес
- *     2 - ошибка стирания страницы
+ * Erase Block
+ * Return:
+ *   0 - Ok
+ *   1 - error: address is not valid
+ *   2 - error during page erasing
  */
 int feraseBlock ( uint32_t block )
 {
@@ -302,10 +322,9 @@ int feraseBlock ( uint32_t block )
 }
 
 /*
- * Найти текущий блок, один блок должен быть текущим
- *   а другой блок должен быть пустым.
- *   *curBlock - куда запишется адрес текущего блока
- *   *empBlock - куда запишется адрес пустого блока
+ * Find current block. One block must be current, another empty.
+ *   *curBlock - pointer, where will be writes current block's address
+ *   *empBlock - pointer, where will be writes empty block's address
  * Return:
  *   0 - ok
  *   1 - Error: curBlock found but embBlock not found
@@ -339,9 +358,8 @@ int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
 }
 
 /*
- * Копирует запись adrRec в буфер flashBuf
- *   запись должна быть уже проверенной на
- *   наличие START ID LEN
+ * Copies record at address adrRec to flashBuf[]
+ *   Record has to be correct (about START, ID, LEN)
  * Return:
  *   0 - ok
  *   1 - error: record's length is not correct
@@ -361,13 +379,12 @@ int fcopyRecToBuf( uint32_t adrRec )
 }
 
 /*
- * Производит запись содержимого буфера flashBuf
- *   по указанному адресу
+ * Writes the contents of the flashBuf[] buffer to the specified address
  * Return:
  *   0 - ok
- *   1 - Error start or Id in flashBuf
- *   2 - Error lenght in flashBuf
- *   3 - Error while flash write half word
+ *   1 - Error: START or Id in flashBuf[]
+ *   2 - Error: lenght in flashBuf
+ *   3 - Error: while flash write half word
  */
 int fwriteRecFromBuf( uint32_t adr )
 {
@@ -393,37 +410,48 @@ int fwriteRecFromBuf( uint32_t adr )
 }
 
 /*
- * Копирование активных записей начная с адреса adrCur
- *   в пустое пространство с адреса adrEmp
+ * To copy all active records from overflow block to empty block.
+ *   adrCur - points to current block
+ *   adrEmp - points to empty block
  * Return:
  *   0 - ok
- *   1,2 - error
+ *   1,2,3 - error
  */
 int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
 {
 	uint16_t head;
+	if ( fread16( adrCur ) != BLOCK_SHIFT ) {
+		return 1;
+	}
+	if ( fread16( adrEmp ) != BLOCK_EMPTY ) {
+		return 2;
+	}
+	adrCur += 2;
+	adrEmp += 2;
 	while ( 1 ) {
 		head = fread16( adrCur );
-		if ( head == 0xFFFF ) { // если дошли до пустой ячейки
+		if ( head == 0xFFFF ) { // if empty cell
 			return 0;
 		}
-		if ( head != START ) { // если какой то левый байт
-			return 1; // нужно ли как то обрабатывать?
+		if ( head != START ) { // if no START tag
+			return 3;
 		}
-		if ( fgetId( adrCur ) == 0 ) { // если запись аннулированная
+		if ( fgetId( adrCur ) == 0 ) { // if record is nulled
 			adrCur += fgetLen( adrCur );
 			continue;
 		}
-		// здесь *adrCur указывает на запись которую нужно скопировать в *adrEmp
-		fcopyRecToBuf( adrCur ); // скопируем запись *adrCur в буфер
-		if ( fwriteRecFromBuf( adrEmp ) != 0 ) { // запишем содержимое буфера в новый блок
-			return 2;
+		// here *adrCur points to record which need to copy to *adrEmp
+		if ( fcopyRecToBuf( adrCur ) != 0 ) { // write rec to buf
+			return 4;
+		}
+		if ( fwriteRecFromBuf( adrEmp ) != 0 ) { // write buf to flash
+			return 5;
 		}
 		adrEmp += fgetLen( adrEmp );
 		adrCur += fgetLen( adrCur );
 		continue;
 	}
-	return 0;
+	return -1; // unreachable
 }
 
 /*
@@ -452,8 +480,9 @@ int fchangeBank(void)
 		return 2;
 	}
 	// скопируем активные записи в пустой блок
-	if ( fmoveBlock( adrCur + 2, adrEmp + 2 ) != 0 ) {
+	if ( fmoveBlock( adrCur, adrEmp ) != 0 ) {
 		urtPrint("Err: in fchangeBank while fmoveBlock \n");
+		return 2;
 	}
 	// пометим новый блок как текущий
 	if ( fwriteHalfWord( adrEmp, BLOCK_CURR ) != 0 ) {

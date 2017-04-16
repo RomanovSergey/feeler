@@ -4,6 +4,8 @@
  *  Created on: 12 марта 2017 г.
  *      Author: se
  *
+ *  Module not complete yet
+ *
  *  Модуль для работы с флэш памятью
  *  Реализует алгоритм записи, чтения данных, а также стирает страницу
  *  при ее заполнении.
@@ -121,8 +123,27 @@ static const uint16_t START = 0xABCD; // start record tag
 static uint16_t flashBuf[MAX_LEN << 2];
 
 // Errors codes
-#define FERR_WRITE_HW      1  // error while write half word data to flash
-#define FERR_FND_EMP_CELL  2  // not found ID, catch empty cell
+#define FRES_OK             0  // ok, successful operation
+#define FERR_WRITE_HW       1  // error while write half word data to flash
+#define FERR_FND_EMP_CELL   2  // not found ID, catch empty cell
+#define FERR_NO_START       3  // error: no START tag
+#define FERR_REC_LEN_MIN    4  // record's lenght is less then allowable
+#define FERR_REC_LEN_MAX    5  // record's lenght is greater then allowable
+#define FERR_OUTOF_BLOCK    6  // out of block range
+#define FERR_MISMATCH_ID    7  // the record's ID doesn't match the address
+#define FERR_REMOVE_ID      8  // error while remove the old record
+#define FERR_ADR_UNCORRECT  9  // address is not correct
+#define FERR_PAGE_ERASE    10  // error during page erasing
+#define FERR_EMP_NFOUND    11  // curBlock found but embBlock not found
+#define FERR_NO_CURR_EMP   12  // non cubBlock and non empBlock
+#define FERR_REC_LEN       13  // record's length is not correct
+#define FERR_MISS_ST_ID    14  // miss START or Id in flashBuf[]
+#define FERR_NOT_SHIFT     15  // block is not in Shift state
+#define FERR_NOT_EMPTY     16  // block is not in Empty state
+#define FERR_LEN_NOT_EVEN  17  // len is not even
+#define FERR_BUF_LITTLE    18  // buff is too little for record
+
+#define FERR_UNREACABLE   -1  // unreachable instruction
 
 /*
  * calculates xor summ
@@ -164,8 +185,7 @@ inline uint16_t fgetLen( uint32_t startAdr )
 /*
  * Writes half word to flash at adr address
  * Return:
- *   0 - ok
- *   other - error code
+ *   code error
  */
 int fwriteHalfWord( uint32_t adr, uint16_t hw )
 {
@@ -176,7 +196,7 @@ int fwriteHalfWord( uint32_t adr, uint16_t hw )
 	if ( fstat != FLASH_COMPLETE ) {
 		return FERR_WRITE_HW; // error while write half word data to flash
 	}
-	return 0;
+	return FRES_OK;
 }
 
 /*
@@ -186,12 +206,8 @@ int fwriteHalfWord( uint32_t adr, uint16_t hw )
  *   *padr  - pointer from wich begin looking for, result will be also here
  *   endAdr - end address of the current block
  * Return:
- *   0 - ok: ID is found, *addr points to the base record's address
- *   1 - not found ID, catch empty cell
- *   2 - error: no START tag
- *   3 - record's lenght is less then allowable
- *   4 - record's lenght is greater then allowable
- *   5 - out of block range
+ *   FRES_OK - ok: ID is found, *addr points to the base record's address
+ *   other - code error
  */
 int fFindIDaddr( uint16_t ID, uint32_t *padr, uint32_t endAdr )
 {
@@ -209,64 +225,59 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr, uint32_t endAdr )
 				urtPrint(", at adr: ");
 				urt_uint32_to_hex( *padr );
 				urtPrint("\n");
-				return 0; // founded!
+				return FRES_OK; // founded!
 			} else {
 				// look at the LEN
 				len = fgetLen( *padr );
 				if ( len < MIN_LEN ) {
-					return 3; // record's lenght is less then allowable
+					return FERR_REC_LEN_MIN; // record's lenght is less then allowable
 				} else if ( len + 8 > MAX_LEN ) {
-					return 4; // record's lenght is greater then allowable
+					return FERR_REC_LEN_MAX; // record's lenght is greater then allowable
 				} else {
 					*padr += len; // will go to the next record
 					if ( *padr >= endAdr ) {
-						return 5; // out of block range
+						return FERR_OUTOF_BLOCK; // out of block range
 					}
 				}
 			}
 		} else if ( data == 0xFFFF ) {
 			return FERR_FND_EMP_CELL; // catch empty cell
 		} else {
-			return 2; // no start tag
+			return FERR_NO_START; // no start tag
 		}
 	} while ( 1 );
-	return -1; // unreachable instruction
+	return FERR_UNREACABLE; // unreachable instruction
 }
 
 /*
  * To delete recort with ID at base recor's address adr
  * Return:
- *   0 - Ok
- *   1 - no START tag
- *   2 - the record's ID doesn't match the address
- *   3 - error while remove the old record
+ *   error code
  */
 int fdeleteID( uint16_t ID, uint32_t adr ) {
 	uint16_t data;
 	data = fread16( adr );
 	if ( data != START ) {
-		return 1;
+		return FERR_NO_START; // no START tag
 	}
 	adr += 2;
 	data = fread16( adr );
 	if ( data != ID ) {
-		return 2;
+		return FERR_MISMATCH_ID;// the record's ID doesn't match the address
 	}
 	FLASH_Unlock();
 	FLASH_Status fstat = FLASH_ProgramHalfWord( adr, 0 );
 	FLASH_Lock();
 	if ( fstat != FLASH_COMPLETE ) {
-		return 3;
+		return FERR_REMOVE_ID; // error while remove the old record
 	}
-	return 0;
+	return FRES_OK;
 }
 
 /*
  * Erase page flash
  * Return:
- *   0 - Ok
- *   1 - address is not correct
- *   2 - error during erasing
+ *   code error
  */
 int ferasePage( uint32_t adr )
 {
@@ -285,10 +296,9 @@ int ferasePage( uint32_t adr )
 			}
 		}
 	}
-
 	if ( adrPage == 0 ) {
 		urtPrint("Err: ferasePage: adr not correct\n");
-		return 1;
+		return FERR_ADR_UNCORRECT; // address is not correct
 	}
 //	if ( (adr != PAGE60) && (adr != PAGE61) && (adr != PAGE62) && (adr != PAGE63) )
 //	{
@@ -300,17 +310,15 @@ int ferasePage( uint32_t adr )
 	FLASH_Lock();
 	if ( fstat != FLASH_COMPLETE ) {
 		urtPrint("Err: ferasePage: cant erase\n");
-		return 2;
+		return FERR_PAGE_ERASE; // error during page erasing
 	}
-	return 0;
+	return FRES_OK;
 }
 
 /*
  * Erase Block
  * Return:
- *   0 - Ok
- *   1 - error: address is not valid
- *   2 - error during page erasing
+ *   code error
  */
 int feraseBlock ( uint32_t block )
 {
@@ -318,7 +326,7 @@ int feraseBlock ( uint32_t block )
 	uint32_t page = block;
 	for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
 		ret = ferasePage( page + i * PAGE_SIZE );
-		if ( ret != 0) {
+		if ( ret != FRES_OK ) {
 			break;
 		}
 	}
@@ -330,9 +338,7 @@ int feraseBlock ( uint32_t block )
  *   *curBlock - pointer, where will be writes current block's address
  *   *empBlock - pointer, where will be writes empty block's address
  * Return:
- *   0 - ok
- *   1 - Error: curBlock found but embBlock not found
- *   2 - Error: non cubBlock and non empBlock
+ *   code error
  */
 int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
 {
@@ -343,9 +349,9 @@ int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
 		blockStat = fread16( BLOCK_B );
 		if ( blockStat == BLOCK_EMPTY ) {
 			*empBlock = BLOCK_B;
-			return 0;
+			return FRES_OK;
 		}
-		return 1;
+		return FERR_EMP_NFOUND; // curBlock found but embBlock not found
 	}
 	blockStat = fread16( BLOCK_B );
 	if ( blockStat == BLOCK_CURR ) {
@@ -353,20 +359,19 @@ int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
 		blockStat = fread16( BLOCK_A );
 		if ( blockStat == BLOCK_EMPTY ) {
 			*empBlock = BLOCK_A;
-			return 0;
+			return FRES_OK;
 		}
-		return 1;
+		return FERR_EMP_NFOUND; // curBlock found but embBlock not found
 	}
 	urtPrint("Err:fFindCurrBlock: no cur emp block\n");
-	return 2;
+	return FERR_NO_CURR_EMP; // non cubBlock and non empBlock
 }
 
 /*
  * Copies record at address adrRec to flashBuf[]
  *   Record has to be correct (about START, ID, LEN)
  * Return:
- *   0 - ok
- *   1 - error: record's length is not correct
+ *   code error
  */
 int fcopyRecToBuf( uint32_t adrRec )
 {
@@ -374,43 +379,40 @@ int fcopyRecToBuf( uint32_t adrRec )
 	len = fgetLen( adrRec );
 	if ( (len < MIN_LEN) || (len > MAX_LEN) ) {
 		urtPrint("Err: fcopyRecToBuf len false\n");
-		return 1;
+		return FERR_REC_LEN; // record's length is not correct
 	}
 	for ( int a = 0; a < len; a += 2 ) {
 		flashBuf[a] = fread16( adrRec + a );
 	}
-	return 0;
+	return FRES_OK;
 }
 
 /*
  * Writes the contents of the flashBuf[] buffer to the specified address
  * Return:
- *   0 - ok
- *   1 - Error: START or Id in flashBuf[]
- *   2 - Error: lenght in flashBuf
- *   3 - Error: while flash write half word
+ *   code error
  */
 int fwriteRecFromBuf( uint32_t adr )
 {
 	FLASH_Status fstat;
 	uint16_t len;
 	if ( (flashBuf[0] != START) || (flashBuf[1] == 0) ) {
-		return 1;
+		return FERR_MISS_ST_ID; // miss START or Id in flashBuf[]
 	}
 	len = flashBuf[2];
 	if ( (len < MIN_LEN) || (len > MAX_LEN) ) {
-		return 2;
+		return FERR_REC_LEN; //  record's length is not correct
 	}
 	FLASH_Unlock();
 	for ( int i = 0; i < len; i++ ) {
 		fstat = FLASH_ProgramHalfWord( adr + (i<<1), flashBuf[i] );
 		if ( fstat != FLASH_COMPLETE ) {
 			FLASH_Lock();
-			return 3;
+			return FERR_WRITE_HW; // error while write half word data to flash
 		}
 	}
 	FLASH_Lock();
-	return 0;
+	return FRES_OK;
 }
 
 /*
@@ -418,44 +420,46 @@ int fwriteRecFromBuf( uint32_t adr )
  *   adrCur - points to current block
  *   adrEmp - points to empty block
  * Return:
- *   0 - ok
- *   1,2,3 - error
+ *   code error
  */
 int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
 {
+	int res;
 	uint16_t head;
 	if ( fread16( adrCur ) != BLOCK_SHIFT ) {
-		return 1;
+		return FERR_NOT_SHIFT; // block is not in Shift state
 	}
 	if ( fread16( adrEmp ) != BLOCK_EMPTY ) {
-		return 2;
+		return FERR_NOT_EMPTY; // block is not in Empty state
 	}
 	adrCur += 2;
 	adrEmp += 2;
 	while ( 1 ) {
 		head = fread16( adrCur );
 		if ( head == 0xFFFF ) { // if empty cell
-			return 0;
+			return FRES_OK;
 		}
 		if ( head != START ) { // if no START tag
-			return 3;
+			return FERR_NO_START; // 3;
 		}
 		if ( fgetId( adrCur ) == 0 ) { // if record is nulled
 			adrCur += fgetLen( adrCur );
 			continue;
 		}
 		// here *adrCur points to record which need to copy to *adrEmp
-		if ( fcopyRecToBuf( adrCur ) != 0 ) { // write rec to buf
-			return 4;
+		res = fcopyRecToBuf( adrCur );
+		if ( res != 0 ) { // write rec to buf
+			return res;
 		}
-		if ( fwriteRecFromBuf( adrEmp ) != 0 ) { // write buf to flash
-			return 5;
+		res = fwriteRecFromBuf( adrEmp );
+		if ( res != 0 ) { // write buf to flash
+			return res;
 		}
 		adrEmp += fgetLen( adrEmp );
 		adrCur += fgetLen( adrCur );
 		continue;
 	}
-	return -1; // unreachable
+	return FERR_UNREACABLE; // unreachable
 }
 
 /*
@@ -467,40 +471,43 @@ int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
  *   - change empty block status to current
  *   - erase old block (that was BLOCK_SHIFT)
  * Return:
- *   0 - ok
- *   1 - can't find current block
- *   2 - error flash write
- *   3 - can't errase block
+ *   code error
  */
 int fchangeBlock(void)
 {
+	int res;
 	uint32_t adrCur;
 	uint32_t adrEmp;
-	if ( fFindCurrBlock( &adrCur, &adrEmp ) != 0 ) {
+	res = fFindCurrBlock( &adrCur, &adrEmp );
+	if ( res != FRES_OK ) {
 		urtPrint("Err: fchangeBank: can't find cur block\n");
-		return 1; // handle this case
+		return res; // handle this case
 	}
 	// curren block status changes to BLOCK_SHIFT (0x0000)
-	if ( fwriteHalfWord( adrCur, BLOCK_SHIFT ) != 0 ) {
+	res = fwriteHalfWord( adrCur, BLOCK_SHIFT );
+	if ( res != FRES_OK ) {
 		urtPrint("Err: fchangeBank: can't BLOCK_SHIFT\n");
-		return 2;
+		return res;
 	}
 	// copies all active records to empty block
-	if ( fmoveBlock( adrCur, adrEmp ) != 0 ) {
+	res = fmoveBlock( adrCur, adrEmp );
+	if ( res != FRES_OK ) {
 		urtPrint("Err: in fchangeBank while fmoveBlock \n");
-		return 2;
+		return res;
 	}
 	// change empty block status to current
-	if ( fwriteHalfWord( adrEmp, BLOCK_CURR ) != 0 ) {
+	res = fwriteHalfWord( adrEmp, BLOCK_CURR );
+	if ( res != FRES_OK ) {
 		urtPrint("Err: fchangeBank: can't make BLOCK_CURR\n");
-		return 2;
+		return res;
 	}
 	// erase old block (that was BLOCK_SHIFT)
-	if ( feraseBlock ( adrCur ) != 0 ) {
+	res = feraseBlock ( adrCur );
+	if ( res != FRES_OK ) {
 		urtPrint("Err: fchangeBank: can't erase old block\n");
-		return 3;
+		return res;
 	}
-	return 0;
+	return FRES_OK;
 }
 
 // =======================================================================================
@@ -512,13 +519,7 @@ int fchangeBlock(void)
  *  *buf - points to the 16 bits data with lenght len bytes.
  *   len - must be even number (because can write only 16 bits)
  * Return:
- *   0 - Ok
- *   1 - error delete of an old record
- *   2 - don't find the empty cell or other mistake
- *   3 - not enough free space for new record
- *   4 - error while writing to flash
- *   5 - len is not an even number
- *   6 - current block is not found
+ *   code error
  */
 int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t len )
 {
@@ -528,26 +529,25 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
 
 	res = fFindCurrBlock( &adr, &doomy );
 	if ( res != 0 ) {
-		//urtPrint("Err: fsaveRecord: not found cur Block\n");
-		return 6;
+		urtPrint("Err: fsaveRecord: not found cur Block\n");
+		return res;
 	}
 	doomy = adr + BLOCK_SIZE;
 
-	if ( len%2 != 0) {
-		return 5; // len is not even
+	if ( len%2 != FRES_OK) {
+		return FERR_LEN_NOT_EVEN; // len is not even
 	}
 
 	res = fFindIDaddr( ID, &adr, doomy );
-	if ( res == 0 ) { // if old record with same ID exist
-		int r;
-		r = fdeleteID( ID, adr ); // delete old record
-		if ( r != 0 ) {
-			return 1;
+	if ( res == FRES_OK ) { // if old record with same ID exist
+		res = fdeleteID( ID, adr ); // delete old record
+		if ( res != FRES_OK ) {
+			return res;
 		}
 		res = fFindIDaddr( ID, &adr, doomy ); // look for again
 	}
-	if ( res != 1 ) {
-		return 2;
+	if ( res != FERR_FND_EMP_CELL ) { // if not an empty cell
+		return res;
 	}
 
 	// and now adr is points to the empty cell
@@ -555,34 +555,39 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
 	uint32_t free = (doomy - 2) - adr; // at end must be always empty hw
 	uint16_t LEN = len + 8; // length of the entire record
 	if ( free < LEN ) {
-		// fchangeBlock
+		// ToDo: fchangeBlock
 		return 3;
 	}
 
 	// write START attribute
-	if ( fwriteHalfWord( adr, START ) != 0 ) {
-		return 4;
+	res = fwriteHalfWord( adr, START );
+	if ( res != FRES_OK ) {
+		return res;
 	}
 	// write ID
-	if ( fwriteHalfWord( adr + 2, ID ) != 0 ) {
-		return 4;
+	res = fwriteHalfWord( adr + 2, ID );
+	if ( res != FRES_OK ) {
+		return res;
 	}
 	// write LEN
-	if ( fwriteHalfWord( adr + 4, LEN ) != 0 ) {
-		return 4;
+	res = fwriteHalfWord( adr + 4, LEN );
+	if ( res != FRES_OK ) {
+		return res;
 	}
 	// write data
 	for ( uint16_t i = 0 ; i < len/2; i++ ) {
-		if ( fwriteHalfWord( adr + 6 + i*2, *(buf + i) ) != 0 ) {
-			return 4;
+		res = fwriteHalfWord( adr + 6 + i*2, *(buf + i) );
+		if ( res != FRES_OK ) {
+			return res;
 		}
 	}
 	// calculate and write XOR
 	uint16_t vxor = fcalcXOR( buf, len );
-	if ( fwriteHalfWord( adr + 6 + len, vxor ) != 0 ) {
-		return 4;
+	res = fwriteHalfWord( adr + 6 + len, vxor );
+	if ( res != FRES_OK ) {
+		return res;
 	}
-	return 0;
+	return FRES_OK;
 }
 
 /*
@@ -591,17 +596,7 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
  *   maxLen - max volume of the buffer buf, in bytes
  *   rlen   - The number of bytes read (alwayes even)
  * Return:
- *   0 - Ok, data was written to flash
- *
- *   1 - not found ID, catch empty cell
- *   2 - error: no START tag
- *   3 - record's lenght is less then allowable
- *   4 - record's lenght is greater then allowable
- *   5 - out of block range
- *
- *   10 - current block is not found
- *   20 - buff is too little for record
- *   21 - buf written, but xor is false
+ *   code error
  */
 int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_t *rlen )
 {
@@ -611,34 +606,33 @@ int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16
 	uint32_t doomy;
 
 	res = fFindCurrBlock( &adr, &doomy );
-	if ( res != 0 ) {
-		return 10;
+	if ( res != FRES_OK ) {
+		return res;
 	}
-	doomy = adr + BLOCK_SIZE;
+	doomy = adr + BLOCK_SIZE; // end block
 	adr += 2;
 
 	res = fFindIDaddr( ID, &adr, doomy );
-	if ( res == 0 ) {
-		// нашли запись
-		dataLen = fgetLen( adr );
-		dataLen -= 8;
-		if ( dataLen > maxLen ) {
-			return 20; // buff is too little for record
-		}
-		adr += 6; // now adr points to the data
-
-		// read data and write its to buf
-		for ( uint16_t i = 0 ; i < dataLen/2; i++ ) {
-			buf[i] = fread16( adr );
-			adr += 2;
-		}
-		*rlen = dataLen;
-		uint16_t xor = fcalcXOR( buf, dataLen );
-		if ( xor != fread16( adr ) ) {
-			return 21; // buf written, but xor is false
-		}
-		return 0;
+	if ( res != FRES_OK ) {
+		return res;
 	}
-	return res;
+	dataLen = fgetLen( adr );
+	dataLen -= 8;
+	if ( dataLen > maxLen ) {
+		return FERR_BUF_LITTLE; // buff is too little for record
+	}
+	adr += 6; // now adr points to the data
+
+	// read data and write its to buf
+	for ( uint16_t i = 0 ; i < dataLen/2; i++ ) {
+		buf[i] = fread16( adr );
+		adr += 2;
+	}
+	*rlen = dataLen;
+	uint16_t xor = fcalcXOR( buf, dataLen );
+	if ( xor != fread16( adr ) ) {
+		return 21; // buf written, but xor is false
+	}
+	return FRES_OK;
 }
 

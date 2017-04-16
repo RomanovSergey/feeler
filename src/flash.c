@@ -120,6 +120,10 @@ static const uint16_t START = 0xABCD; // start record tag
 
 static uint16_t flashBuf[MAX_LEN << 2];
 
+// Errors codes
+#define FERR_WRITE_HW      1  // error while write half word data to flash
+#define FERR_FND_EMP_CELL  2  // not found ID, catch empty cell
+
 /*
  * calculates xor summ
  */
@@ -161,7 +165,7 @@ inline uint16_t fgetLen( uint32_t startAdr )
  * Writes half word to flash at adr address
  * Return:
  *   0 - ok
- *   1 - error
+ *   other - error code
  */
 int fwriteHalfWord( uint32_t adr, uint16_t hw )
 {
@@ -170,7 +174,7 @@ int fwriteHalfWord( uint32_t adr, uint16_t hw )
 	fstat = FLASH_ProgramHalfWord( adr, hw ); // в статус блока записываются 0x0000
 	FLASH_Lock();
 	if ( fstat != FLASH_COMPLETE ) {
-		return 1;
+		return FERR_WRITE_HW; // error while write half word data to flash
 	}
 	return 0;
 }
@@ -221,7 +225,7 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr, uint32_t endAdr )
 				}
 			}
 		} else if ( data == 0xFFFF ) {
-			return 1; // catch empty cell
+			return FERR_FND_EMP_CELL; // catch empty cell
 		} else {
 			return 2; // no start tag
 		}
@@ -455,41 +459,43 @@ int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
 }
 
 /*
- * Процесс переключения блока происходит следующим образом:
- *   - в статус блока записываются 0x0000
- *   - другой блок должен быть пустым
- *   - копируются все записи в новый блок
- *   - после копирования всех записей, новый блок помечается как текущий а старый стираем
+ * Changes the block from current to empty.
+ * It is need when curren block overflow.
+ * Switch to new block walk thrue next steps:
+ *   - curren block status changes to BLOCK_SHIFT (0x0000)
+ *   - copies all active records to empty block
+ *   - change empty block status to current
+ *   - erase old block (that was BLOCK_SHIFT)
  * Return:
  *   0 - ok
  *   1 - can't find current block
  *   2 - error flash write
  *   3 - can't errase block
  */
-int fchangeBank(void)
+int fchangeBlock(void)
 {
-	uint32_t adrCur; // будет указывать на адрес текущего блока
-	uint32_t adrEmp; // будет указывать на адрес пустого блока
+	uint32_t adrCur;
+	uint32_t adrEmp;
 	if ( fFindCurrBlock( &adrCur, &adrEmp ) != 0 ) {
 		urtPrint("Err: fchangeBank: can't find cur block\n");
 		return 1; // handle this case
 	}
-	// текущий блок пометим как в режиме переключения
+	// curren block status changes to BLOCK_SHIFT (0x0000)
 	if ( fwriteHalfWord( adrCur, BLOCK_SHIFT ) != 0 ) {
 		urtPrint("Err: fchangeBank: can't BLOCK_SHIFT\n");
 		return 2;
 	}
-	// скопируем активные записи в пустой блок
+	// copies all active records to empty block
 	if ( fmoveBlock( adrCur, adrEmp ) != 0 ) {
 		urtPrint("Err: in fchangeBank while fmoveBlock \n");
 		return 2;
 	}
-	// пометим новый блок как текущий
+	// change empty block status to current
 	if ( fwriteHalfWord( adrEmp, BLOCK_CURR ) != 0 ) {
 		urtPrint("Err: fchangeBank: can't make BLOCK_CURR\n");
 		return 2;
 	}
-	// сотрем старый текущий блок который находится в режиме переключенияb
+	// erase old block (that was BLOCK_SHIFT)
 	if ( feraseBlock ( adrCur ) != 0 ) {
 		urtPrint("Err: fchangeBank: can't erase old block\n");
 		return 3;
@@ -549,6 +555,7 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
 	uint32_t free = (doomy - 2) - adr; // at end must be always empty hw
 	uint16_t LEN = len + 8; // length of the entire record
 	if ( free < LEN ) {
+		// fchangeBlock
 		return 3;
 	}
 
@@ -586,15 +593,15 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
  * Return:
  *   0 - Ok, data was written to flash
  *
- *   1 - не нашли ID, дошли до пустой ячейки, paddr на пустую ячейку
- *   2 - нет старта данных, ошибка
- *   3 - длина записи меньше минимально допустимой
- *   4 - длина записи больше максимально допустимой
+ *   1 - not found ID, catch empty cell
+ *   2 - error: no START tag
+ *   3 - record's lenght is less then allowable
+ *   4 - record's lenght is greater then allowable
  *   5 - out of block range
- *   6 - current block is not found
  *
- *   11 - объем буфер buf не достаточен для записи
- *   12 - данные в buf записали, но xor не совпадает
+ *   10 - current block is not found
+ *   20 - buff is too little for record
+ *   21 - buf written, but xor is false
  */
 int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16_t *rlen )
 {
@@ -605,7 +612,7 @@ int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16
 
 	res = fFindCurrBlock( &adr, &doomy );
 	if ( res != 0 ) {
-		return 6;
+		return 10;
 	}
 	doomy = adr + BLOCK_SIZE;
 	adr += 2;
@@ -616,7 +623,7 @@ int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16
 		dataLen = fgetLen( adr );
 		dataLen -= 8;
 		if ( dataLen > maxLen ) {
-			return 11; // объем буфер buf не достаточен для записи
+			return 20; // buff is too little for record
 		}
 		adr += 6; // now adr points to the data
 
@@ -628,7 +635,7 @@ int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16
 		*rlen = dataLen;
 		uint16_t xor = fcalcXOR( buf, dataLen );
 		if ( xor != fread16( adr ) ) {
-			return 12;
+			return 21; // buf written, but xor is false
 		}
 		return 0;
 	}

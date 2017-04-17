@@ -6,10 +6,10 @@
  *
  *  Module not complete yet
  *
- *  Модуль для работы с флэш памятью
- *  Реализует алгоритм записи, чтения данных, а также стирает страницу
- *  при ее заполнении.
- *  Запись и чтение осуществляется пакетами, заданной длины.
+ *  Purpose of this module is work with flash memory.
+ *  Implemented algorithms for write and read records,
+ *    switch to another block on overflow.
+ *  Read and write are implemented with packet with defined length.
  *
  *====================================================================================
  * Алгоритм записи и чтения информации во флэш.
@@ -230,12 +230,15 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr, uint32_t endAdr )
 				// look at the LEN
 				len = fgetLen( *padr );
 				if ( len < MIN_LEN ) {
+					urtPrint("Err: fFindIDaddr: LEN_MIN\n");
 					return FERR_REC_LEN_MIN; // record's lenght is less then allowable
 				} else if ( len + 8 > MAX_LEN ) {
+					urtPrint("Err: fFindIDaddr: LEN_MAX\n");
 					return FERR_REC_LEN_MAX; // record's lenght is greater then allowable
 				} else {
 					*padr += len; // will go to the next record
 					if ( *padr >= endAdr ) {
+						urtPrint("Err: fFindIDaddr: out of block\n");
 						return FERR_OUTOF_BLOCK; // out of block range
 					}
 				}
@@ -243,6 +246,7 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr, uint32_t endAdr )
 		} else if ( data == 0xFFFF ) {
 			return FERR_FND_EMP_CELL; // catch empty cell
 		} else {
+			urtPrint("Err: fFindIDaddr: no START\n");
 			return FERR_NO_START; // no start tag
 		}
 	} while ( 1 );
@@ -440,7 +444,7 @@ int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
 			return FRES_OK;
 		}
 		if ( head != START ) { // if no START tag
-			return FERR_NO_START; // 3;
+			return FERR_NO_START;
 		}
 		if ( fgetId( adrCur ) == 0 ) { // if record is nulled
 			adrCur += fgetLen( adrCur );
@@ -465,6 +469,8 @@ int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
 /*
  * Changes the block from current to empty.
  * It is need when curren block overflow.
+ * Params:
+ *   *newCurBlock - pointer, where to write address of new current block
  * Switch to new block walk thrue next steps:
  *   - curren block status changes to BLOCK_SHIFT (0x0000)
  *   - copies all active records to empty block
@@ -473,7 +479,7 @@ int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
  * Return:
  *   code error
  */
-int fchangeBlock(void)
+int fchangeBlock( uint32_t *newCurBlock)
 {
 	int res;
 	uint32_t adrCur;
@@ -507,6 +513,44 @@ int fchangeBlock(void)
 		urtPrint("Err: fchangeBank: can't erase old block\n");
 		return res;
 	}
+	*newCurBlock = adrEmp;
+	return FRES_OK;
+}
+
+/*
+ * Calculates a free space at the current block.
+ *   *free     - pointer where to store result
+ *   *adrBlock - pointer where to store address of current block
+ * Return:
+ *   code error, if 0 then *free and *adrBlock has results
+ */
+int fgetFree( uint16_t *free, uint32_t *adrBlock )
+{
+	int res;
+	uint32_t adr;
+	uint32_t doomy;
+
+	*free = 0;
+
+	res = fFindCurrBlock( adrBlock, &doomy );
+	if ( res != 0 ) {
+		urtPrint("Err: fgetFree: not found cur Block\n");
+		return res;
+	}
+	adr = *adrBlock;
+
+	doomy = adr + BLOCK_SIZE;
+	while ( 1 ) {
+		res = fFindIDaddr( 0xFFFF, &adr, doomy );
+		if ( res == FERR_FND_EMP_CELL ) { // if finded empty cell
+			break;
+		} else if ( res == FRES_OK ) {
+			continue; // we do not look for this ID
+		} else {
+			return res; // error code
+		}
+	}
+	*free = (doomy - 2) - adr; // at end must be always empty hw
 	return FRES_OK;
 }
 
@@ -514,8 +558,7 @@ int fchangeBlock(void)
 // ======================== interface functions ==========================================
 
 /*
- * Saves the record with ID to the flash
- * , where
+ * Saves the record with ID to the flash, where:
  *  *buf - points to the 16 bits data with lenght len bytes.
  *   len - must be even number (because can write only 16 bits)
  * Return:
@@ -525,39 +568,39 @@ int fsaveRecord( const uint16_t ID, const uint16_t* const buf, const uint16_t le
 {
 	int res;
 	uint32_t adr;
-	uint32_t doomy;
+	uint32_t end;
+	uint16_t free;
 
-	res = fFindCurrBlock( &adr, &doomy );
-	if ( res != 0 ) {
-		urtPrint("Err: fsaveRecord: not found cur Block\n");
-		return res;
-	}
-	doomy = adr + BLOCK_SIZE;
-
-	if ( len%2 != FRES_OK) {
+	if ( (len % 2) != FRES_OK) {
 		return FERR_LEN_NOT_EVEN; // len is not even
 	}
 
-	res = fFindIDaddr( ID, &adr, doomy );
+	res = fgetFree( &free, &adr );
+	if ( res != FRES_OK ) {
+		// ToDo: implement case when cur block not found
+		return res;
+	}
+	uint16_t LEN = len + 8; // length of the entire record
+	if ( free < LEN ) {
+		res = fchangeBlock( &adr );
+		if ( res != FRES_OK ) {
+			return res;
+		}
+	}
+
+	end = adr + BLOCK_SIZE;
+	res = fFindIDaddr( ID, &adr, end );
 	if ( res == FRES_OK ) { // if old record with same ID exist
 		res = fdeleteID( ID, adr ); // delete old record
 		if ( res != FRES_OK ) {
 			return res;
 		}
-		res = fFindIDaddr( ID, &adr, doomy ); // look for again
+		res = fFindIDaddr( ID, &adr, end ); // look for again
 	}
 	if ( res != FERR_FND_EMP_CELL ) { // if not an empty cell
 		return res;
 	}
-
-	// and now adr is points to the empty cell
-	// to calculate a volume of the free memory
-	uint32_t free = (doomy - 2) - adr; // at end must be always empty hw
-	uint16_t LEN = len + 8; // length of the entire record
-	if ( free < LEN ) {
-		// ToDo: fchangeBlock
-		return 3;
-	}
+	// now adr is points to the empty cell
 
 	// write START attribute
 	res = fwriteHalfWord( adr, START );
@@ -611,7 +654,7 @@ int floadRecord( const uint16_t ID, uint16_t* buf, const uint16_t maxLen, uint16
 	}
 	doomy = adr + BLOCK_SIZE; // end block
 	adr += 2;
-
+	// now adr points to begin of first record
 	res = fFindIDaddr( ID, &adr, doomy );
 	if ( res != FRES_OK ) {
 		return res;

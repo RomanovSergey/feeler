@@ -11,38 +11,40 @@
  *    switch to another block on overflow.
  *  Read and write are implemented with packet with defined length.
  *
- *====================================================================================
- * Алгоритм записи и чтения информации во флэш.
+ * ===================================================================================
+ * Algorithm for write and read information to/from internal stm32 flash memory.
  *
- * Минимальная операция записи контроллером - 2 байта (16 бит), записать можно
- *   только в стертую ячеку (0xFFFF - проверяется флэш контроллером),
- *   исключение - если записываемые данные имеют все биты нули (0х0000).
- * Адрес записи должен быть выровнен по четным адресам.
- *   Стирать можно только страницу целиком (1 кБ на данном контроллере), посте стирания
- *   все данные страницы переведутся в 0xFF.
+ * Microcontroller allows to write to flash only 2 bytes (16 bits) at once
+ *   and to the eased cell (0xFFFF - checked by controller).
+ *   Only exception to this is when 0x0000 is programmed.
+ * Addresses of writes must be even value.
+ *   We can erase only whole page (1 kB on this device), after erase all cells
+ * will stay to 0xFFFF value.
  *
- * В качестве формата пакета данных (record) во флэше примем следующий вид:
+ * To store information on flash, we will be use packets (records) in next format:
  *   START, ID, LEN, DATA[], XOR
- * ,где
- *     START  - признак старта записи, 16 бит: 0xABCD (чтобы распознать ошибку)
- *     ID     - идентификатор записи, 16 бит, если 0 - то запись стерта
- *     LEN    - длина всей записи, начиная от START и заканчивая XOR, в байтах
- *     DATA[] - сами данные, по 16 бит, имеют длину = LEN - 8 байт
- *     XOR    - контрольная сумма DATA[] данных
+ * , where:
+ *   START  - start tag of the record: 0xABCD (purpose of this: to catch bugs)
+ *   ID     - record's identifier, if ID == 0x0000: record is erased
+ *   LEN    - lenght of the record in bytes, from START, to XOR inclusive (even number)
+ *   DATA[] - usefull data, by 16 bits, has lenght = LEN - 8 bytes
+ *   XOR    - controll summ of DATA[]
  *
- * - Запись данных во флэше должна быть уникальной, то есть записи с
- * одинаковыми ID повторятся не должны.
- * - Если запись с определенным ID нужно удалить не стирая всю страницу, то вместо
- * поля ID записываются нули, остальные поля записи не трогаются.
- * - Поиск записи в блоке по ID происходит по алгоримту: первый байт всегда должен быть
- * стартовым, далее смотрим ID, если ID не наш, увеличиваем адрес на LEN байт и
- * итерация повторяется пока не найдем нужный ID или пока не наткнемся на пустую
- * ячейку или пока не закончится страница памяти.
- * - Если нужно записать новые данные с определенным ID, то сначала удаляем старую
- * запись с данным ID (если она есть), находим первую чистую ячейку (0xFFFF) и если
- * хватает места для записи - записываем.
+ * Record on the flash should be unique, that is, records with the same ID
+ *   should not be repeated.
+ * If you want to delete record with specific ID without erasing the entire page,
+ *   then 0x0000 are written instead of the ID field, the remaining fields
+ *   of the records are not touched.
+ * The search for an entry in the block by ID occurs according to the algorithm:
+ *   the first byte should always be the starting one, then look at the ID,
+ *   if the ID is not ours, we increase the address to LEN bytes and iteration
+ *   is repeated until we find the desired ID or until we come across
+ *   an empty cell or until it ends Page of memory.
+ * If you want to write new data with a specific ID, first delete the old record
+ *   with the given ID (if it is), then find the first clean cell (0xFFFF)
+ *   and if there is enough space for writing - write it down.
  *
- *====================================================================================
+ * ===================================================================================
  * В качестве блока будем использовать 2 смежные страницы памяти - для увеличения
  *   объема хранилища.
  * В блоке будем различать:
@@ -74,13 +76,6 @@
  *   - удаляется запись в старом блоке
  *   - после копирования всех записей, новый блок помечается как текущий а старый стираем
  *
- * Если перед операцией чтения или записи текущий блок не найден, то необходимо
- *   его создать. Для этого проверяются текуще блоки.
- *   - помечен ли какой либо блок как в процессе переключения
- *   - если да продолжим процедуру переключения
- *   - если блоков в процессе переключения тоже нет, выбираем младший по адресу блок
- *     и помечаем его текущим.
- *
  * Перед поиском записи в блоке переходим в текущий блок.
  * При операции чтения данных возможны варианты:
  *   - нет данных: здесь софт решает что делать
@@ -92,7 +87,14 @@
  *   - не достаточно свободного места: произвести переключение блока
  *   - ошибка записи: сообщить обо ошибке
  *
- *====================================================================================
+ * Если перед операцией чтения или записи текущий блок не найден, то необходимо
+ *   его создать. Для этого проверяются текуще блоки.
+ *   - помечен ли какой либо блок как в процессе переключения
+ *   - если да продолжим процедуру переключения
+ *   - если блоков в процессе переключения тоже нет, выбираем младший по адресу блок
+ *     и помечаем его текущим.
+ *
+ * ===================================================================================
  *
  */
 
@@ -554,8 +556,29 @@ int fgetFree( uint16_t *free, uint32_t *adrBlock )
 	return FRES_OK;
 }
 
+/*
+ * when curren block is not found, it is need to call
+ * this function, in which will create current block
+ *
+ * Если перед операцией чтения или записи текущий блок не найден, то необходимо
+ *   его создать. Для этого проверяются текуще блоки.
+ *   - помечен ли какой либо блок как в процессе переключения
+ *   - если да продолжим процедуру переключения
+ *   - если блоков в процессе переключения тоже нет, выбираем младший по адресу блок
+ *     и помечаем его текущим.
+ */
+int func( void )
+{
+	uint32_t  adrCur;
+	uint32_t  adrEmp;
+	int res = 0;
+
+	//res = fFindCurrBlock( &adrCur, &adrEmp );
+	return res;
+}
+
 // =======================================================================================
-// ======================== interface functions ==========================================
+// ============================== interface functions ====================================
 
 /*
  * Saves the record with ID to the flash, where:

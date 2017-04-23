@@ -118,8 +118,9 @@ static const uint16_t BLOCK_CURR  = 0xBBBB; // current block
 static const uint16_t BLOCK_SHIFT = 0x0000; // in the process of switching
 
 static const uint16_t START = 0xABCD; // start record tag
+static const uint16_t END   = 0xEEEE; // end record tag
 
-#define MIN_LEN   10   // Minimum record length (data + 8 service bytes)
+#define MIN_LEN   12   // Minimum record length (data + 10 service bytes)
 #define MAX_LEN   200  // Maximum record length, in bytes
 
 static uint16_t flashBuf[MAX_LEN << 2];
@@ -185,6 +186,27 @@ inline uint16_t fgetLen( uint32_t startAdr )
 }
 
 /*
+ * Reads Len data from base startAdr record's address
+ *   startAdr - adr with START tag
+ *   *len - where will be result
+ * Return:
+ *   FRES_OK (0) - ok, result in len
+ *   FERR_REC_LEN_MIN
+ *   FERR_REC_LEN_MAX
+ */
+int fgetAndCheckLen( uint32_t startAdr, uint16_t *len )
+{
+	*len = fgetLen( startAdr );
+	if ( *len < MIN_LEN ) {
+		return FERR_REC_LEN_MIN;
+	}
+	if ( *len > MAX_LEN ) {
+		return FERR_REC_LEN_MAX;
+	}
+	return 0;
+}
+
+/*
  * Writes half word to flash at adr address
  * Return:
  *   code error
@@ -230,19 +252,16 @@ int fFindIDaddr( uint16_t ID, uint32_t *padr, uint32_t endAdr )
 				return FRES_OK; // founded!
 			} else {
 				// look at the LEN
-				len = fgetLen( *padr );
-				if ( len < MIN_LEN ) {
-					urtPrint("Err: fFindIDaddr: LEN_MIN\n");
-					return FERR_REC_LEN_MIN; // record's lenght is less then allowable
-				} else if ( len + 8 > MAX_LEN ) {
-					urtPrint("Err: fFindIDaddr: LEN_MAX\n");
-					return FERR_REC_LEN_MAX; // record's lenght is greater then allowable
-				} else {
+				int res;
+				res = fgetAndCheckLen( *padr, &len );
+				if ( res == 0 ) {
 					*padr += len; // will go to the next record
 					if ( *padr >= endAdr ) {
 						urtPrint("Err: fFindIDaddr: out of block\n");
 						return FERR_OUTOF_BLOCK; // out of block range
 					}
+				} else {
+					return res;
 				}
 			}
 		} else if ( data == 0xFFFF ) {
@@ -269,7 +288,7 @@ int fdeleteID( uint16_t ID, uint32_t adr ) {
 	adr += 2;
 	data = fread16( adr );
 	if ( data != ID ) {
-		return FERR_MISMATCH_ID;// the record's ID doesn't match the address
+		return FERR_MISMATCH_ID; // the record's ID doesn't match the address
 	}
 	FLASH_Unlock();
 	FLASH_Status fstat = FLASH_ProgramHalfWord( adr, 0 );
@@ -382,13 +401,15 @@ int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
 int fcopyRecToBuf( uint32_t adrRec )
 {
 	uint16_t len;
-	len = fgetLen( adrRec );
-	if ( (len < MIN_LEN) || (len > MAX_LEN) ) {
+	int res;
+
+	res = fgetAndCheckLen( adrRec, &len );
+	if ( res != FRES_OK ) {
 		urtPrint("Err: fcopyRecToBuf len false\n");
-		return FERR_REC_LEN; // record's length is not correct
+		return res;
 	}
-	for ( int a = 0; a < len; a += 2 ) {
-		flashBuf[a] = fread16( adrRec + a );
+	for ( int a = 0; a < len/2; a++ ) {
+		flashBuf[a] = fread16( adrRec + (a<<1) );
 	}
 	return FRES_OK;
 }
@@ -410,7 +431,7 @@ int fwriteRecFromBuf( uint32_t adr )
 		return FERR_REC_LEN; //  record's length is not correct
 	}
 	FLASH_Unlock();
-	for ( int i = 0; i < len; i++ ) {
+	for ( int i = 0; i < len/2; i++ ) {
 		fstat = FLASH_ProgramHalfWord( adr + (i<<1), flashBuf[i] );
 		if ( fstat != FLASH_COMPLETE ) {
 			FLASH_Lock();
@@ -446,6 +467,17 @@ int fmoveBlock( uint32_t adrCur, uint32_t adrEmp )
 			return FRES_OK;
 		}
 		if ( head != START ) { // if no START tag
+			// looking for END tag
+			urtPrint("fmoveBlock: no START\n");
+			for ( int i = 0; i < MAX_LEN + 10; i++ ) {
+				adrCur++;
+				head = fread16( adrCur );
+				if ( head == END ) {
+					adrCur++;
+					urtPrint("fmoveBlock: find END\n");
+					continue;
+				}
+			}
 			return FERR_NO_START;
 		}
 		if ( fgetId( adrCur ) == 0 ) { // if record is nulled
@@ -572,8 +604,16 @@ int func( void )
 	uint32_t  adrCur;
 	uint32_t  adrEmp;
 	int res = 0;
+	uint16_t blockStat;
+	blockStat = fread16( BLOCK_A );
+	if ( blockStat == BLOCK_EMPTY ) {
 
-	//res = fFindCurrBlock( &adrCur, &adrEmp );
+		return 0; // curBlock found but embBlock not found
+	}
+	blockStat = fread16( BLOCK_B );
+	if ( blockStat == BLOCK_EMPTY ) {
+
+	}
 	return res;
 }
 

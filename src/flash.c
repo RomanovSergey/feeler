@@ -231,7 +231,11 @@ int fwriteHalfWord( uint32_t adr, uint16_t hw )
  *   endAdr - end address of the current block
  * Return:
  *   FRES_OK - ok: ID is found, *addr points to the base record's address
- *   other - code error
+ *   FERR_FND_EMP_CELL - catch empty cell
+ *   FERR_OUTOF_BLOCK - out of block range
+ *   FERR_NO_START - no start tag
+ *   FERR_REC_LEN_MIN
+ *   FERR_REC_LEN_MAX
  */
 int fFindIDaddr( uint16_t ID, uint32_t *padr, uint32_t endAdr )
 {
@@ -363,7 +367,9 @@ int feraseBlock ( uint32_t block )
  *   *curBlock - pointer, where will be writes current block's address
  *   *empBlock - pointer, where will be writes empty block's address
  * Return:
- *   code error
+ *   FRES_OK - 0 - if ok
+ *   FERR_EMP_NFOUND - curBlock found but embBlock not found
+ *   FERR_NO_CURR_EMP - non cubBlock and non empBlock
  */
 int fFindCurrBlock( uint32_t *curBlock, uint32_t *empBlock )
 {
@@ -556,7 +562,13 @@ int fchangeBlock( uint32_t *newCurBlock)
  *   *free     - pointer where to store result
  *   *adrBlock - pointer where to store address of current block
  * Return:
- *   code error, if 0 then *free and *adrBlock has results
+ *   FRES_OK - Good thing, - *free and *adrBlock has results
+ *   FERR_EMP_NFOUND  - curBlock found but embBlock not found
+ *   FERR_NO_CURR_EMP - non cubBlock and non empBlock
+ *   FERR_OUTOF_BLOCK - out of block range
+ *   FERR_NO_START    - no start tag
+ *   FERR_REC_LEN_MIN
+ *   FERR_REC_LEN_MAX
  */
 int fgetFree( uint16_t *free, uint32_t *adrBlock )
 {
@@ -599,23 +611,23 @@ int fgetFree( uint16_t *free, uint32_t *adrBlock )
  *   - если блоков в процессе переключения тоже нет, выбираем младший по адресу блок
  *     и помечаем его текущим.
  */
-int func( void )
-{
-	uint32_t  adrCur;
-	uint32_t  adrEmp;
-	int res = 0;
-	uint16_t blockStat;
-	blockStat = fread16( BLOCK_A );
-	if ( blockStat == BLOCK_EMPTY ) {
-
-		return 0; // curBlock found but embBlock not found
-	}
-	blockStat = fread16( BLOCK_B );
-	if ( blockStat == BLOCK_EMPTY ) {
-
-	}
-	return res;
-}
+//int func( void )
+//{
+//	uint32_t  adrCur;
+//	uint32_t  adrEmp;
+//	int res = 0;
+//	uint16_t blockStat;
+//	blockStat = fread16( BLOCK_A );
+//	if ( blockStat == BLOCK_EMPTY ) {
+//
+//		return 0; // curBlock found but embBlock not found
+//	}
+//	blockStat = fread16( BLOCK_B );
+//	if ( blockStat == BLOCK_EMPTY ) {
+//
+//	}
+//	return res;
+//}
 
 // =======================================================================================
 // ============================== interface functions ====================================

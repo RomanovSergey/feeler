@@ -73,14 +73,27 @@ int fwriteHW( uint32_t adr, uint16_t hw )
 }
 
 /*
+ * To copy all active records from overflow block to empty block.
+ *   adrCur - points to current block
+ *   adrEmp - points to empty block
+ * Return:
+ *   code error
+ */
+int fmvBlock( uint32_t adrCur, uint32_t adrEmp, uint32_t *newAdr )
+{
+	return 0;
+}
+
+/*
  * Specifies *adr to the free cell,
  * enough for record with len data
  * Return:
  *   FRES_OK - good, *adr will point to free cell with enough space
  *   code error
  */
-int fGetFreeSpace( uint32_t *address, uint8_t len )
+int fGetFreeSpace( uint32_t *address, uint8_t hwlen )
 {
+	int res;
 	uint32_t endAdr;
 	uint16_t data;
 	uint32_t adr;
@@ -101,12 +114,18 @@ int fGetFreeSpace( uint32_t *address, uint8_t len )
 	while (1) {
 		data = fread16( adr );
 		if ( data != 0xFFFF ) {
-			adr += (uint8_t)(data & 0x00FF) + ADDLEN;
+			adr += (uint8_t)(data & 0x00FF)*2 + ADDLEN;
 			// ToDo: check adr out of block range
+			if ( adr > endAdr) {
+				res = fmvBlock( adrCur, adrEmp, &adr );
+				if ( res != 0 ) {
+					return res;
+				}
+			}
 			continue;
 		}
 		// to calculate len
-		if ( (adr + len) > endAdr ) {
+		if ( (adr + ADDLEN + hwlen*2) > endAdr ) {
 			// not enough space
 
 			return FERR_UNREACABLE;
@@ -134,14 +153,14 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 {
 	int res;
 	uint32_t adr;
-	uint8_t len;
+	uint8_t hwlen;
 
-	adr = adrBLOCK_A;
-	len = (uint8_t)(IDLEN & 0x00FF);
+	adr = 0;
+	hwlen = (uint8_t)(IDLEN & 0x00FF);
 
 	// Specifies adr on the free cell and calculates
 	// whether there is enough free space for writing
-	res = fGetFreeSpace( &adr, len );
+	res = fGetFreeSpace( &adr, hwlen );
 	if ( res != 0 ) {
 		return res;
 	}
@@ -154,7 +173,7 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 	adr += 2;
 
 	// write data
-	for ( uint16_t i = 0 ; i < len; i++ ) {
+	for ( uint16_t i = 0 ; i < hwlen; i++ ) {
 		res = fwriteHW( adr, buf[i] );
 		if ( res != FRES_OK ) {
 			return res;
@@ -163,7 +182,7 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 	}
 
 	// calculate and write check summ
-	uint16_t cs = fcalcCS( buf, len );
+	uint16_t cs = fcalcCS( buf, hwlen );
 	res = fwriteHW( adr, cs );
 	if ( res != FRES_OK ) {
 		return res;

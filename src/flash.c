@@ -303,64 +303,64 @@ int fdeleteID( uint16_t ID, uint32_t adr ) {
 	return FRES_OK;
 }
 
-/*
- * Erase page flash
- * Return:
- *   code error
- */
-int ferasePage( uint32_t adr )
-{
-	uint32_t adrPage = 0;
-
-	if ( adr < BLOCK_B ) {
-		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
-			if ( adr == BLOCK_A + i * PAGE_SIZE ) {
-				adrPage = adr;
-			}
-		}
-	} else {
-		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
-			if ( adr == BLOCK_B + i * PAGE_SIZE ) {
-				adrPage = adr;
-			}
-		}
-	}
-	if ( adrPage == 0 ) {
-		urtPrint("Err: ferasePage: adr not correct\n");
-		return FERR_ADR_UNCORRECT; // address is not correct
-	}
-//	if ( (adr != PAGE60) && (adr != PAGE61) && (adr != PAGE62) && (adr != PAGE63) )
-//	{
-//		urtPrint("Err: ferasePage: adr not correct\n");
-//		return 1;
+///*
+// * Erase page flash
+// * Return:
+// *   code error
+// */
+//int ferasePage( uint32_t adr )
+//{
+//	uint32_t adrPage = 0;
+//
+//	if ( adr < BLOCK_B ) {
+//		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
+//			if ( adr == BLOCK_A + i * PAGE_SIZE ) {
+//				adrPage = adr;
+//			}
+//		}
+//	} else {
+//		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
+//			if ( adr == BLOCK_B + i * PAGE_SIZE ) {
+//				adrPage = adr;
+//			}
+//		}
 //	}
-	FLASH_Unlock();
-	FLASH_Status fstat =  FLASH_ErasePage( adrPage );
-	FLASH_Lock();
-	if ( fstat != FLASH_COMPLETE ) {
-		urtPrint("Err: ferasePage: cant erase\n");
-		return FERR_PAGE_ERASE; // error during page erasing
-	}
-	return FRES_OK;
-}
-
-/*
- * Erase Block
- * Return:
- *   code error
- */
-int feraseBlock ( uint32_t block )
-{
-	int ret = 0;
-	uint32_t page = block;
-	for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
-		ret = ferasePage( page + i * PAGE_SIZE );
-		if ( ret != FRES_OK ) {
-			break;
-		}
-	}
-	return ret;
-}
+//	if ( adrPage == 0 ) {
+//		urtPrint("Err: ferasePage: adr not correct\n");
+//		return FERR_ADR_UNCORRECT; // address is not correct
+//	}
+////	if ( (adr != PAGE60) && (adr != PAGE61) && (adr != PAGE62) && (adr != PAGE63) )
+////	{
+////		urtPrint("Err: ferasePage: adr not correct\n");
+////		return 1;
+////	}
+//	FLASH_Unlock();
+//	FLASH_Status fstat =  FLASH_ErasePage( adrPage );
+//	FLASH_Lock();
+//	if ( fstat != FLASH_COMPLETE ) {
+//		urtPrint("Err: ferasePage: cant erase\n");
+//		return FERR_PAGE_ERASE; // error during page erasing
+//	}
+//	return FRES_OK;
+//}
+//
+///*
+// * Erase Block
+// * Return:
+// *   code error
+// */
+//int feraseBlock ( uint32_t block )
+//{
+//	int ret = 0;
+//	uint32_t page = block;
+//	for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
+//		ret = ferasePage( page + i * PAGE_SIZE );
+//		if ( ret != FRES_OK ) {
+//			break;
+//		}
+//	}
+//	return ret;
+//}
 
 /*
  * Find current block. One block must be current, another empty.

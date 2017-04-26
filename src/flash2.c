@@ -26,6 +26,9 @@ static const uint8_t  ADDLEN = 4; // IDLEN(2) + CS(2)
 #define FRES_OK             0  // ok, successful operation
 #define FERR_WRITE_HW       1  // error while write half word data to flash
 #define FERR_ID             2  // record's ID is not allowable
+#define FERR_OVER_BLOCK     3  // record is out of block
+#define FERR_PAGE_ADR       4  // page address is not correct
+#define FERR_PAGE_ERASE     5  // error during page erasing
 #define FERR_UNREACABLE    -1  // unreachable instruction
 
 #define FNUMREC   5  // numbers of ID, from 1 to FNUMREC
@@ -81,13 +84,70 @@ int fwriteHW( uint32_t adr, uint16_t hw )
 }
 
 /*
- * To copy all active records from overflow block to empty block.
+ * Erase page flash
+ * Return:
+ *   FRES_OK - good
+ *   FERR_PAGE_ADR
+ *   FERR_PAGE_ERASE
+ */
+int ferasePage( uint32_t adr )
+{
+	uint32_t adrPage = 0;
+
+	if ( adr < adrBLOCK_B ) {
+		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
+			if ( adr == adrBLOCK_A + i * PAGE_SIZE ) {
+				adrPage = adr;
+			}
+		}
+	} else {
+		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
+			if ( adr == adrBLOCK_B + i * PAGE_SIZE ) {
+				adrPage = adr;
+			}
+		}
+	}
+	if ( adrPage == 0 ) {
+		urtPrint("Err: ferasePage: adr not correct\n");
+		return FERR_PAGE_ADR; // page address is not correct
+	}
+
+	FLASH_Unlock();
+	FLASH_Status fstat =  FLASH_ErasePage( adrPage );
+	FLASH_Lock();
+	if ( fstat != FLASH_COMPLETE ) {
+		urtPrint("Err: ferasePage: cant erase\n");
+		return FERR_PAGE_ERASE; // error during page erasing
+	}
+	return FRES_OK;
+}
+
+/*
+ * Erase Block
+ * Return:
+ *   code error
+ */
+int feraseBlock ( uint32_t block )
+{
+	int ret = 0;
+	uint32_t page = block;
+	for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
+		ret = ferasePage( page + i * PAGE_SIZE );
+		if ( ret != FRES_OK ) {
+			break;
+		}
+	}
+	return ret;
+}
+
+/*
+ * To copy all active records from overflow block to erased block.
  *   adrCur - points to current block
  *   adrEmp - points to empty block
  * Return:
  *   code error
  */
-int fmvBlock( uint32_t adrCur, uint32_t adrEmp, uint32_t *newAdr )
+int swapBlocks( void )
 {
 	return 0;
 }
@@ -99,50 +159,50 @@ int fmvBlock( uint32_t adrCur, uint32_t adrEmp, uint32_t *newAdr )
  *   FRES_OK - good, *adr will point to free cell with enough space
  *   code error
  */
-int fGetFreeSpace( uint32_t *address, uint8_t hwlen )
-{
-	int res;
-	uint32_t endAdr;
-	uint16_t data;
-	uint32_t adr;
-	uint32_t adrCur;
-	uint32_t adrEmp;
-
-	data = fread16( adrBLOCK_A );
-	if ( data != 0xFFFF ) {
-		adrCur = adrBLOCK_A;
-		adrEmp = adrBLOCK_B;
-	} else {
-		adrCur = adrBLOCK_B;
-		adrEmp = adrBLOCK_A;
-	}
-	adr = adrCur;
-	endAdr = adrCur + BLOCK_SIZE - 2; // at end must be free space
-
-	while (1) {
-		data = fread16( adr );
-		if ( data != 0xFFFF ) {
-			adr += (uint8_t)(data & 0x00FF)*2 + ADDLEN;
-			if ( adr > endAdr) {
-				res = fmvBlock( adrCur, adrEmp, &adr );
-				if ( res != 0 ) {
-					return res;
-				}
-			}
-			continue;
-		}
-		// to calculate len
-		if ( (adr + ADDLEN + hwlen*2) > endAdr ) {
-			// not enough space
-
-			return FERR_UNREACABLE;
-		}
-		// space is enough
-		*address = adr;
-		return FRES_OK;
-	}
-	return FERR_UNREACABLE;
-}
+//int fGetFreeSpace( uint32_t *address, uint8_t hwlen )
+//{
+//	int res;
+//	uint32_t endAdr;
+//	uint16_t data;
+//	uint32_t adr;
+//	uint32_t adrCur;
+//	uint32_t adrEmp;
+//
+//	data = fread16( adrBLOCK_A );
+//	if ( data != 0xFFFF ) {
+//		adrCur = adrBLOCK_A;
+//		adrEmp = adrBLOCK_B;
+//	} else {
+//		adrCur = adrBLOCK_B;
+//		adrEmp = adrBLOCK_A;
+//	}
+//	adr = adrCur;
+//	endAdr = adrCur + BLOCK_SIZE - 2; // at end must be free space
+//
+//	while (1) {
+//		data = fread16( adr );
+//		if ( data != 0xFFFF ) {
+//			adr += (uint8_t)(data & 0x00FF)*2 + ADDLEN;
+//			if ( adr > endAdr) {
+//				res = fmvBlock( adrCur, adrEmp, &adr );
+//				if ( res != 0 ) {
+//					return res;
+//				}
+//			}
+//			continue;
+//		}
+//		// to calculate len
+//		if ( (adr + ADDLEN + hwlen*2) > endAdr ) {
+//			// not enough space
+//
+//			return FERR_UNREACABLE;
+//		}
+//		// space is enough
+//		*address = adr;
+//		return FRES_OK;
+//	}
+//	return FERR_UNREACABLE;
+//}
 
 // =======================================================================================
 // ============================== interface functions ====================================
@@ -155,8 +215,8 @@ int fGetFreeSpace( uint32_t *address, uint8_t hwlen )
 int flashInit(void)
 {
 	uint16_t data;
-	uint32_t adr;
 	uint8_t  id;
+	int  res = 0;
 
 	// init fm sturct =========================
 	fm.curBlock  = 0;
@@ -179,29 +239,40 @@ int flashInit(void)
 	}
 
 	fm.endAdr = fm.curBlock + BLOCK_SIZE - 2; // at end must be free space
-	adr = fm.curBlock;
+	fm.cell = fm.curBlock;
 	while (1) {
-		data = fread16( adr );
+		data = fread16( fm.cell );
 		if ( data != 0xFFFF ) {
-			id  = (uint8_t)(data >> 8);
-			if ( id > FNUMREC ) {
-				urtPrint("flashInit: err: id\n");
-				return FERR_ID;
+			if ( data == 0 ) {
+				fm.cell += 2;
+				continue;
 			}
-			adr += (uint8_t)(data & 0x00FF)*2 + ADDLEN;
-			if ( adr > fm.endAdr) {
+			id  = (uint8_t)(data >> 8);
+			if ( (id == 0) || (id > FNUMREC) ) {
+				urtPrint("flashInit: err: id\n");
+				res = FERR_ID;
+				break;
+			}
+			// fill record's address
+			fm.arec[id-1] = fm.cell;
+			// go to the next record's address
+			fm.cell += (uint8_t)(data & 0x00FF)*2 + ADDLEN;
+			if ( fm.cell > fm.endAdr) {
 				// need to move block
-				fm.cell = adr;
 				fm.freeSpace = fm.endAdr - fm.cell;
+				res = FERR_OVER_BLOCK;
 				break;
 			}
 			continue;
 		}
-		fm.cell = adr;
 		fm.freeSpace = fm.endAdr - fm.cell;
+		res = 0;
 		break;
 	}
-	return FRES_OK;
+	if ( res != 0 ) {
+		res = swapBlocks();
+	}
+	return res;
 }
 
 /*
@@ -224,7 +295,7 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 
 	// Specifies adr on the free cell and calculates
 	// whether there is enough free space for writing
-	res = fGetFreeSpace( &adr, hwlen );
+	//res = fGetFreeSpace( &adr, hwlen );
 	if ( res != 0 ) {
 		return res;
 	}

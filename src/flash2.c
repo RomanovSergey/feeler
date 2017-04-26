@@ -20,19 +20,27 @@ static const uint32_t adrBLOCK_A     = PAGE60;
 static const uint32_t adrBLOCK_B     = PAGE62;
 static const uint32_t BLOCK_SIZE  = PAGE_SIZE * 2;
 
-static const uint16_t BLOCK_EMPTY = 0xFFFF; // empty block
-static const uint16_t BLOCK_CURR  = 0xBBBB; // current block
-static const uint16_t BLOCK_SHIFT = 0x0000; // in the process of switching
-
 static const uint8_t  ADDLEN = 4; // IDLEN(2) + CS(2)
 
 // Errors codes
 #define FRES_OK             0  // ok, successful operation
 #define FERR_WRITE_HW       1  // error while write half word data to flash
-#define FERR_UNREACABLE   -1  // unreachable instruction
+#define FERR_ID             2  // record's ID is not allowable
+#define FERR_UNREACABLE    -1  // unreachable instruction
 
+#define FNUMREC   5  // numbers of ID, from 1 to FNUMREC
 
-//static uint16_t flashBuf[256];
+// inits on power on and keeps actual information of records in flash
+typedef struct {
+	uint32_t  curBlock;   // current block - where to write and read records
+	uint32_t  ersBlock;   // erased block - where to move on overflow current block
+	uint32_t  endAdr;     // last allowable addres of current block
+	uint32_t  cell;       // start address erased cells of current block
+	uint16_t  freeSpace;  // available free space in current block
+	uint32_t  arec[FNUMREC]; // index - is ID, keep last address, if 0 - no record
+} FlashManager;
+
+static FlashManager fm;
 
 /*
  * calculates check summ
@@ -115,7 +123,6 @@ int fGetFreeSpace( uint32_t *address, uint8_t hwlen )
 		data = fread16( adr );
 		if ( data != 0xFFFF ) {
 			adr += (uint8_t)(data & 0x00FF)*2 + ADDLEN;
-			// ToDo: check adr out of block range
 			if ( adr > endAdr) {
 				res = fmvBlock( adrCur, adrEmp, &adr );
 				if ( res != 0 ) {
@@ -139,6 +146,63 @@ int fGetFreeSpace( uint32_t *address, uint8_t hwlen )
 
 // =======================================================================================
 // ============================== interface functions ====================================
+
+/*
+ * called in power on, to initialise fm struct
+ * Return:
+ *   FERR_ID
+ */
+int flashInit(void)
+{
+	uint16_t data;
+	uint32_t adr;
+	uint8_t  id;
+
+	// init fm sturct =========================
+	fm.curBlock  = 0;
+	fm.ersBlock  = 0;
+	fm.cell      = 0;
+	fm.freeSpace = 0;
+	fm.endAdr    = 0;
+	for ( int i = 0; i < FNUMREC; i++ ) {
+		fm.arec[i] = 0;
+	}
+	// ========================================
+
+	data = fread16( adrBLOCK_A );
+	if ( data != 0xFFFF ) {
+		fm.curBlock = adrBLOCK_A;
+		fm.ersBlock = adrBLOCK_B;
+	} else {
+		fm.curBlock = adrBLOCK_B;
+		fm.ersBlock = adrBLOCK_A;
+	}
+
+	fm.endAdr = fm.curBlock + BLOCK_SIZE - 2; // at end must be free space
+	adr = fm.curBlock;
+	while (1) {
+		data = fread16( adr );
+		if ( data != 0xFFFF ) {
+			id  = (uint8_t)(data >> 8);
+			if ( id > FNUMREC ) {
+				urtPrint("flashInit: err: id\n");
+				return FERR_ID;
+			}
+			adr += (uint8_t)(data & 0x00FF)*2 + ADDLEN;
+			if ( adr > fm.endAdr) {
+				// need to move block
+				fm.cell = adr;
+				fm.freeSpace = fm.endAdr - fm.cell;
+				break;
+			}
+			continue;
+		}
+		fm.cell = adr;
+		fm.freeSpace = fm.endAdr - fm.cell;
+		break;
+	}
+	return FRES_OK;
+}
 
 /*
  * Writes data to flash.

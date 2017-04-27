@@ -8,7 +8,7 @@
 #include "stm32f0xx.h"
 #include "micro.h"
 #include "uart.h"
-#include "flash.h"
+#include "flash2.h"
 #include "main.h"
 
 #pragma pack(1)
@@ -37,26 +37,21 @@ void initCalib(void) {
 	}
 
 	int res;
-	uint16_t rlen;
 	uint16_t *pTabl;
 
 	pTabl = (uint16_t*)&table[0][0]; // Fe
-	res = floadRecord( FID_FE_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t), &rlen );
+	res = fread( FID_FE_DEF, pTabl );
 	if ( res == 0 ) {
-		urtPrint("Fe loaded, rlen=");
-		urt_uint32_to_str (rlen);
-		urtPrint(" bytes \n");
+		urtPrint("Fe loaded/n");
 	} else {
 		urtPrint("Err load Fe. Result: ");
 		urt_uint32_to_str (res);
 		urtPrint(" \n");
 	}
 	pTabl = (uint16_t*)&table[1][0]; // Al
-	res = floadRecord( FID_AL_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t), &rlen );
+	res = fread( FID_AL_DEF, pTabl );
 	if ( res == 0 ) {
-		urtPrint("Al loaded, rlen=");
-		urt_uint32_to_str (rlen);
-		urtPrint(" bytes \n");
+		urtPrint("Al loaded/n");
 	} else {
 		urtPrint("Err load Al. Result: ");
 		urt_uint32_to_str (res);
@@ -69,7 +64,7 @@ int microSaveFe(void)
 	int res;
 	uint16_t *pTabl;
 	pTabl = (uint16_t*)table[0];
-	res = fsaveRecord( FID_FE_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t) );
+	res = fwrite( FID_FE_DEF, pTabl );
 	if ( res == 0 ) {
 		return 0;
 	}
@@ -84,7 +79,7 @@ int microSaveAl(void)
 	int res;
 	uint16_t *pTabl;
 	pTabl = (uint16_t*)table[1];
-	res = fsaveRecord( FID_AL_DEF, pTabl, FTOMSIZE * sizeof(uint32_t) * sizeof(uint16_t) );
+	res = fwrite( FID_AL_DEF, pTabl );
 	if ( res == 0 ) {
 		return 0;
 	}

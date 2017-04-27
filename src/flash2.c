@@ -7,7 +7,7 @@
 
 #include "stm32f0xx.h"
 #include "stm32f0xx_flash.h"
-#include "flash.h"
+#include "flash2.h"
 #include "uart.h"
 
 #define PAGE60     0x0800F000
@@ -29,6 +29,7 @@ static const uint8_t  ADDLEN = 4; // IDLEN(2) + CS(2)
 #define FERR_OVER_BLOCK     3  // record is out of block
 #define FERR_PAGE_ADR       4  // page address is not correct
 #define FERR_PAGE_ERASE     5  // error during page erasing
+#define FERR_CS             6  // controll summ error
 #define FERR_UNREACABLE    -1  // unreachable instruction
 
 #define FNUMREC   5  // numbers of ID, from 1 to FNUMREC
@@ -39,11 +40,11 @@ typedef struct {
 	uint32_t  ersBlock;   // erased block - where to move on overflow current block
 	uint32_t  endAdr;     // last allowable addres of current block
 	uint32_t  cell;       // start address erased cells of current block
-	uint16_t  freeSpace;  // available free space in current block
 	uint32_t  arec[FNUMREC]; // index - is ID, keep last address, if 0 - no record
 } FlashManager;
 
 static FlashManager fm;
+//static uint16_t fBuf[256+4];
 
 /*
  * calculates check summ
@@ -94,7 +95,7 @@ int ferasePage( uint32_t adr )
 {
 	uint32_t adrPage = 0;
 
-	if ( adr < adrBLOCK_B ) {
+	if ( adr < adrBLOCK_B ) { // ToDo: make it easy
 		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
 			if ( adr == adrBLOCK_A + i * PAGE_SIZE ) {
 				adrPage = adr;
@@ -125,7 +126,9 @@ int ferasePage( uint32_t adr )
 /*
  * Erase Block
  * Return:
- *   code error
+ *   FRES_OK - good
+ *   FERR_PAGE_ADR
+ *   FERR_PAGE_ERASE
  */
 int feraseBlock ( uint32_t block )
 {
@@ -142,67 +145,92 @@ int feraseBlock ( uint32_t block )
 
 /*
  * To copy all active records from overflow block to erased block.
- *   adrCur - points to current block
- *   adrEmp - points to empty block
  * Return:
- *   code error
+ *   FRES_OK - good
+ *   FERR_PAGE_ADR
+ *   FERR_PAGE_ERASE
  */
-int swapBlocks( void )
+int fswapBlocks( void )
 {
-	return 0;
-}
+	uint16_t data;
+	uint32_t adr;
+	uint32_t end;
+	uint8_t  hwlen;
+	int res = 0;
 
-/*
- * Specifies *adr to the free cell,
- * enough for record with len data
- * Return:
- *   FRES_OK - good, *adr will point to free cell with enough space
- *   code error
- */
-//int fGetFreeSpace( uint32_t *address, uint8_t hwlen )
-//{
-//	int res;
-//	uint32_t endAdr;
-//	uint16_t data;
-//	uint32_t adr;
-//	uint32_t adrCur;
-//	uint32_t adrEmp;
-//
-//	data = fread16( adrBLOCK_A );
-//	if ( data != 0xFFFF ) {
-//		adrCur = adrBLOCK_A;
-//		adrEmp = adrBLOCK_B;
-//	} else {
-//		adrCur = adrBLOCK_B;
-//		adrEmp = adrBLOCK_A;
-//	}
-//	adr = adrCur;
-//	endAdr = adrCur + BLOCK_SIZE - 2; // at end must be free space
-//
-//	while (1) {
-//		data = fread16( adr );
-//		if ( data != 0xFFFF ) {
-//			adr += (uint8_t)(data & 0x00FF)*2 + ADDLEN;
-//			if ( adr > endAdr) {
-//				res = fmvBlock( adrCur, adrEmp, &adr );
-//				if ( res != 0 ) {
-//					return res;
-//				}
-//			}
-//			continue;
-//		}
-//		// to calculate len
-//		if ( (adr + ADDLEN + hwlen*2) > endAdr ) {
-//			// not enough space
-//
-//			return FERR_UNREACABLE;
-//		}
-//		// space is enough
-//		*address = adr;
-//		return FRES_OK;
-//	}
-//	return FERR_UNREACABLE;
-//}
+	uint32_t  curBlock;   // current block - where to write and read records
+	uint32_t  ersBlock;   // erased block - where to move on overflow current block
+	uint32_t  arec[FNUMREC]; // index - is ID, keep last address, if 0 - no record
+
+	// init ===================================
+	for ( int i = 0; i < FNUMREC; i++ ) {
+		arec[i] = 0;
+	}
+	// ========================================
+
+	adr = fm.ersBlock;
+	end = adr + BLOCK_SIZE;
+	while ( 1 ) { // to test - all data in erased block must be 0xFFFF
+		data = fread16( adr );
+		if ( data != 0xFFFF ) {
+			res = 1; // need to erase block
+			break;
+		}
+		adr += 2;
+		if ( adr == end ) {
+			break;
+		}
+	}
+	if ( res != 0 ) {
+		urtPrint("fswapBlocks: need to erase\n");
+		res = feraseBlock ( fm.ersBlock );
+		if ( res != 0 ) {
+			urtPrint("eraseBlock error, need to continue\n");
+		}
+	}
+	// copy all records to new block
+	adr = fm.ersBlock;
+	for ( int nr = 0; nr < FNUMREC; nr++ ) {
+		if ( fm.arec[nr] != 0 ) {
+			// write IDLEN
+			data = fread16( fm.arec[nr] );
+			hwlen = (uint8_t)(data & 0x00FF);
+			res = fwriteHW( adr, data );
+			if ( res != FRES_OK ) {
+				urtPrint("fswapBlocks: err fwriteHW continue\n");
+			}
+			arec[nr] = adr;
+			adr += 2;
+			for ( uint16_t i = 0 ; i < (hwlen + 1); i++ ) { // with cs data
+				data = fread16( fm.arec[nr] + i*2 );
+				res = fwriteHW( adr, data );
+				if ( res != FRES_OK ) {
+					urtPrint("fswapBlocks: err fwriteHW continue\n");
+				}
+				adr += 2;
+			}
+		}
+	}
+	curBlock = fm.ersBlock;
+	ersBlock = fm.curBlock;
+
+	res = feraseBlock ( ersBlock );
+	if ( res != 0 ) {
+		urtPrint("eraseBlock error, need to continue\n");
+	}
+
+	// init fm sturct =========================
+	fm.curBlock  = curBlock;
+	fm.ersBlock  = ersBlock;
+	fm.endAdr    = fm.curBlock + BLOCK_SIZE - 2;;
+	fm.cell      = adr;
+	for ( int i = 0; i < FNUMREC; i++ ) {
+		fm.arec[i] = arec[i];
+	}
+	// ========================================
+
+	return res;
+}
 
 // =======================================================================================
 // ============================== interface functions ====================================
@@ -221,9 +249,8 @@ int flashInit(void)
 	// init fm sturct =========================
 	fm.curBlock  = 0;
 	fm.ersBlock  = 0;
-	fm.cell      = 0;
-	fm.freeSpace = 0;
 	fm.endAdr    = 0;
+	fm.cell      = 0;
 	for ( int i = 0; i < FNUMREC; i++ ) {
 		fm.arec[i] = 0;
 	}
@@ -250,7 +277,7 @@ int flashInit(void)
 			id  = (uint8_t)(data >> 8);
 			if ( (id == 0) || (id > FNUMREC) ) {
 				urtPrint("flashInit: err: id\n");
-				res = FERR_ID;
+				res = FERR_ID; // ToDo: erase?
 				break;
 			}
 			// fill record's address
@@ -258,19 +285,16 @@ int flashInit(void)
 			// go to the next record's address
 			fm.cell += (uint8_t)(data & 0x00FF)*2 + ADDLEN;
 			if ( fm.cell > fm.endAdr) {
-				// need to move block
-				fm.freeSpace = fm.endAdr - fm.cell;
-				res = FERR_OVER_BLOCK;
+				res = FERR_OVER_BLOCK; // need to swap blocks
 				break;
 			}
 			continue;
 		}
-		fm.freeSpace = fm.endAdr - fm.cell;
 		res = 0;
 		break;
 	}
 	if ( res != 0 ) {
-		res = swapBlocks();
+		res = fswapBlocks();
 	}
 	return res;
 }
@@ -287,38 +311,36 @@ int flashInit(void)
 int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 {
 	int res;
-	uint32_t adr;
 	uint8_t hwlen;
 
-	adr = 0;
 	hwlen = (uint8_t)(IDLEN & 0x00FF);
 
-	// Specifies adr on the free cell and calculates
-	// whether there is enough free space for writing
-	//res = fGetFreeSpace( &adr, hwlen );
-	if ( res != 0 ) {
-		return res;
+	// is there enough free space for writing
+	if ( (fm.endAdr - fm.cell) < (hwlen * 2 + ADDLEN) ) {
+		urtPrint("fwrite to fswapBlocks\n");
+		fswapBlocks();
 	}
 
 	// write IDLEN
-	res = fwriteHW( adr, IDLEN );
+	res = fwriteHW( fm.cell, IDLEN );
+	fm.cell += 2;
 	if ( res != FRES_OK ) {
 		return res;
 	}
-	adr += 2;
 
 	// write data
 	for ( uint16_t i = 0 ; i < hwlen; i++ ) {
-		res = fwriteHW( adr, buf[i] );
+		res = fwriteHW( fm.cell, buf[i] );
+		fm.cell += 2;
 		if ( res != FRES_OK ) {
 			return res;
 		}
-		adr += 2;
 	}
 
 	// calculate and write check summ
 	uint16_t cs = fcalcCS( buf, hwlen );
-	res = fwriteHW( adr, cs );
+	res = fwriteHW( fm.cell, cs );
+	fm.cell += 2;
 	if ( res != FRES_OK ) {
 		return res;
 	}
@@ -328,9 +350,30 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 /*
  * Read data from flash.
  */
-int fread( const uint16_t IDLEN, const uint16_t* const buf )
+int fread( const uint16_t IDLEN, uint16_t* const buf )
 {
+	uint8_t  id;
+	uint8_t  hwlen;
+	uint32_t adr;
 
+	// ToDo: make check IDLEN cleverer
+	id = (uint8_t)(IDLEN >> 8);
+	hwlen = (uint8_t)(IDLEN & 0x00FF);
+	if ( (id == 0) || (id > FNUMREC) ) {
+		return FERR_ID;
+	}
+	adr = fm.arec[id-1];
+
+	// read data and write its to buf
+	for ( uint16_t i = 0 ; i < hwlen; i++ ) {
+		buf[i] = fread16( adr );
+		adr += 2;
+	}
+
+	uint16_t cs = fcalcCS( buf, hwlen );
+	if ( cs != fread16( adr ) ) {
+		return FERR_CS;
+	}
 	return 1;
 }
 

@@ -14,7 +14,7 @@
 #include "displayDrv.h"
 #include "pwr.h"
 #include "sound.h"
-#include "flash.h"
+#include "flash2.h"
 #include "fonts/img.h"
 #include <string.h>
 

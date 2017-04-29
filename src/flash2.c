@@ -32,8 +32,6 @@ static const uint8_t  ADDLEN = 4; // IDLEN(2) + CS(2)
 #define FERR_CS             6  // controll summ error
 #define FERR_UNREACABLE    -1  // unreachable instruction
 
-#define FNUMREC   5  // numbers of ID, from 1 to FNUMREC
-
 // inits on power on and keeps actual information of records in flash
 typedef struct {
 	uint32_t  curBlock;   // current block - where to write and read records
@@ -44,7 +42,30 @@ typedef struct {
 } FlashManager;
 
 static FlashManager fm;
-//static uint16_t fBuf[256+4];
+
+/*
+ * Check IDLEN for correct
+ * Return:
+ *   FRES_OK - *idnum and *hwdlen has result
+ *   FERR_ID
+ */
+int fcheckId( uint16_t IDLEN, uint8_t *idnum, uint8_t *hwdlen )
+{
+	uint8_t id;
+
+	id = (uint8_t)(IDLEN >> 8);
+	if ( id == 0 ) {
+		urtPrint("fcheckId: err: id=0\n");
+		return FERR_ID;
+	}
+	if ( id > FNUMREC ) {
+		urtPrint("fcheckId: err: id>FNUMREC\n");
+		return FERR_ID;
+	}
+	*idnum = id;
+	*hwdlen = (uint8_t)(IDLEN & 0x00FF);
+	return FRES_OK;
+}
 
 /*
  * calculates check summ
@@ -244,6 +265,7 @@ int flashInit(void)
 {
 	uint16_t data;
 	uint8_t  id;
+	uint8_t  hwdlen;
 	int  res = 0;
 
 	// init fm sturct =========================
@@ -274,16 +296,14 @@ int flashInit(void)
 				fm.cell += 2;
 				continue;
 			}
-			id  = (uint8_t)(data >> 8);
-			if ( (id == 0) || (id > FNUMREC) ) {
-				urtPrint("flashInit: err: id\n");
-				res = FERR_ID; // ToDo: erase?
+			res = fcheckId( data, &id, &hwdlen );
+			if ( res != FRES_OK ) {
 				break;
 			}
 			// fill record's address
 			fm.arec[id-1] = fm.cell;
 			// go to the next record's address
-			fm.cell += (uint8_t)(data & 0x00FF)*2 + ADDLEN;
+			fm.cell += hwdlen*2 + ADDLEN;
 			if ( fm.cell > fm.endAdr) {
 				res = FERR_OVER_BLOCK; // need to swap blocks
 				break;
@@ -306,17 +326,22 @@ int flashInit(void)
  *  *buf - points to the 16 bits data with lenght len bytes.
  * Return:
  *   0 - ok
- *   other - error
+ *   FERR_ID
+ *   FERR_WRITE_HW
  */
 int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 {
 	int res;
-	uint8_t hwlen;
+	uint8_t idnum;
+	uint8_t hwdlen;
 
-	hwlen = (uint8_t)(IDLEN & 0x00FF);
+	res = fcheckId( IDLEN, &idnum, &hwdlen );
+	if ( res != FRES_OK ) {
+		return res;
+	}
 
 	// is there enough free space for writing
-	if ( (fm.endAdr - fm.cell) < (hwlen * 2 + ADDLEN) ) {
+	if ( (fm.endAdr - fm.cell) < (hwdlen * 2 + ADDLEN) ) { // ToDo: calculate rec len
 		urtPrint("fwrite to fswapBlocks\n");
 		fswapBlocks();
 	}
@@ -329,7 +354,7 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 	}
 
 	// write data
-	for ( uint16_t i = 0 ; i < hwlen; i++ ) {
+	for ( uint16_t i = 0 ; i < hwdlen; i++ ) {
 		res = fwriteHW( fm.cell, buf[i] );
 		fm.cell += 2;
 		if ( res != FRES_OK ) {
@@ -338,7 +363,7 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 	}
 
 	// calculate and write check summ
-	uint16_t cs = fcalcCS( buf, hwlen );
+	uint16_t cs = fcalcCS( buf, hwdlen );
 	res = fwriteHW( fm.cell, cs );
 	fm.cell += 2;
 	if ( res != FRES_OK ) {
@@ -352,25 +377,24 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
  */
 int fread( const uint16_t IDLEN, uint16_t* const buf )
 {
+	int res;
 	uint8_t  id;
-	uint8_t  hwlen;
+	uint8_t  hwdlen;
 	uint32_t adr;
 
-	// ToDo: make check IDLEN cleverer
-	id = (uint8_t)(IDLEN >> 8);
-	hwlen = (uint8_t)(IDLEN & 0x00FF);
-	if ( (id == 0) || (id > FNUMREC) ) {
-		return FERR_ID;
+	res = fcheckId( IDLEN, &id, &hwdlen );
+	if ( res != FRES_OK ) {
+		return res;
 	}
 	adr = fm.arec[id-1];
 
 	// read data and write its to buf
-	for ( uint16_t i = 0 ; i < hwlen; i++ ) {
+	for ( uint16_t i = 0 ; i < hwdlen; i++ ) {
 		buf[i] = fread16( adr );
 		adr += 2;
 	}
 
-	uint16_t cs = fcalcCS( buf, hwlen );
+	uint16_t cs = fcalcCS( buf, hwdlen );
 	if ( cs != fread16( adr ) ) {
 		return FERR_CS;
 	}

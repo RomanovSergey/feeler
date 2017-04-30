@@ -49,7 +49,7 @@ static FlashManager fm;
  *   FRES_OK - *idnum and *hwdlen has result
  *   FERR_ID
  */
-int fcheckId( uint16_t IDLEN, uint8_t *idnum, uint8_t *hwdlen )
+static int fcheckId( uint16_t IDLEN, uint8_t *idnum, uint8_t *hwdlen )
 {
 	uint8_t id;
 
@@ -70,7 +70,7 @@ int fcheckId( uint16_t IDLEN, uint8_t *idnum, uint8_t *hwdlen )
 /*
  * calculates check summ
  */
-uint16_t fcalcCS( const uint16_t *buf, uint8_t len )
+static uint16_t fcalcCS( const uint16_t *buf, uint8_t len )
 {
 	uint16_t cs = 0;
 	for ( int i = 0; i < len; i++ ) {
@@ -79,10 +79,14 @@ uint16_t fcalcCS( const uint16_t *buf, uint8_t len )
 	return cs;
 }
 
+static inline uint16_t freclen(uint8_t hwdlen )
+{
+	return hwdlen * 2 + ADDLEN;
+}
 /*
  * Reads 2 bytes from flash by Address
  */
-inline uint16_t fread16(uint32_t Address)
+static inline uint16_t fread16(uint32_t Address)
 {
 	return *(__IO uint16_t*)Address;
 }
@@ -93,7 +97,7 @@ inline uint16_t fread16(uint32_t Address)
  *   FRES_OK - good
  *   FERR_WRITE_HW - error while write half word data to flash
  */
-int fwriteHW( uint32_t adr, uint16_t hw )
+static int fwriteHW( uint32_t adr, uint16_t hw )
 {
 	FLASH_Status fstat;
 	FLASH_Unlock();
@@ -112,28 +116,8 @@ int fwriteHW( uint32_t adr, uint16_t hw )
  *   FERR_PAGE_ADR
  *   FERR_PAGE_ERASE
  */
-int ferasePage( uint32_t adr )
+static int ferasePage( uint32_t adrPage )
 {
-	uint32_t adrPage = 0;
-
-	if ( adr < adrBLOCK_B ) { // ToDo: make it easy
-		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
-			if ( adr == adrBLOCK_A + i * PAGE_SIZE ) {
-				adrPage = adr;
-			}
-		}
-	} else {
-		for ( int i = 0; i < BLOCK_SIZE / PAGE_SIZE; i++ ) {
-			if ( adr == adrBLOCK_B + i * PAGE_SIZE ) {
-				adrPage = adr;
-			}
-		}
-	}
-	if ( adrPage == 0 ) {
-		urtPrint("Err: ferasePage: adr not correct\n");
-		return FERR_PAGE_ADR; // page address is not correct
-	}
-
 	FLASH_Unlock();
 	FLASH_Status fstat =  FLASH_ErasePage( adrPage );
 	FLASH_Lock();
@@ -151,7 +135,7 @@ int ferasePage( uint32_t adr )
  *   FERR_PAGE_ADR
  *   FERR_PAGE_ERASE
  */
-int feraseBlock ( uint32_t block )
+static int feraseBlock ( uint32_t block )
 {
 	int ret = 0;
 	uint32_t page = block;
@@ -171,7 +155,7 @@ int feraseBlock ( uint32_t block )
  *   FERR_PAGE_ADR
  *   FERR_PAGE_ERASE
  */
-int fswapBlocks( void )
+static int fswapBlocks( void )
 {
 	uint16_t data;
 	uint32_t adr;
@@ -240,7 +224,7 @@ int fswapBlocks( void )
 		urtPrint("eraseBlock error, need to continue\n");
 	}
 
-	// init fm sturct =========================
+	// reinit fm sturct
 	fm.curBlock  = curBlock;
 	fm.ersBlock  = ersBlock;
 	fm.endAdr    = fm.curBlock + BLOCK_SIZE - 2;;
@@ -248,8 +232,6 @@ int fswapBlocks( void )
 	for ( int i = 0; i < FNUMREC; i++ ) {
 		fm.arec[i] = arec[i];
 	}
-	// ========================================
-
 	return res;
 }
 
@@ -303,7 +285,7 @@ int flashInit(void)
 			// fill record's address
 			fm.arec[id-1] = fm.cell;
 			// go to the next record's address
-			fm.cell += hwdlen*2 + ADDLEN;
+			fm.cell += freclen( hwdlen );
 			if ( fm.cell > fm.endAdr) {
 				res = FERR_OVER_BLOCK; // need to swap blocks
 				break;
@@ -341,7 +323,7 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 	}
 
 	// is there enough free space for writing
-	if ( (fm.endAdr - fm.cell) < (hwdlen * 2 + ADDLEN) ) { // ToDo: calculate rec len
+	if ( (fm.endAdr - fm.cell) < freclen(hwdlen) ) {
 		urtPrint("fwrite to fswapBlocks\n");
 		fswapBlocks();
 	}
@@ -398,6 +380,6 @@ int fread( const uint16_t IDLEN, uint16_t* const buf )
 	if ( cs != fread16( adr ) ) {
 		return FERR_CS;
 	}
-	return 1;
+	return FRES_OK;
 }
 

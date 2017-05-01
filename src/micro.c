@@ -39,23 +39,28 @@ void initCalib(void) {
 	int res;
 	uint16_t *pTabl;
 
+	res = flashInit();
+	if ( res != 0 ) {
+		urtPrint("flashInit error\n");
+	}
+
 	pTabl = (uint16_t*)&table[0][0]; // Fe
 	res = fread( FID_FE_DEF, pTabl );
 	if ( res == 0 ) {
-		urtPrint("Fe loaded/n");
+		urtPrint("Fe loaded\n");
 	} else {
 		urtPrint("Err load Fe. Result: ");
 		urt_uint32_to_str (res);
-		urtPrint(" \n");
+		urtPrint("\n");
 	}
 	pTabl = (uint16_t*)&table[1][0]; // Al
 	res = fread( FID_AL_DEF, pTabl );
 	if ( res == 0 ) {
-		urtPrint("Al loaded/n");
+		urtPrint("Al loaded\n");
 	} else {
 		urtPrint("Err load Al. Result: ");
 		urt_uint32_to_str (res);
-		urtPrint(" \n");
+		urtPrint("\n");
 	}
 }
 

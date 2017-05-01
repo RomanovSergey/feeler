@@ -30,6 +30,7 @@ static const uint8_t  ADDLEN = 4; // IDLEN(2) + CS(2)
 #define FERR_PAGE_ADR       4  // page address is not correct
 #define FERR_PAGE_ERASE     5  // error during page erasing
 #define FERR_CS             6  // controll summ error
+#define FERR_NO_IDLEN       7  // record with IDLEN not found
 #define FERR_UNREACABLE    -1  // unreachable instruction
 
 // inits on power on and keeps actual information of records in flash
@@ -68,7 +69,7 @@ static int fcheckId( uint16_t IDLEN, uint8_t *idnum, uint8_t *hwdlen )
 }
 
 /*
- * calculates check summ
+ * Calculates check summ
  */
 static uint16_t fcalcCS( const uint16_t *buf, uint8_t len )
 {
@@ -79,6 +80,9 @@ static uint16_t fcalcCS( const uint16_t *buf, uint8_t len )
 	return cs;
 }
 
+/*
+ * Returns record's lenght
+ */
 static inline uint16_t freclen(uint8_t hwdlen )
 {
 	return hwdlen * 2 + ADDLEN;
@@ -167,6 +171,7 @@ static int fswapBlocks( void )
 	uint32_t  ersBlock;   // erased block - where to move on overflow current block
 	uint32_t  arec[FNUMREC]; // index - is ID, keep last address, if 0 - no record
 
+	urtPrint("fswapBlocks begin\n");
 	// init ===================================
 	for ( int i = 0; i < FNUMREC; i++ ) {
 		arec[i] = 0;
@@ -182,7 +187,7 @@ static int fswapBlocks( void )
 			break;
 		}
 		adr += 2;
-		if ( adr == end ) {
+		if ( adr >= end ) {
 			break;
 		}
 	}
@@ -241,7 +246,8 @@ static int fswapBlocks( void )
 /*
  * called in power on, to initialise fm struct
  * Return:
- *   FERR_ID
+ *   FERR_PAGE_ADR
+ *   FERR_PAGE_ERASE
  */
 int flashInit(void)
 {
@@ -330,6 +336,7 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 
 	// write IDLEN
 	res = fwriteHW( fm.cell, IDLEN );
+	fm.arec[idnum-1] = fm.cell;
 	fm.cell += 2;
 	if ( res != FRES_OK ) {
 		return res;
@@ -356,6 +363,11 @@ int fwrite( const uint16_t IDLEN, const uint16_t* const buf )
 
 /*
  * Read data from flash.
+ * Return
+ *   FRES_OK - ok, buf has new data
+ *   FERR_CS - data writen to buf, but CS not correct
+ *   FERR_ID - IDLEN not correct
+ *   FERR_NO_IDLEN - record with IDLEN not found
  */
 int fread( const uint16_t IDLEN, uint16_t* const buf )
 {
@@ -369,7 +381,10 @@ int fread( const uint16_t IDLEN, uint16_t* const buf )
 		return res;
 	}
 	adr = fm.arec[id-1];
-
+	if ( adr == 0 ) {
+		return FERR_NO_IDLEN;
+	}
+	adr += 2;
 	// read data and write its to buf
 	for ( uint16_t i = 0 ; i < hwdlen; i++ ) {
 		buf[i] = fread16( adr );

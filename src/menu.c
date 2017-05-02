@@ -105,20 +105,27 @@ int dPowerOn(uint8_t ev) {
 	return 1;
 }
 
-void dshowV(uint32_t val) { //из dworkScreen()
+void dshowV(uint32_t val) //из dworkScreen()
+{
+	uint8_t me;
 	disClear();
 	disPrint(0, 0, "Измерение");
 	if ( magGetStat() ) {
 		disPrin(" *");
 	}
 
-	uint16_t microValue = micro( val );
+	uint16_t microValue = micro( val, &me );
 	if ( microValue == 0xFFFF ) {
 		disPrintFONT2(1,0," Air");
 	} else {
 		//disUINT32_to_str(5, 0, microValue );
 		disUINT16_4digit_to_strFONT2(1,0, microValue);
 		disPrint(3, 48, " um");
+		if ( me == 0 ) { // Fe
+			disPrint(3, 72, "Fe");
+		} else if ( me == 1 ) { // Al
+			disPrint(3, 72, "Al");
+		}
 	}
 
 	disUINT32_to_str(4, 0, val); // freq
@@ -348,12 +355,12 @@ int calib(uint8_t ev, int metall) {
 		mgPutEv( MG_OFF );
 		pdisp = duserCalib;
 		return 0;
-	case DIS_REPAINT:
+	case DIS_REPAINT: // at first entry to this menu
 		index = 0;
 		break;
 	case DIS_PUSH_OK: //Eb1Click:
-		res = addCalibPoint( getFreq(), thickness[index], metall );
-		if ( res == 0 ) {//если получили ошибку калибровки
+		res = addCalibPoint( getFreq(), thickness[index], index, metall );
+		if ( res != 0 ) {
 			mgPutEv( MG_OFF );
 			pdisp = dmessageError1;
 			prev  = duserCalib;
@@ -363,11 +370,11 @@ int calib(uint8_t ev, int metall) {
 		if ( index == sizeof(thickness)/(sizeof(uint16_t)) ) {
 			index = 0;
 			mgPutEv( MG_OFF );
-			if ( metall == 0 ) { // если железо
+			if ( metall == 0 ) { // if Ferrum
 				pdisp = dcalibFeDone;
 				return 0;
 			}
-			pdisp = dcalibAlDone; // если алюминий
+			pdisp = dcalibAlDone; // if Aluminum
 			return 0;
 		}
 		break;

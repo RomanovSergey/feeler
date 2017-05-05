@@ -288,7 +288,7 @@ int dcalibFeDone(uint8_t ev) {
 	case DIS_MEASURE:
 		return 0;
 	case DIS_PUSH_L:
-		initCalib();
+		micro_initCalib();
 		pdisp = duserCalib;
 		return 0;
 	case DIS_PUSH_OK:
@@ -317,7 +317,7 @@ int dcalibAlDone(uint8_t ev) {
 	case DIS_MEASURE:
 		return 0;
 	case DIS_PUSH_L:
-		initCalib();
+		micro_initCalib();
 		pdisp = duserCalib;
 		return 0;
 	case DIS_PUSH_OK:

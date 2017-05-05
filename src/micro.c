@@ -11,29 +11,45 @@
 #include "flash2.h"
 #include "main.h"
 
-#pragma pack(1)
-typedef struct {
-	uint32_t  F;  //измеренное значение индуктивности
-	uint16_t  micro; //соответствующее значение в микрометрах
-} ftoM_t;// F to micrometer
-#pragma pack()
-
 //FTOMSIZE - количество точек для замеров и калибровки
 #define FTOMSIZE  20
 
+//#pragma pack(1)
+//typedef struct {
+//	uint32_t  F;     // measured value of inductance
+//	uint16_t  micro; // corresponding value in micrometers
+//} ftoM_t;// F to micrometer
+//#pragma pack()
+
 //калибровочная таблица в озу
 //индекс 0 - железо; индекс 1 - алюминий
-ftoM_t table[2][FTOMSIZE];
+//ftoM_t table[2][FTOMSIZE];
+
+#pragma pack(1)
+typedef struct {
+	uint16_t  points;          // numbers of calibrate points, max FTOMSIZE
+	uint32_t  F[FTOMSIZE];     // measured value of inductance
+	uint16_t  micro[FTOMSIZE]; // corresponding value in micrometers
+} CAL_T;// F to micrometer
+#pragma pack()
+
+static CAL_T fe; // calib table for Ferrum
+static CAL_T al; // calib table for Aluminum
 
 /*
  * Начальная инициализация калибровочной таблицы в озу
  */
-void initCalib(void) {
-	for (int m = 0; m < 2; m++) {
-		for (int i = 0; i < FTOMSIZE; i++) {
-			table[m][i].F = 0;
-			table[m][i].micro = 0xFFFF; // означает воздух (infinity)
-		}
+void micro_initCalib(void)
+{
+	fe.points = 0;
+	for (int i = 0; i < FTOMSIZE; i++) {
+		fe.F[i] = 0;
+		fe.micro[i] = 0xFFFF; // означает воздух (infinity)
+	}
+	al.points = 0;
+	for (int i = 0; i < FTOMSIZE; i++) {
+		al.F[i] = 0;
+		al.micro[i] = 0xFFFF; // означает воздух (infinity)
 	}
 
 	int res;
@@ -44,7 +60,7 @@ void initCalib(void) {
 		urtPrint("flashInit error\n");
 	}
 
-	pTabl = (uint16_t*)&table[0][0]; // Fe
+	pTabl = (uint16_t*)&fe; // Fe
 	res = fread( FID_FE_DEF, pTabl );
 	if ( res == 0 ) {
 		urtPrint("Fe loaded\n");
@@ -53,7 +69,7 @@ void initCalib(void) {
 		urt_uint32_to_str (res);
 		urtPrint("\n");
 	}
-	pTabl = (uint16_t*)&table[1][0]; // Al
+	pTabl = (uint16_t*)&al; // Al
 	res = fread( FID_AL_DEF, pTabl );
 	if ( res == 0 ) {
 		urtPrint("Al loaded\n");
@@ -68,7 +84,7 @@ int microSaveFe(void)
 {
 	int res;
 	uint16_t *pTabl;
-	pTabl = (uint16_t*)table[0];
+	pTabl = (uint16_t*)&fe;
 	res = fwrite( FID_FE_DEF, pTabl );
 	if ( res == 0 ) {
 		return 0;
@@ -83,7 +99,7 @@ int microSaveAl(void)
 {
 	int res;
 	uint16_t *pTabl;
-	pTabl = (uint16_t*)table[1];
+	pTabl = (uint16_t*)&al;
 	res = fwrite( FID_AL_DEF, pTabl );
 	if ( res == 0 ) {
 		return 0;
@@ -105,42 +121,38 @@ int microSaveAl(void)
  */
 int16_t micro(int32_t F, uint8_t *metall ) {
 	int32_t M, M1, M2, F1, F2;
-	uint16_t i=1;
 
-	if ( table[0][0].micro != 0xFFFF ) { // если железная таблица не пустая
-		if ( F <= table[0][0].F ) {
-			return 0;//величина без зазора - 0 мкм
+	if ( fe.points != 0 ) { // if Ferrum table not empty
+		if ( F <= fe.F[0] ) {
+			*metall = 0; // Fe
+			return 0;
 		}
-		while ( i < FTOMSIZE ) { // table[0][i].micro != 0xFFFF ) { // пока таблица не закончилась
-			if ( F <= table[0][i].F ) { // (F > table[0][i-1].F)&&(F <= table[0][i].F) ) {
-				F2 = table[0][i].F;
-				M2 = table[0][i].micro;
-				F1 = table[0][i-1].F;
-				M1 = table[0][i-1].micro;
+		for (int i = 1; i < fe.points; i++ ) {
+			if ( F <= fe.F[i] ) { // (F > table[0][i-1].F)&&(F <= table[0][i].F) ) {
+				F2 = fe.F[i];
+				M2 = fe.micro[i];
+				F1 = fe.F[i-1];
+				M1 = fe.micro[i-1];
 				M = (F-F1)*(M2-M1)/(F2-F1) + M1;
 				*metall = 0; // Fe
 				return M;
 			}
-			i++;
 		}
 	}
 
-	if ( table[1][0].micro != 0xFFFF ) { // если алюминиевая таблица не пустая
-		if ( F >= table[1][0].F ) {
-			return 0;//величина без зазора - 0 мкм
-		}
-		i = 1;
-		while ( i < FTOMSIZE ) { // table[1][i].micro != 0xFFFF ) { // пока таблица не закончилась
-			if ( F >= table[1][i].F ) {
-				F2 = table[1][i].F;
-				M2 = table[1][i].micro;
-				F1 = table[1][i-1].F;
-				M1 = table[1][i-1].micro;
+	if ( al.points != 0 ) { // if Aluminum table not empty
+		for (int i = 1; i < al.points; i++ ) {
+			if ( F >= al.F[i] ) { // (F > table[0][i-1].F)&&(F <= table[0][i].F) ) {
+				F2 = al.F[i];
+				M2 = al.micro[i];
+				F1 = al.F[i-1];
+				M1 = al.micro[i-1];
 				M = (F-F1)*(M2-M1)/(F2-F1) + M1;
 				*metall = 1; // Al
 				return M;
 			}
-			i++;
+			*metall = 1; // Al
+			return 0;
 		}
 	}
 	*metall = 0xFF; // ?
@@ -155,15 +167,25 @@ int16_t micro(int32_t F, uint8_t *metall ) {
  *   metall - if 0 then Ferrum, if 1 then Aluminum
  * Return:
  *   0 - success
- *   1 - error
+ *   1 - out of index
+ *   2 - metall unrecognized
  */
 int addCalibPoint(uint32_t Freq, uint16_t micro, uint8_t index, int metall)
 {
 	if ( index >= FTOMSIZE ) { // if overflow
 		return 1; // error add point (last element must be 0 and 0xFFFF)
 	}
-	table[metall][index].F  = Freq;
-	table[metall][index].micro = micro;
-	return 0; // good
+	if ( metall == 0 ) { // Fe
+		fe.F[index] = Freq;
+		fe.micro[index] = micro;
+		fe.points = index;
+		return 0; // good
+	} else if ( metall == 1 ) { // Al
+		al.F[index] = Freq;
+		al.micro[index] = micro;
+		al.points = index;
+		return 0; // good
+	}
+	return 2;
 }
 

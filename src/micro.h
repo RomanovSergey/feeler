@@ -9,7 +9,7 @@
 #define MICROMETER_H_
 
 int16_t micro(int32_t F, uint8_t *metall );
-void initCalib(void);
+void micro_initCalib(void);
 int microSaveFe(void);
 int microSaveAl(void);
 int addCalibPoint(uint32_t Freq, uint16_t micro, uint8_t index, int metall);

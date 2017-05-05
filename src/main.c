@@ -31,7 +31,7 @@ int main(void) {
 	init();
 
 	urtPrint("Start\n");
-	initCalib();
+	micro_initCalib();
 	mgPutEv( MG_OFF );
 	while (1) {
 		magnetic();

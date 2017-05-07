@@ -22,7 +22,6 @@
 #include "sound.h"
 #include "pwr.h"
 
-//GLOBAL_T g;
 
 void init(void);
 

@@ -14,30 +14,21 @@
 //FTOMSIZE - количество точек для замеров и калибровки
 #define FTOMSIZE  20
 
-//#pragma pack(1)
-//typedef struct {
-//	uint32_t  F;     // measured value of inductance
-//	uint16_t  micro; // corresponding value in micrometers
-//} ftoM_t;// F to micrometer
-//#pragma pack()
-
-//калибровочная таблица в озу
-//индекс 0 - железо; индекс 1 - алюминий
-//ftoM_t table[2][FTOMSIZE];
-
 #pragma pack(1)
 typedef struct {
 	uint16_t  points;          // numbers of calibrate points, max FTOMSIZE
-	uint32_t  F[FTOMSIZE];     // measured value of inductance
+	uint16_t  air;             // frequency of air
+	uint16_t  F[FTOMSIZE];     // measured frequency of inductance
 	uint16_t  micro[FTOMSIZE]; // corresponding value in micrometers
 } CAL_T;// F to micrometer
 #pragma pack()
 
 static CAL_T fe; // calib table for Ferrum
 static CAL_T al; // calib table for Aluminum
+uint16_t Air;
 
 /*
- * Начальная инициализация калибровочной таблицы в озу
+ * Initial initialization of the calibration table
  */
 void micro_initCalib(void)
 {
@@ -119,6 +110,18 @@ int microSaveAl(void)
  * Then the required value of M is equal to:
  *   M = (F-F1)*(M2-M1)/(F2-F1) + M1;
  */
+/*
+ * Return:
+ *   0 - Ferrum *micro has result
+ *   1 - Air
+ *   2 - Aluminum *micro has result
+ *   3 - No calib data
+ */
+int microtr(uint16_t F, uint16_t *micro)
+{
+	int res;
+	return 0;
+}
 int16_t micro(int32_t F, uint8_t *metall ) {
 	int32_t M, M1, M2, F1, F2;
 
@@ -128,7 +131,7 @@ int16_t micro(int32_t F, uint8_t *metall ) {
 			return 0;
 		}
 		for (int i = 1; i < fe.points; i++ ) {
-			if ( F <= fe.F[i] ) { // (F > table[0][i-1].F)&&(F <= table[0][i].F) ) {
+			if ( F <= fe.F[i] ) {
 				F2 = fe.F[i];
 				M2 = fe.micro[i];
 				F1 = fe.F[i-1];
@@ -141,8 +144,12 @@ int16_t micro(int32_t F, uint8_t *metall ) {
 	}
 
 	if ( al.points != 0 ) { // if Aluminum table not empty
+		if ( F >= al.F[0] ) {
+			*metall = 1; // Al
+			return 0;
+		}
 		for (int i = 1; i < al.points; i++ ) {
-			if ( F >= al.F[i] ) { // (F > table[0][i-1].F)&&(F <= table[0][i].F) ) {
+			if ( F >= al.F[i] ) {
 				F2 = al.F[i];
 				M2 = al.micro[i];
 				F1 = al.F[i-1];
@@ -151,8 +158,6 @@ int16_t micro(int32_t F, uint8_t *metall ) {
 				*metall = 1; // Al
 				return M;
 			}
-			*metall = 1; // Al
-			return 0;
 		}
 	}
 	*metall = 0xFF; // ?

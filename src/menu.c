@@ -105,30 +105,34 @@ int dPowerOn(uint8_t ev) {
 	return 1;
 }
 
-void dshowV(uint32_t val) //из dworkScreen()
+void dshowV( uint16_t freq )
 {
-	uint8_t me;
+	uint16_t microValue;
+	int res;
+
 	disClear();
 	disPrint(0, 0, "Измерение");
 	if ( magGetStat() ) {
 		disPrin(" *");
 	}
 
-	uint16_t microValue = micro( val, &me );
-	if ( microValue == 0xFFFF ) {
-		disPrintFONT2(1,0," Air");
-	} else {
-		//disUINT32_to_str(5, 0, microValue );
+	res = micro( freq, &microValue );
+	if ( res == 0 ) { // Ferrum
 		disUINT16_4digit_to_strFONT2(1,0, microValue);
 		disPrint(3, 48, " um");
-		if ( me == 0 ) { // Fe
-			disPrint(3, 72, "Fe");
-		} else if ( me == 1 ) { // Al
-			disPrint(3, 72, "Al");
-		}
+		disPrint(3, 72, "Fe");
+	} else if ( res == 1 ) { // Air
+		disPrintFONT2(1,0," Air");
+	} else if ( res == 2 ) { // Aluminum
+		disUINT16_4digit_to_strFONT2(1,0, microValue);
+		disPrint(3, 48, " um");
+		disPrint(3, 72, "Al");
+	} else if ( res == 3 ) { // No Fe calib data
+		disPrint(3, 0, "No Fe calibr.");
+	} else if ( res == 4 ) { // No Al calib data
+		disPrint(3, 0, "No Al calibr.");
 	}
-
-	disUINT32_to_str(4, 0, val); // freq
+	disUINT32_to_str(4, 0, freq);
 }
 
 /*

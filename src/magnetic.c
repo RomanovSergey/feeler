@@ -12,8 +12,8 @@
 #include "sound.h"
 
 static int measureDone = 0;
-static uint32_t irq_freq = 0;
-static uint32_t freq = 0;
+static uint16_t irq_freq = 0;
+static uint16_t freq = 0;
 static int magstat = 0; // magnetic status: 0-off; 1-on.
 
 //===========================================================================
@@ -71,7 +71,7 @@ uint8_t mgGetEv(void) { // private
  */
 void TIM2_IRQHandler(void) {
 	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_Update) ) {
-		irq_freq = TIM_GetCounter( TIM3 );
+		irq_freq = (uint16_t)TIM_GetCounter( TIM3 );
 		TIM_SetCounter(TIM3, 0);
 		measureDone = 1;//флаг - данные измерения готовы
 
@@ -82,7 +82,7 @@ void TIM2_IRQHandler(void) {
 /*
  * выдает текущую частоту
  */
-uint32_t getFreq(void) {
+uint16_t getFreq(void) {
 	return freq;
 }
 

@@ -8,7 +8,7 @@
 #ifndef MICROMETER_H_
 #define MICROMETER_H_
 
-int16_t micro(int32_t F, uint8_t *metall );
+int micro( uint16_t F, uint16_t *micro );
 void micro_initCalib(void);
 int microSaveFe(void);
 int microSaveAl(void);

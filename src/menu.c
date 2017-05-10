@@ -77,7 +77,7 @@ int dmessageError1(uint8_t ev) {
 
 int emptyDisplay(uint8_t event) {
 	if ( event == DIS_PAINT ) {
-		pdisp = dworkScreen;
+		pdisp = dPowerOn;
 		sndPutEv( SND_PERMIT );
 		return 0;
 	}
@@ -92,7 +92,10 @@ int emptyDisplay(uint8_t event) {
 int dPowerOn(uint8_t ev) {
 	switch (ev) {
 	case DIS_PUSH_OK:
-		//g.air = getFreq();
+		if ( microSetAir( getFreq() ) != 0 ) {
+			pdisp = dmessageError1;
+			return 0;
+		}
 		pdisp = dworkScreen;
 		return 0;
 	}

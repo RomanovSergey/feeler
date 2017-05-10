@@ -25,7 +25,7 @@ typedef struct {
 
 static CAL_T fe; // calib table for Ferrum
 static CAL_T al; // calib table for Aluminum
-uint16_t Air;
+static uint16_t Air;
 
 /*
  * Initial initialization of the calibration table
@@ -174,6 +174,15 @@ int micro( uint16_t F, uint16_t *micro )
 		}
 	}
 	return 1; // Air
+}
+
+int microSetAir( uint16_t air )
+{
+	Air = air;
+	if ( ( Air < 8000 ) || ( Air > 17000 ) ) {
+		return 1; // Error
+	}
+	return 0; // Ok
 }
 
 /*

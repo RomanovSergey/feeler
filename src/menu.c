@@ -20,7 +20,18 @@
 
 static pdisp_t prev = NULL;
 
-//static FLASH_Status fstat;
+/*
+ * Start menu function on Power On
+ */
+int emptyDisplay(uint8_t event) {
+	if ( event == DIS_PAINT ) {
+		pdisp = dPowerOn;
+		sndPutEv( SND_PERMIT );
+		return 0;
+	}
+	disClear();
+	return 1;
+}
 
 /*
  * Не существующее меню
@@ -75,27 +86,22 @@ int dmessageError1(uint8_t ev) {
 	return 1;
 }
 
-int emptyDisplay(uint8_t event) {
-	if ( event == DIS_PAINT ) {
-		pdisp = dPowerOn;
-		sndPutEv( SND_PERMIT );
-		return 0;
-	}
-	disClear();
-	return 1;
-}
-
 /*
  * Отображается при включении питания
  * просит замерить частоту на воздухе
  */
 int dPowerOn(uint8_t ev) {
 	switch (ev) {
+	case DIS_REPAINT:
+		mgPutEv( MG_ON );
+		break;
 	case DIS_PUSH_OK:
 		if ( microSetAir( getFreq() ) != 0 ) {
+			mgPutEv( MG_OFF );
 			pdisp = dmessageError1;
 			return 0;
 		}
+		mgPutEv( MG_OFF );
 		pdisp = dworkScreen;
 		return 0;
 	}
@@ -114,28 +120,31 @@ void dshowV( uint16_t freq )
 	int res;
 
 	disClear();
-	disPrint(0, 0, "Измерение");
 	if ( magGetStat() ) {
+		disPrint(0, 0, "Измерение");
 		disPrin(" *");
+		res = micro( freq, &microValue );
+		if ( res == 0 ) { // Ferrum
+			disUINT16_4digit_to_strFONT2(1,0, microValue);
+			disPrint(3, 48, " um");
+			disPrint(3, 72, "Fe");
+		} else if ( res == 1 ) { // Air
+			disPrintFONT2(1,0," Air");
+		} else if ( res == 2 ) { // Aluminum
+			disUINT16_4digit_to_strFONT2(1,0, microValue);
+			disPrint(3, 48, " um");
+			disPrint(3, 72, "Al");
+		} else if ( res == 3 ) { // No Fe calib data
+			disPrint(2, 0, "No Fe calibr.");
+		} else if ( res == 4 ) { // No Al calib data
+			disPrint(2, 0, "No Al calibr.");
+		}
+		disUINT32_to_str(4, 0, freq);
+	} else {
+		disPrint(1, 0, "Для измерения");
+		disPrint(3, 0, "нажмите левую");
+		disPrint(5, 0, "кнопку");
 	}
-
-	res = micro( freq, &microValue );
-	if ( res == 0 ) { // Ferrum
-		disUINT16_4digit_to_strFONT2(1,0, microValue);
-		disPrint(3, 48, " um");
-		disPrint(3, 72, "Fe");
-	} else if ( res == 1 ) { // Air
-		disPrintFONT2(1,0," Air");
-	} else if ( res == 2 ) { // Aluminum
-		disUINT16_4digit_to_strFONT2(1,0, microValue);
-		disPrint(3, 48, " um");
-		disPrint(3, 72, "Al");
-	} else if ( res == 3 ) { // No Fe calib data
-		disPrint(3, 0, "No Fe calibr.");
-	} else if ( res == 4 ) { // No Al calib data
-		disPrint(3, 0, "No Al calibr.");
-	}
-	disUINT32_to_str(4, 0, freq);
 }
 
 /*
@@ -190,11 +199,6 @@ int dmainM(uint8_t ev) {
 	case DIS_PUSH_L:
 		pdisp = dworkScreen; // Наверх
 		curs = 0;
-//		if ( curs > 0 ) {
-//			curs--;
-//		} else {
-//			curs = 3;
-//		}
 		break;
 	case DIS_PUSH_R:
 		curs++;
@@ -226,11 +230,6 @@ int duserCalib(uint8_t ev) {
 	case DIS_PUSH_L:
 		pdisp = dmainM; // Наверх
 		curs = 0;
-//		if ( curs > 0 ) {
-//			curs--;
-//		} else {
-//			curs = 2;
-//		}
 		break;
 	case DIS_PUSH_R:
 		curs++;
@@ -295,7 +294,7 @@ int dcalibFeDone(uint8_t ev) {
 	case DIS_MEASURE:
 		return 0;
 	case DIS_PUSH_L:
-		micro_initCalib();
+		//micro_initCalib();
 		pdisp = duserCalib;
 		return 0;
 	case DIS_PUSH_OK:
@@ -324,7 +323,7 @@ int dcalibAlDone(uint8_t ev) {
 	case DIS_MEASURE:
 		return 0;
 	case DIS_PUSH_L:
-		micro_initCalib();
+		//micro_initCalib();
 		pdisp = duserCalib;
 		return 0;
 	case DIS_PUSH_OK:

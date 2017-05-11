@@ -48,7 +48,7 @@ static FlashManager fm;
  * Check IDLEN for correct
  * Return:
  *   FRES_OK - *idnum and *hwdlen has result
- *   FERR_ID
+ *   FERR_ID - record's ID is not allowable
  */
 static int fcheckId( uint16_t IDLEN, uint8_t *idnum, uint8_t *hwdlen )
 {
@@ -256,6 +256,8 @@ int flashInit(void)
 	uint8_t  hwdlen;
 	int  res = 0;
 
+	urtPrint("flashInit\n");
+
 	// init fm sturct =========================
 	fm.curBlock  = 0;
 	fm.ersBlock  = 0;
@@ -282,6 +284,7 @@ int flashInit(void)
 		if ( data != 0xFFFF ) {
 			if ( data == 0 ) {
 				fm.cell += 2;
+				urtPrint("0\n");
 				continue;
 			}
 			res = fcheckId( data, &id, &hwdlen );

@@ -108,43 +108,57 @@ int dPowerOn(uint8_t ev) {
 	disClear();
 	disPrint(0,0,"Замерте воздух");
 	disPrint(1,0,"  нажмите OK");
-	disPrint(2,0,"F = ");
-	disUINT32_to_str(2,0xFF, getFreq() );
-	disPrin(" y.e.");
+	disPrint(3,0,"F = ");
+	disUINT32_to_str(3,0xFF, getFreq() );
+	disPrin(" Гц");
+	disPrint(5, 36, "OK");
 	return 1;
 }
 
-void dshowV( uint16_t freq )
+void dshowV( uint16_t freq, uint8_t flag )
 {
+	static uint16_t save_frec = 0;
 	uint16_t microValue;
 	int res;
 
 	disClear();
 	if ( magGetStat() ) {
-		disPrint(0, 0, "Измерение");
-		disPrin(" *");
-		res = micro( freq, &microValue );
-		if ( res == 0 ) { // Ferrum
-			disUINT16_4digit_to_strFONT2(1,0, microValue);
-			disPrint(3, 48, " um");
-			disPrint(3, 72, "Fe");
-		} else if ( res == 1 ) { // Air
-			disPrintFONT2(1,0," Air");
-		} else if ( res == 2 ) { // Aluminum
-			disUINT16_4digit_to_strFONT2(1,0, microValue);
-			disPrint(3, 48, " um");
-			disPrint(3, 72, "Al");
-		} else if ( res == 3 ) { // No Fe calib data
-			disPrint(2, 0, "No Fe calibr.");
-		} else if ( res == 4 ) { // No Al calib data
-			disPrint(2, 0, "No Al calibr.");
+		if ( freq != 0 ) {
+			save_frec = freq;
 		}
-		disUINT32_to_str(4, 0, freq);
+		disPrint(0, 0, "Измерение");
+		if ( flag ) {
+			disPrin(" *");
+		}
 	} else {
-		disPrint(1, 0, "Для измерения");
-		disPrint(3, 0, "нажмите левую");
-		disPrint(5, 0, "кнопку");
+		disPrint(0, 0, "Фиксация");
 	}
+
+	res = micro( save_frec, &microValue );
+	if ( res == 0 ) { // Ferrum
+		disUINT16_4digit_to_strFONT2(1,0, microValue);
+		disPrint(3, 48, " um");
+		disPrint(3, 72, "Fe");
+	} else if ( res == 1 ) { // Air
+		disPrintFONT2(1,0," Air");
+	} else if ( res == 2 ) { // Aluminum
+		disUINT16_4digit_to_strFONT2(1,0, microValue);
+		disPrint(3, 48, " um");
+		disPrint(3, 72, "Al");
+	} else if ( res == 3 ) { // No Fe calib data
+		disPrint(2, 0, "No Fe calibr.");
+	} else if ( res == 4 ) { // No Al calib data
+		disPrint(2, 0, "No Al calibr.");
+	}
+	disUINT32_to_str(4, 0, save_frec);
+
+//	else {
+//		disPrint(0, 0, "Для измерения");
+//		disPrint(1, 0, "нажмите левую");
+//		disPrint(2, 0, "кнопку");
+//		disPrint(5, 0, "ЛК   Меню Реж.");
+//		disPrint(5, 36, "Меню");
+//	}
 }
 
 /*
@@ -152,6 +166,7 @@ void dshowV( uint16_t freq )
  * по мере поступления новых данных
  */
 int dworkScreen(uint8_t ev) {
+	static uint8_t measflag = 0;
 	switch (ev) {
 	case DIS_PUSH_OK:
 		pdisp = dmainM;//на главное меню
@@ -163,13 +178,16 @@ int dworkScreen(uint8_t ev) {
 	case DIS_PULL_L:
 		mgPutEv( MG_OFF );
 		return 0;
+	case DIS_MEASURE:
+		measflag ^= 1;
+		break;
 	case DIS_PUSH_R:
 	case DIS_LONGPUSH_OK:
 	case DIS_LONGPUSH_L:
 	case DIS_LONGPUSH_R:
 		return 0;
 	}
-	dshowV( getFreq() );
+	dshowV( getFreq(), measflag );
 	return 1;//надо перерисовать
 }
 

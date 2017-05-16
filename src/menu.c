@@ -117,15 +117,11 @@ int dPowerOn(uint8_t ev) {
 
 void dshowV( uint16_t freq, uint8_t flag )
 {
-	static uint16_t save_frec = 0;
 	uint16_t microValue;
 	int res;
 
 	disClear();
 	if ( magGetStat() ) {
-		if ( freq != 0 ) {
-			save_frec = freq;
-		}
 		disPrint(0, 0, "Измерение");
 		if ( flag ) {
 			disPrin(" *");
@@ -134,7 +130,7 @@ void dshowV( uint16_t freq, uint8_t flag )
 		disPrint(0, 0, "Фиксация");
 	}
 
-	res = micro( save_frec, &microValue );
+	res = micro( freq, &microValue );
 	if ( res == 0 ) { // Ferrum
 		disUINT16_4digit_to_strFONT2(1,0, microValue);
 		disPrint(3, 48, " um");
@@ -149,16 +145,10 @@ void dshowV( uint16_t freq, uint8_t flag )
 		disPrint(2, 0, "No Fe calibr.");
 	} else if ( res == 4 ) { // No Al calib data
 		disPrint(2, 0, "No Al calibr.");
+	} else if ( res == 5 ) { // Freq is zero
+		disPrint(2, 0, "No Data");
 	}
-	disUINT32_to_str(4, 0, save_frec);
-
-//	else {
-//		disPrint(0, 0, "Для измерения");
-//		disPrint(1, 0, "нажмите левую");
-//		disPrint(2, 0, "кнопку");
-//		disPrint(5, 0, "ЛК   Меню Реж.");
-//		disPrint(5, 36, "Меню");
-//	}
+	disUINT32_to_str(4, 0, freq);
 }
 
 /*

@@ -131,6 +131,7 @@ void magnetic(void)
 		TIM_SetCounter(TIM2, 0);
 		TIM_Cmd(TIM2, ENABLE);
 		dispPutEv( DIS_MEASURE );
+		freq = 0;
 		break;
 	case MG_OFF: // выключим магнит
 		magstat = 0;
@@ -146,7 +147,7 @@ void magnetic(void)
 		TIM_Cmd(TIM3, DISABLE);
 		TIM_Cmd(TIM2, DISABLE);
 		TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
-		freq = 0;
+		//freq = 0;
 		irq_freq = 0;
 		dispPutEv( DIS_MEASURE );
 		break;

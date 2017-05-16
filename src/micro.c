@@ -116,12 +116,17 @@ int microSaveAl(void)
  *   2 - Aluminum: *micro has result
  *   3 - No Fe calib data
  *   4 - No Al calib data
+ *   5 - Frequency is Zero
  */
 int micro( uint16_t F, uint16_t *micro )
 {
 	int32_t M, M1, M2, F1, F2;
 	uint8_t hasFe = 1;
 	uint8_t hasAl = 1;
+
+	if ( F == 0 ) {
+		return 5;
+	}
 
 	if ( fe.max != 0 ) { // if Ferrum table not empty
 		if ( F <= fe.F[0] ) {

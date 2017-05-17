@@ -197,9 +197,7 @@ void init(void) {
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	GPIO_ResetBits(GPIOA,GPIO_Pin_6);
-	//
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_7);
-	//GPIOA->MODER |= (((uint32_t)GPIO_Mode_OUT) << (6 * 2)); //PA6 -> gpio func
 
 	//======================================================================
 	//PA0 COMP1_INM ========================================================

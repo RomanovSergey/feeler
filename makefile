@@ -94,7 +94,7 @@ $(TARGET).$(TARGET_EXT): $(C_OBJS) $(S_OBJS)
 
 
 erase_stlink:
-	st-flash erase 20 
+	st-flash erase 25
 
 flash_stlink: $(TARGET).bin
 	st-flash write $(TARGET).bin 0x8000000

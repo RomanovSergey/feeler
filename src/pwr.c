@@ -61,7 +61,7 @@ uint8_t pwrGetEv(void) {
 }
 //===========================================================================
 //===========================================================================
-
+#define CNTINAKT  27
 void power(void)
 {
 	static const uint16_t CTIM = 1000; // const for startTime
@@ -83,14 +83,14 @@ void power(void)
 			pdisp = emptyDisplay;
 			break;
 		case PWR_INACTIVE: // событие простоя кнопок
-			if ( magGetStat() ) {
-				Inactivity = 0;
-				break;
-			}
+//			if ( magGetStat() ) {
+//				Inactivity = 0;
+//				break;
+//			}
 			Inactivity++;
-			if ( Inactivity == 4 ) {
+			if ( Inactivity == CNTINAKT ) {
 				BL2_OFF;
-			} else if ( Inactivity > 4 ) {
+			} else if ( Inactivity > CNTINAKT ) {
 				pwrPutEv( PWR_POWEROFF );
 			}
 			break;

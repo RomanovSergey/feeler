@@ -34,6 +34,16 @@ int main(void) {
 	mgPutEv( MG_OFF );
 	while (1) {
 		magnetic();
+//		{
+//			static int state = 0;
+//			if ( state ) {
+//				state = 0;
+//				GPIO_ResetBits(GPIOA,GPIO_Pin_6);
+//			} else {
+//				state = 1;
+//				GPIO_SetBits(GPIOA,GPIO_Pin_6);
+//			}
+//		}
 		sound();
 		display();
 		buttons();
@@ -183,9 +193,9 @@ void init(void) {
 	COMP_InitStruct.COMP_Output = COMP_Output_TIM3IC1;
 	COMP_InitStruct.COMP_OutputPol = COMP_OutputPol_NonInverted;
 	COMP_InitStruct.COMP_Hysteresis = COMP_Hysteresis_No;
-	COMP_InitStruct.COMP_Mode = COMP_Mode_HighSpeed;
+	COMP_InitStruct.COMP_Mode = COMP_Mode_LowPower; // COMP_Mode_HighSpeed;
 	COMP_Init(COMP_Selection_COMP1, &COMP_InitStruct);
-	//
+
 	COMP_Cmd(COMP_Selection_COMP1, ENABLE);
 
 	//======================================================================
@@ -193,7 +203,7 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	GPIO_ResetBits(GPIOA,GPIO_Pin_6);
@@ -204,7 +214,7 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
@@ -213,7 +223,7 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 

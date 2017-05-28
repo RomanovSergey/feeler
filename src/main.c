@@ -21,7 +21,7 @@
 #include "displayDrv.h"
 #include "sound.h"
 #include "pwr.h"
-
+#include "adc.h"
 
 void init(void);
 
@@ -66,7 +66,7 @@ void init(void) {
 	TIM_OCInitTypeDef        TIM_OCInitStruct;
 	USART_InitTypeDef        USART_InitStruct;
 	NVIC_InitTypeDef         NVIC_InitStruct;
-	//ADC_InitTypeDef          ADC_InitStruct;
+	ADC_InitTypeDef          ADC_InitStruct;
 
 	//SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс
@@ -267,6 +267,22 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;//main priority
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
+
+	//======================================================================
+	//ADC for battary measure ==============================================
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
+
+	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
+	ADC_InitStruct.ADC_ContinuousConvMode = DISABLE;
+	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
+	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T1_TRGO;
+	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
+	ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
+	ADC_Init( ADC1, &ADC_InitStruct );
+
+	adcSaveCalibData( ADC_GetCalibrationFactor( ADC1 ) );
+	ADC_VrefintCmd(ENABLE);
+	ADC_Cmd(ADC1, ENABLE);
 }
 
 #ifdef  USE_FULL_ASSERT

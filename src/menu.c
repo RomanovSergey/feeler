@@ -17,6 +17,7 @@
 #include "flash2.h"
 #include "fonts/img.h"
 #include <string.h>
+#include "adc.h"
 
 static pdisp_t prev = NULL;
 
@@ -38,7 +39,9 @@ int emptyDisplay(uint8_t event) {
  */
 int dnotDone(uint8_t ev) {
 	switch (ev) {
+	case DIS_PUSH_L:
 	case DIS_ALARM:
+		pwrPutEv( PWR_RESET_ALARM );
 		if ( prev != NULL ) {
 			pdisp = prev;
 			prev = NULL;
@@ -66,7 +69,9 @@ int dnotDone(uint8_t ev) {
  */
 int dmessageError1(uint8_t ev) {
 	switch (ev) {
+	case DIS_PUSH_L:
 	case DIS_ALARM://сработал будильник
+		pwrPutEv( PWR_RESET_ALARM );
 		if ( prev != NULL ) {
 			pdisp = prev;
 			prev = NULL;
@@ -114,7 +119,7 @@ int dPowerOn(uint8_t ev) {
 	disPrint(5, 36, "OK");
 	return 1;
 }
-
+/*
 void dshowV( uint16_t freq, uint8_t flag )
 {
 	uint16_t microValue;
@@ -149,7 +154,7 @@ void dshowV( uint16_t freq, uint8_t flag )
 		disPrint(2, 0, "No Data");
 	}
 	disUINT32_to_str(4, 0, freq);
-}
+}*/
 
 /*
  * Рабочий - отображает измеренное значение толщины
@@ -177,7 +182,44 @@ int dworkScreen(uint8_t ev) {
 	case DIS_LONGPUSH_R:
 		return 0;
 	}
-	dshowV( getFreq(), measflag );
+	//dshowV( getFreq(), measflag );
+
+	uint16_t freq = getFreq();
+	uint16_t microValue;
+	int res;
+
+	disClear();
+	if ( magGetStat() ) {
+		disPrint(0, 0, "Измер.");
+		if ( measflag ) {
+			disPrin("*");
+		}
+	} else {
+		disPrint(0, 0, "Фикс.");
+	}
+
+	disPrint(0, 60, adcGetBattary() );
+
+	res = micro( freq, &microValue );
+	if ( res == 0 ) { // Ferrum
+		disUINT16_4digit_to_strFONT2(1,0, microValue);
+		disPrint(3, 48, " um");
+		disPrint(3, 72, "Fe");
+	} else if ( res == 1 ) { // Air
+		disPrintFONT2(1,0," Air");
+	} else if ( res == 2 ) { // Aluminum
+		disUINT16_4digit_to_strFONT2(1,0, microValue);
+		disPrint(3, 48, " um");
+		disPrint(3, 72, "Al");
+	} else if ( res == 3 ) { // No Fe calib data
+		disPrint(2, 0, "No Fe calibr.");
+	} else if ( res == 4 ) { // No Al calib data
+		disPrint(2, 0, "No Al calibr.");
+	} else if ( res == 5 ) { // Freq is zero
+		disPrint(2, 0, "No Data");
+	}
+	disUINT32_to_str(4, 0, freq);
+
 	return 1;//надо перерисовать
 }
 

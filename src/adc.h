@@ -8,6 +8,7 @@
 #ifndef SRC_ADC_H_
 #define SRC_ADC_H_
 
-void adcSaveCalibData(uint32_t cal);
+void adcSaveCalibData( uint32_t cal );
+char* adcGetBattary( void );
 
 #endif /* SRC_ADC_H_ */

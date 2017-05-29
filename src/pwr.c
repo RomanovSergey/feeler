@@ -106,6 +106,9 @@ void power(void)
 		case PWR_ALARM_3000:
 			alarm = 3000;
 			break;
+		case PWR_RESET_ALARM:
+			alarm = 0;
+			break;
 		}
 
 		if ( alarm != 0 ) {

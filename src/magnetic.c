@@ -66,27 +66,14 @@ uint8_t mgGetEv(void) { // private
 //===========================================================================
 
 
-static int irqCounter = 0;
 /*
  * interrupt handler
  */
 void TIM2_IRQHandler(void) {
 	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_Update) ) {
-//		if ( irqCounter ) {
-//			irqCounter = 0;
-			irq_freq = (uint16_t)TIM_GetCounter( TIM3 );
-			TIM_SetCounter(TIM3, 0);
-
-			measureDone = 1; // флаг - данные измерения готовы
-//			GPIOA->MODER  &= ~(GPIO_MODER_MODER0 << (6 * 2)); // reset PA6 MODER bits
-//			GPIOA->MODER |= (((uint32_t)GPIO_Mode_OUT) << (6 * 2)); // set PA6 as GPIO
-//			GPIOA->BRR = GPIO_Pin_6; // PA6 to low
-//		} else {
-//			irqCounter = 1;
-//			GPIOA->MODER  &= ~(GPIO_MODER_MODER0 << (6 * 2)); // reset PA6 MODER bits
-//			GPIOA->MODER |= (((uint32_t)GPIO_Mode_AF) << (6 * 2)); // set PA6 as AF
-//			TIM_SetCounter(TIM3, 0);
-//		}
+		irq_freq = (uint16_t)TIM_GetCounter( TIM3 );
+		TIM_SetCounter(TIM3, 0);
+		measureDone = 1; // флаг - данные измерения готовы
 		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
 	}
 }
@@ -124,7 +111,6 @@ void magnetic(void)
 	switch ( event ) {
 	case MG_ON: // включим магнит
 		magstat = 1;
-		irqCounter = 1;
 		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
 		TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
 

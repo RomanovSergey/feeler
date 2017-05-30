@@ -9,6 +9,10 @@
 #include "adc.h"
 #include "uart.h"
 
+static int      irq_ready = 0;
+static uint16_t irq_adc_data = 0;
+static uint16_t adc_data = 0;
+
 static uint32_t calData = 0; // saves ADC calib data (is need?)
 static char battaryStr[5];
 
@@ -17,14 +21,19 @@ void ADC1_COMP_IRQHandler( void )
 	//while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) );
 	if ( SET == ADC_GetITStatus(ADC1, ADC_IT_EOC) ) {
 		ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
-		//ADC_GetConversionValue(ADC1);
+		irq_adc_data = ADC_GetConversionValue(ADC1);
+		irq_ready = 1;
 	}
-
 }
 
 void adc( void )
 {
 	static uint16_t cnt = 0;
+
+	if ( irq_ready == 1 ) {
+		irq_ready = 0;
+		adc_data = irq_adc_data;
+	}
 
 	cnt++;
 	if ( cnt > 500 ) {

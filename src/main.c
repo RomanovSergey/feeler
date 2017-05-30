@@ -34,22 +34,12 @@ int main(void) {
 	mgPutEv( MG_OFF );
 	while (1) {
 		magnetic();
-//		{
-//			static int state = 0;
-//			if ( state ) {
-//				state = 0;
-//				GPIO_ResetBits(GPIOA,GPIO_Pin_6);
-//			} else {
-//				state = 1;
-//				GPIO_SetBits(GPIOA,GPIO_Pin_6);
-//			}
-//		}
 		sound();
 		display();
 		buttons();
 		uart();
 		power();
-
+//		PWR_EnterSleepMode(PWR_SLEEPEntry_WFE);
 		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk));//wait until systick timer (1ms)
 	}
 }
@@ -193,7 +183,7 @@ void init(void) {
 	COMP_InitStruct.COMP_Output = COMP_Output_TIM3IC1;
 	COMP_InitStruct.COMP_OutputPol = COMP_OutputPol_NonInverted;
 	COMP_InitStruct.COMP_Hysteresis = COMP_Hysteresis_No;
-	COMP_InitStruct.COMP_Mode = COMP_Mode_LowPower; // COMP_Mode_HighSpeed;
+	COMP_InitStruct.COMP_Mode = COMP_Mode_HighSpeed;
 	COMP_Init(COMP_Selection_COMP1, &COMP_InitStruct);
 
 	COMP_Cmd(COMP_Selection_COMP1, ENABLE);
@@ -203,7 +193,7 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	GPIO_ResetBits(GPIOA,GPIO_Pin_6);
@@ -214,7 +204,7 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
@@ -223,7 +213,7 @@ void init(void) {
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
@@ -270,7 +260,16 @@ void init(void) {
 
 	//======================================================================
 	//ADC for battary measure ==============================================
+	GPIO_DeInit(GPIOA);
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
+	ADC_DeInit(ADC1);
 
 	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
 	ADC_InitStruct.ADC_ContinuousConvMode = DISABLE;
@@ -284,6 +283,13 @@ void init(void) {
 
 	adcSaveCalibData( ADC_GetCalibrationFactor( ADC1 ) );
 	ADC_Cmd(ADC1, ENABLE);
+	while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY) );
+	//
+	ADC_ChannelConfig(ADC1, ADC_Channel_3, ADC_SampleTime_1_5Cycles);
+	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
+	ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);
+
+	ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
 }
 
 #ifdef  USE_FULL_ASSERT

@@ -12,6 +12,27 @@
 static uint32_t calData = 0; // saves ADC calib data (is need?)
 static char battaryStr[5];
 
+void ADC1_COMP_IRQHandler( void )
+{
+	//while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) );
+	if ( SET == ADC_GetITStatus(ADC1, ADC_IT_EOC) ) {
+		ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
+		//ADC_GetConversionValue(ADC1);
+	}
+
+}
+
+void adc( void )
+{
+	static uint16_t cnt = 0;
+
+	cnt++;
+	if ( cnt > 500 ) {
+		cnt = 0;
+		ADC_StartOfConversion(ADC1);
+	}
+}
+
 void adcSaveCalibData(uint32_t cal)
 {
 	calData = cal;
@@ -29,3 +50,4 @@ char* adcGetBattary( void )
 	battaryStr[4] = 0;
 	return battaryStr;
 }
+

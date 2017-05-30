@@ -114,7 +114,6 @@ int magGetStat(void) {
  */
 void magnetic(void)
 {
-	GPIO_InitTypeDef         GPIO_InitStructure;
 	uint8_t event;
 	if (measureDone == 1) { //для синхронизации с прерыванием
 		measureDone = 0;

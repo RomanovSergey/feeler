@@ -119,42 +119,6 @@ int dPowerOn(uint8_t ev) {
 	disPrint(5, 36, "OK");
 	return 1;
 }
-/*
-void dshowV( uint16_t freq, uint8_t flag )
-{
-	uint16_t microValue;
-	int res;
-
-	disClear();
-	if ( magGetStat() ) {
-		disPrint(0, 0, "Измерение");
-		if ( flag ) {
-			disPrin(" *");
-		}
-	} else {
-		disPrint(0, 0, "Фиксация");
-	}
-
-	res = micro( freq, &microValue );
-	if ( res == 0 ) { // Ferrum
-		disUINT16_4digit_to_strFONT2(1,0, microValue);
-		disPrint(3, 48, " um");
-		disPrint(3, 72, "Fe");
-	} else if ( res == 1 ) { // Air
-		disPrintFONT2(1,0," Air");
-	} else if ( res == 2 ) { // Aluminum
-		disUINT16_4digit_to_strFONT2(1,0, microValue);
-		disPrint(3, 48, " um");
-		disPrint(3, 72, "Al");
-	} else if ( res == 3 ) { // No Fe calib data
-		disPrint(2, 0, "No Fe calibr.");
-	} else if ( res == 4 ) { // No Al calib data
-		disPrint(2, 0, "No Al calibr.");
-	} else if ( res == 5 ) { // Freq is zero
-		disPrint(2, 0, "No Data");
-	}
-	disUINT32_to_str(4, 0, freq);
-}*/
 
 /*
  * Рабочий - отображает измеренное значение толщины
@@ -622,28 +586,4 @@ int dimageShtrih(uint8_t ev)
 	}
 	return 1;
 }
-
-//===========================================================================
-//===========================================================================
-///*
-// * Фикирует измеренное значение, пока нажата кнопка
-// */
-//int dkeepVal(uint8_t ev) {
-//	static uint32_t keepVal = 0;
-//	switch (ev) {
-//	case DIS_PULL_L:
-//		pdisp = workScreenM;
-//		keepVal = 0;
-//		return 0;
-//	case Eb1Long:
-//		return 0;
-//	case Erepaint:
-//		keepVal = getFreq();
-//		break;
-//	}
-//
-//	showVal( keepVal );
-//	return 1;//надо перерисовать
-//}
-//
 

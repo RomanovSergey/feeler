@@ -34,6 +34,7 @@ int main(void) {
 	mgPutEv( MG_OFF );
 	while (1) {
 		magnetic();
+		adc();
 		sound();
 		display();
 		buttons();
@@ -260,7 +261,6 @@ void init(void) {
 
 	//======================================================================
 	//ADC for battary measure ==============================================
-	GPIO_DeInit(GPIOA);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -279,7 +279,7 @@ void init(void) {
 	ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
 	ADC_Init( ADC1, &ADC_InitStruct );
 	ADC_JitterCmd(ADC1, ADC_JitterOff_PCLKDiv4, ENABLE);
-	ADC_VrefintCmd(ENABLE);
+	//ADC_VrefintCmd(ENABLE);
 
 	adcSaveCalibData( ADC_GetCalibrationFactor( ADC1 ) );
 	ADC_Cmd(ADC1, ENABLE);
@@ -290,6 +290,11 @@ void init(void) {
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);
 
 	ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
+
+	NVIC_InitStruct.NVIC_IRQChannel = ADC1_COMP_IRQn;
+	NVIC_InitStruct.NVIC_IRQChannelPriority = 2;
+	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStruct);
 }
 
 #ifdef  USE_FULL_ASSERT

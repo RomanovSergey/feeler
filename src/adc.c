@@ -8,13 +8,14 @@
 #include "stm32f0xx.h"
 #include "adc.h"
 #include "uart.h"
+#include "displayDrv.h"
 
 static int      irq_ready = 0;
 static uint16_t irq_adc_data = 0;
 static uint16_t adc_data = 0;
 
 static uint32_t calData = 0; // saves ADC calib data (is need?)
-static char battaryStr[5];
+
 
 void ADC1_COMP_IRQHandler( void )
 {
@@ -33,6 +34,7 @@ void adc( void )
 	if ( irq_ready == 1 ) {
 		irq_ready = 0;
 		adc_data = irq_adc_data;
+		dispPutEv( DIS_MEASURE );
 	}
 
 	cnt++;
@@ -50,8 +52,14 @@ void adcSaveCalibData(uint32_t cal)
 	urtPrint("\n");
 }
 
+uint16_t adcData(void)
+{
+	return adc_data;
+}
+
 char* adcGetBattary( void )
 {
+	static char battaryStr[5];
 	battaryStr[0] = '2';
 	battaryStr[1] = '.';
 	battaryStr[2] = '9';

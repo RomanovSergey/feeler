@@ -163,6 +163,7 @@ int dworkScreen(uint8_t ev) {
 	}
 
 	disPrint(0, 60, adcGetBattary() );
+	disUINT32_to_str( 1, 0, adcData() );
 
 	res = micro( freq, &microValue );
 	if ( res == 0 ) { // Ferrum
@@ -180,7 +181,7 @@ int dworkScreen(uint8_t ev) {
 	} else if ( res == 4 ) { // No Al calib data
 		disPrint(2, 0, "No Al calibr.");
 	} else if ( res == 5 ) { // Freq is zero
-		disPrint(2, 0, "No Data");
+		disPrint(3, 0, "No Data");
 	}
 	disUINT32_to_str(4, 0, freq);
 

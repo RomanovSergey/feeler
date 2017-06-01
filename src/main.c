@@ -279,7 +279,7 @@ void init(void) {
 	ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
 	ADC_Init( ADC1, &ADC_InitStruct );
 	ADC_JitterCmd(ADC1, ADC_JitterOff_PCLKDiv4, ENABLE);
-	//ADC_VrefintCmd(ENABLE);
+	ADC_VrefintCmd(ENABLE);
 
 	adcSaveCalibData( ADC_GetCalibrationFactor( ADC1 ) );
 	ADC_Cmd(ADC1, ENABLE);

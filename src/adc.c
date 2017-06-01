@@ -68,3 +68,9 @@ char* adcGetBattary( void )
 	return battaryStr;
 }
 
+uint16_t adcVda( void )
+{
+	uint16_t vrefint_cal; // VREFINT calibration value
+	vrefint_cal = *(__IO uint16_t*)0x1FFFF7BA;
+	return vrefint_cal;
+}

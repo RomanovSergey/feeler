@@ -199,7 +199,7 @@ int dmainM(uint8_t ev) {
 			curs = 0;
 		} else if ( curs == 1 ) { // Выбор калибровки
 			prev  = dmainM;
-			pdisp = dnotDone;//dflashDebug;
+			pdisp = adcTest; // dnotDone;//dflashDebug;
 		} else if ( curs == 2 ) { // Польз. калибр.
 			pdisp = duserCalib;
 		} else if ( curs == 3 ) { // Просмотр таб.
@@ -260,8 +260,14 @@ int adcTest(uint8_t ev) {
 	disClear();
 	disPrint(0,0,"ADC Test");
 
-	disPrint(1, 0, adcGetBattary() );
-	disUINT32_to_str( 2, 0, adcData() );
+	disPrint(1,0,"str=");
+	disPrin( adcGetBattary() );
+
+	disPrint(2,0,"data=");
+	disUINT32_to_str( 2, 0xFF, adcData() );
+
+	disPrint(3,0,"vincal=");
+	disUINT32_to_str( 3, 0xFF, adcVda() );
 
 	return 1;
 }

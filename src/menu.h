@@ -14,7 +14,8 @@ int emptyDisplay(uint8_t event);
 int dPowerOn(uint8_t ev);
 int dworkScreen(uint8_t event); // <---
 int dmainM(uint8_t ev);
-int duserCalib(uint8_t ev);
+  int adcTest(uint8_t ev);
+  int duserCalib(uint8_t ev);
 
 int dcalibDone(uint8_t ev);
 int dcalibFeDone(uint8_t ev);

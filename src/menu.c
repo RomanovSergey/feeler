@@ -128,7 +128,7 @@ int dworkScreen(uint8_t ev) {
 	static uint8_t measflag = 0;
 	switch (ev) {
 	case DIS_PUSH_OK:
-		pdisp = dmainM;//на главное меню
+		pdisp = dmainM;
 		mgPutEv( MG_OFF );
 		return 0;
 	case DIS_PUSH_L:
@@ -146,7 +146,6 @@ int dworkScreen(uint8_t ev) {
 	case DIS_LONGPUSH_R:
 		return 0;
 	}
-	//dshowV( getFreq(), measflag );
 
 	uint16_t freq = getFreq();
 	uint16_t microValue;
@@ -229,10 +228,41 @@ int dmainM(uint8_t ev) {
 	disClear();
 	disPrint(0,0,"Главное меню");
 	disPrint(1,6, "Наверх");
-	disPrint(2,6, "Выбор калибр.");
+	disPrint(2,6, "ADC test");
 	disPrint(3,6, "Польз.калибр.");
-	disPrint(4,6, "Просмотр таб.");
+	disPrint(4,6, "Просмотр карт"); // look at table
 	disPrint( curs + 1, 0, "→");
+	return 1;
+}
+
+int adcTest(uint8_t ev) {
+	static uint8_t measflag = 0;
+	switch (ev) {
+	case DIS_PUSH_OK:
+		pdisp = dmainM;
+		mgPutEv( MG_OFF );
+		return 0;
+	case DIS_PUSH_L:
+		mgPutEv( MG_ON );
+		return 0;
+	case DIS_PULL_L:
+		mgPutEv( MG_OFF );
+		return 0;
+	case DIS_MEASURE:
+		measflag ^= 1;
+		break;
+	case DIS_PUSH_R:
+	case DIS_LONGPUSH_OK:
+	case DIS_LONGPUSH_L:
+	case DIS_LONGPUSH_R:
+		return 0;
+	}
+	disClear();
+	disPrint(0,0,"ADC Test");
+
+	disPrint(1, 0, adcGetBattary() );
+	disUINT32_to_str( 2, 0, adcData() );
+
 	return 1;
 }
 

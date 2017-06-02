@@ -162,7 +162,7 @@ int dworkScreen(uint8_t ev) {
 	}
 
 	disPrint(0, 60, adcGetBattary() );
-	disUINT32_to_str( 1, 0, adcData() );
+	disUINT32_to_str( 1, 0, adcVbat() );
 
 	res = micro( freq, &microValue );
 	if ( res == 0 ) { // Ferrum
@@ -248,7 +248,7 @@ int adcTest(uint8_t ev) {
 	case DIS_PULL_L:
 		mgPutEv( MG_OFF );
 		return 0;
-	case DIS_MEASURE:
+	case DIS_ADC:
 		measflag ^= 1;
 		break;
 	case DIS_PUSH_R:
@@ -259,15 +259,24 @@ int adcTest(uint8_t ev) {
 	}
 	disClear();
 	disPrint(0,0,"ADC Test");
+	if ( measflag ) {
+		disPrin("*");
+	}
 
 	disPrint(1,0,"str=");
 	disPrin( adcGetBattary() );
 
 	disPrint(2,0,"data=");
-	disUINT32_to_str( 2, 0xFF, adcData() );
+	disUINT32_to_str( 2, 0xFF, adcVbat() );
 
-	disPrint(3,0,"vincal=");
-	disUINT32_to_str( 3, 0xFF, adcVda() );
+	disPrint(3,0,"vref=");
+	disUINT32_to_str( 3, 0xFF, adcVref() );
+
+	disPrint(4,0,"vda*100=");
+	disUINT32_to_str( 4, 0xFF, adcVda() );
+
+	disPrint(5,0,"vcal=");
+	disUINT32_to_str( 5, 0xFF, adcVcal() );
 
 	return 1;
 }

@@ -284,8 +284,8 @@ void init(void) {
 	adcSaveCalibData( ADC_GetCalibrationFactor( ADC1 ) );
 	ADC_Cmd(ADC1, ENABLE);
 	while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY) );
-	//
-	ADC_ChannelConfig(ADC1, ADC_Channel_3, ADC_SampleTime_1_5Cycles);
+	// Channel_3 - battary, Channel_17 - vrefint
+	ADC_ChannelConfig(ADC1, ADC_Channel_17, ADC_SampleTime_55_5Cycles); // 4 mks and more
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);
 

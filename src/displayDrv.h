@@ -22,7 +22,8 @@
 #define DIS_PULL_L       22
 #define DIS_PUSH_R       30
 #define DIS_LONGPUSH_R   31
-#define DIS_MEASURE      50
+#define DIS_MEASURE      40
+#define DIS_ADC          41
 
 typedef int (*pdisp_t)(uint8_t event);
 extern pdisp_t pdisp;

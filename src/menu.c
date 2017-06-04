@@ -183,7 +183,6 @@ int dworkScreen(uint8_t ev) {
 		disPrint(3, 0, "No Data");
 	}
 	disUINT32_to_str(4, 0, freq);
-
 	return 1;//надо перерисовать
 }
 
@@ -263,20 +262,24 @@ int adcTest(uint8_t ev) {
 		disPrin("*");
 	}
 
-	disPrint(1,0,"str=");
-	disPrin( adcGetBattary() );
+	disPrint(1,0,"raw=");
+	disUINT32_to_str( 1, 0xFF, adcRaw() );
 
-	disPrint(2,0,"data=");
+	disPrint(2,0,"VBat=");
 	disUINT32_to_str( 2, 0xFF, adcVbat() );
 
-	disPrint(3,0,"vref=");
-	disUINT32_to_str( 3, 0xFF, adcVref() );
+	//disPrint(3,0,"vref=");
+	//disUINT32_to_str( 3, 0xFF, adcVref() );
 
+	uint16_t avda = adcVda();
 	disPrint(4,0,"vda*100=");
-	disUINT32_to_str( 4, 0xFF, adcVda() );
+	disUINT32_to_str( 4, 0xFF, avda );
+	//urtPrint("vda*100=");
+	//urt_uint32_to_str(avda);
+	//urtPrint("\n");
 
-	disPrint(5,0,"vcal=");
-	disUINT32_to_str( 5, 0xFF, adcVcal() );
+	//disPrint(5,0,"vrcal=");
+	//disUINT32_to_str( 5, 0xFF, adcVcal() );
 
 	return 1;
 }

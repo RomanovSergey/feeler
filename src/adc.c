@@ -11,7 +11,6 @@
 #include "displayDrv.h"
 
 static int      irq_stat = 0;
-//static int      irq_ready = 0;
 static uint16_t irq_vref = 0;
 static uint16_t vref = 0;
 static uint16_t irq_vbat = 0;
@@ -22,18 +21,18 @@ static uint32_t calData = 0; // saves ADC calib data (is need?)
 
 void ADC1_COMP_IRQHandler( void )
 {
-	//while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) );
 	if ( SET == ADC_GetITStatus(ADC1, ADC_IT_EOC) ) {
-		ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
 		if ( irq_stat == 0 ) {
 			irq_vref = ADC_GetConversionValue( ADC1 );
-			ADC_ChannelConfig(ADC1, ADC_Channel_3, ADC_SampleTime_13_5Cycles); // vbat
+			ADC_ChannelConfig(ADC1, ADC_Channel_3, ADC_SampleTime_71_5Cycles); // vbat
 			irq_stat = 1;
+			ADC_StartOfConversion( ADC1 );
 		} else if ( irq_stat == 1 ) {
 			irq_vbat = ADC_GetConversionValue( ADC1 );
+			ADC_ITConfig( ADC1, ADC_IT_EOC, DISABLE );
 			irq_stat = 2;
-			//irq_ready = 1;
 		}
+		ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
 	}
 }
 
@@ -42,7 +41,7 @@ void adc( void )
 	static uint16_t cnt = 0;
 
 	if ( irq_stat == 2 ) {
-		irq_stat = 0;
+		irq_stat = 3;
 		vbat = irq_vbat;
 		vref = irq_vref;
 		dispPutEv( DIS_ADC );
@@ -51,8 +50,10 @@ void adc( void )
 	cnt++;
 	if ( cnt > 500 ) {
 		cnt = 0;
-		ADC_ChannelConfig(ADC1, ADC_Channel_17, ADC_SampleTime_55_5Cycles); // vref
-		ADC_StartOfConversion(ADC1);
+		irq_stat = 0;
+		ADC_ChannelConfig( ADC1, ADC_Channel_17, ADC_SampleTime_71_5Cycles ); // vref
+		ADC_StartOfConversion( ADC1 );
+		ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
 	}
 }
 
@@ -64,14 +65,19 @@ void adcSaveCalibData(uint32_t cal)
 	urtPrint("\n");
 }
 
-uint16_t adcVbat(void)
+uint16_t adcGetCalib(void)
+{
+	return calData;
+}
+
+uint16_t adcRaw(void)
 {
 	return vbat;
 }
 
-uint16_t adcVref(void)
+uint16_t adcVbat(void)
 {
-	return vref;
+	return (uint32_t)vbat * 325 / 4096;
 }
 
 char* adcGetBattary( void )
@@ -92,7 +98,7 @@ char* adcGetBattary( void )
  */
 uint16_t adcVda( void )
 {
-	const uint16_t vrefint_cal = *(__I uint16_t*)0x1FFFF7BA;
+	const uint16_t vrefint_cal = *(__I uint16_t*)0x1FFFF7BA; // 3280;
 	uint32_t var;
 
 	var = ( 330 * (uint32_t)vrefint_cal ) / vref;
@@ -100,8 +106,3 @@ uint16_t adcVda( void )
 	return (uint16_t)var;
 }
 
-uint16_t adcVcal( void )
-{
-	const uint16_t vrefint_cal = *(__I uint16_t*)0x1FFFF7BA;
-	return vrefint_cal;
-}

@@ -269,7 +269,7 @@ void init(void) {
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-	ADC_DeInit(ADC1);
+	//ADC_DeInit(ADC1);
 
 	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
 	ADC_InitStruct.ADC_ContinuousConvMode = DISABLE;
@@ -278,18 +278,20 @@ void init(void) {
 	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
 	ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
 	ADC_Init( ADC1, &ADC_InitStruct );
-	ADC_JitterCmd(ADC1, ADC_JitterOff_PCLKDiv4, ENABLE);
-	ADC_VrefintCmd(ENABLE);
 
+	ADC_VrefintCmd(ENABLE);
+	ADC_JitterCmd(ADC1, ADC_JitterOff_PCLKDiv4, ENABLE);
 	adcSaveCalibData( ADC_GetCalibrationFactor( ADC1 ) );
+
 	ADC_Cmd(ADC1, ENABLE);
 	while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY) );
+	ADC_ClearFlag( ADC1, ADC_FLAG_ADRDY );
 	// Channel_3 - battary, Channel_17 - vrefint
-	ADC_ChannelConfig(ADC1, ADC_Channel_17, ADC_SampleTime_55_5Cycles); // 4 mks and more
+	//ADC_ChannelConfig(ADC1, ADC_Channel_17, ADC_SampleTime_55_5Cycles); // 4 mks and more
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOSMP);
 
-	ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
+	//ADC_ITConfig(ADC1, ADC_IT_EOC, ENABLE);
 
 	NVIC_InitStruct.NVIC_IRQChannel = ADC1_COMP_IRQn;
 	NVIC_InitStruct.NVIC_IRQChannelPriority = 2;

@@ -76,17 +76,13 @@ void power(void)
 
 		switch ( event ) {
 		case PWR_POWEROFF:
-			PWR_OFF;
 			BL1_OFF;
 			BL2_OFF;
+			PWR_OFF;
 			DISRESET_LOW;
 			pdisp = emptyDisplay;
 			break;
 		case PWR_INACTIVE: // событие простоя кнопок
-//			if ( magGetStat() ) {
-//				Inactivity = 0;
-//				break;
-//			}
 			Inactivity++;
 			if ( Inactivity == CNTINAKT ) {
 				BL2_OFF;

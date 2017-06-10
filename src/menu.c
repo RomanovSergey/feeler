@@ -262,18 +262,22 @@ int adcTest(uint8_t ev) {
 		disPrin("*");
 	}
 
-	disPrint(1,0,"raw=");
-	disUINT32_to_str( 1, 0xFF, adcRaw() );
+	disPrint( 1, 0,"VBat=");
+	disUINT32_to_str( 1, 0xFF, adcVbat() );
 
-	disPrint(2,0,"VBat=");
-	disUINT32_to_str( 2, 0xFF, adcVbat() );
+	uint16_t avda = adcVda();
+	disPrint( 2, 0,"vda*100=");
+	disUINT32_to_str( 2, 0xFF, avda );
+
+	disPrint( 3, 0,"T=");
+	disUINT32_to_str( 3, 0xFF, adcT() );
 
 	//disPrint(3,0,"vref=");
 	//disUINT32_to_str( 3, 0xFF, adcVref() );
 
-	uint16_t avda = adcVda();
-	disPrint(4,0,"vda*100=");
-	disUINT32_to_str( 4, 0xFF, avda );
+//	disPrint(1,0,"raw=");
+//	disUINT32_to_str( 1, 0xFF, adcRaw() );
+
 	//urtPrint("vda*100=");
 	//urt_uint32_to_str(avda);
 	//urtPrint("\n");

@@ -17,5 +17,6 @@ uint16_t adcVbat(void);
 //uint16_t adcVref(void);
 uint16_t adcVda( void );
 //uint16_t adcVcal( void );
+int32_t adcT(void);
 
 #endif /* SRC_ADC_H_ */

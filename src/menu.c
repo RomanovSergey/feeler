@@ -161,8 +161,8 @@ int dworkScreen(uint8_t ev) {
 		disPrint(0, 0, "Фикс.");
 	}
 
-	disPrint(0, 60, adcGetBattary() );
-	disUINT32_to_str( 1, 0, adcVbat() );
+	//disPrint(0, 60, adcGetBattary() );
+	disUINT32_to_str( 1, 60, adcVbat() );
 
 	res = micro( freq, &microValue );
 	if ( res == 0 ) { // Ferrum
@@ -262,12 +262,12 @@ int adcTest(uint8_t ev) {
 		disPrin("*");
 	}
 
-	disPrint( 1, 0,"VBat=");
-	disUINT32_to_str( 1, 0xFF, adcVbat() );
-
 	uint16_t avda = adcVda();
-	disPrint( 2, 0,"vda*100=");
-	disUINT32_to_str( 2, 0xFF, avda );
+	disPrint( 1, 0,"vda*100=");
+	disUINT32_to_str( 1, 0xFF, avda );
+
+	disPrint( 2, 0,"VBat=");
+	disUINT32_to_str( 2, 0xFF, adcVbat() );
 
 	disPrint( 3, 0,"T=");
 	disUINT32_to_str( 3, 0xFF, adcT() );

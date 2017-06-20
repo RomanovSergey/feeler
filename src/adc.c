@@ -19,6 +19,9 @@ static volatile uint16_t irq_temp = 0;
 static uint16_t vref = 0;
 static uint16_t vbat = 0;
 static uint16_t temp = 0;
+static uint32_t sum_vref = 0;
+static uint32_t sum_vbat = 0;
+static uint32_t sum_temp = 0;
 static uint16_t vda_v = 330; // calculated vda in voltage
 
 static uint32_t calData = 0; // saves ADC calib data (is need?)
@@ -42,21 +45,36 @@ void ADC1_COMP_IRQHandler( void )
 	}
 }
 
+#define ADC_COUNT 16
 void adc( void )
 {
-	static int cnt = 0;
+	static int tim = 0;
+	static int count = 0;
 
 	if ( irq_stat == 3 ) {
-		vbat = irq_vbat;
-		temp = irq_temp;
-		vref = irq_vref;
-		dispPutEv( DIS_ADC );
-		irq_stat++;
+		if ( count < ADC_COUNT ) {
+			count++;
+			sum_vbat += irq_vbat;
+			sum_temp += irq_temp;
+			sum_vref += irq_vref;
+			irq_stat = 0;
+			ADC_StartOfConversion( ADC1 );
+		} else {
+			count = 0;
+			irq_stat++;
+			vbat = sum_vbat / ADC_COUNT;
+			sum_vbat = 0;
+			temp = sum_temp / ADC_COUNT;
+			sum_temp = 0;
+			vref = sum_vref / ADC_COUNT;
+			sum_vref = 0;
+			dispPutEv( DIS_ADC );
+		}
 	}
 
-	cnt++;
-	if ( cnt > 500 ) {
-		cnt = 0;
+	tim++;
+	if ( tim > 500 ) {
+		tim = 0;
 		irq_stat = 0;
 		ADC_StartOfConversion( ADC1 );
 	}

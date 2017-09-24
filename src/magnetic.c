@@ -10,11 +10,12 @@
 #include "displayDrv.h"
 #include "magnetic.h"
 #include "sound.h"
+#include "adc.h"
 
-static int measureDone = 0;
-static uint16_t irq_freq = 0;
-static uint16_t freq = 0;
-static int magstat = 0; // magnetic status: 0-off; 1-on.
+//static int measureDone = 0;
+static uint16_t freq[2] = {0};
+static int selFreq = 0;
+static int magstat = 1; // magnetic status: 0-off; 1-on.
 
 //===========================================================================
 //===========================================================================
@@ -69,20 +70,31 @@ uint8_t mgGetEv(void) { // private
 /*
  * interrupt handler
  */
-void TIM2_IRQHandler(void) {
-	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_Update) ) {
-		irq_freq = (uint16_t)TIM_GetCounter( TIM3 );
-		TIM_SetCounter(TIM3, 0);
-		measureDone = 1; // флаг - данные измерения готовы
-		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
+void TIM3_IRQHandler(void) {
+	if ( SET == TIM_GetITStatus(TIM3, TIM_IT_CC2) ) {
+		ADC_StartOfConversion( ADC1 );
+		TIM_ClearFlag(TIM3, TIM_FLAG_CC2);
 	}
 }
+//void TIM2_IRQHandler(void) {
+//	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_Update) ) {
+//		irq_freq = (uint16_t)TIM_GetCounter( TIM3 );
+//		TIM_SetCounter(TIM3, 0);
+//		measureDone = 1; // флаг - данные измерения готовы
+//		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
+//	}
+//}
 
 /*
  * выдает текущую частоту
  */
-uint16_t getFreq(void) {
-	return freq;
+uint16_t getFreq(void)
+{
+	if ( selFreq == 0 ) {
+		return freq[0];
+	} else {
+		return freq[1];
+	}
 }
 
 /*
@@ -93,52 +105,79 @@ int magGetStat(void) {
 	return magstat;
 }
 
+static const uint32_t minPeriod = 480;   // 100 kHz
+static const uint32_t maxPeriod = 12000; // 4 kHz
+void magnetic(void)
+{
+	static uint32_t period = maxPeriod;
+
+	if ( period > minPeriod) {
+		period -= 2;
+	} else {
+		period = maxPeriod;
+		adcReset();
+		dispPutEv( DIS_MEASURE ); //событие - данные измерения готовы
+	}
+
+	TIM_SetCompare1( TIM3, period / 2 );
+	TIM_SetCompare2( TIM3, period / 4 );
+	TIM_SetAutoreload( TIM3, period );
+
+	if ( selFreq == 0 ) {
+		freq[1] = 48000000 / period;
+		selFreq = 1;
+	} else {
+		freq[0] = 48000000 / period;
+		selFreq = 0;
+	}
+}
+
 /*
  * Вызывается из main()
  * для синхронизации переменных (частоты и генерации события)
  * т.к. программа однопоточная, а measureDone устанавливается
  * гораздо реже основного цикла программы
  */
-void magnetic(void)
-{
-	uint8_t event;
-	if (measureDone == 1) { //для синхронизации с прерыванием
-		measureDone = 0;
-		freq = irq_freq;
-		dispPutEv( DIS_MEASURE ); //событие - данные измерения готовы
-	}
-	event = mgGetEv(); // заберем событие из кругового буфера событий магнита
-	switch ( event ) {
-	case MG_ON: // включим магнит
-		magstat = 1;
-		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
-		TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
-
-		GPIOA->MODER  &= ~(GPIO_MODER_MODER0 << (6 * 2)); // reset PA6 MODER bits
-		GPIOA->MODER |= (((uint32_t)GPIO_Mode_AF) << (6 * 2)); // set PA6 as AF
-
-		TIM_SetCounter(TIM3, 0);
-		TIM_Cmd(TIM3, ENABLE);
-		TIM_SetCounter(TIM2, 0);
-		TIM_Cmd(TIM2, ENABLE);
-		dispPutEv( DIS_MEASURE );
-		freq = 0;
-		break;
-	case MG_OFF: // выключим магнит
-		magstat = 0;
-		GPIOA->MODER  &= ~(GPIO_MODER_MODER0 << (6 * 2)); // reset PA6 MODER bits
-		GPIOA->MODER |= (((uint32_t)GPIO_Mode_OUT) << (6 * 2)); // set PA6 as GPIO
-		GPIOA->BRR = GPIO_Pin_6; // PA6 to low
-		//GPIO_ResetBits(GPIOA, GPIO_Pin_6);
-
-		TIM_Cmd(TIM3, DISABLE);
-		TIM_Cmd(TIM2, DISABLE);
-		TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
-
-		irq_freq = 0;
-		dispPutEv( DIS_MEASURE );
-		break;
-	}
-}
+//void magnetic(void)
+//{
+//	uint8_t event;
+//	if (measureDone == 1) { //для синхронизации с прерыванием
+//		measureDone = 0;
+//		freq = irq_freq;
+//		dispPutEv( DIS_MEASURE ); //событие - данные измерения готовы
+//	}
+//	event = mgGetEv(); // заберем событие из кругового буфера событий магнита
+//	switch ( event ) {
+//	case MG_ON: // включим магнит
+//		magstat = 1;
+//		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
+//		TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+//
+//		GPIOA->MODER  &= ~(GPIO_MODER_MODER0 << (6 * 2)); // reset PA6 MODER bits
+//		GPIOA->MODER |= (((uint32_t)GPIO_Mode_AF) << (6 * 2)); // set PA6 as AF
+//
+//		TIM_SetCounter(TIM3, 0);
+//		TIM_Cmd(TIM3, ENABLE);
+//		TIM_SetCounter(TIM2, 0);
+//		TIM_Cmd(TIM2, ENABLE);
+//		dispPutEv( DIS_MEASURE );
+//		freq = 0;
+//		break;
+//	case MG_OFF: // выключим магнит
+//		magstat = 0;
+//		GPIOA->MODER  &= ~(GPIO_MODER_MODER0 << (6 * 2)); // reset PA6 MODER bits
+//		GPIOA->MODER |= (((uint32_t)GPIO_Mode_OUT) << (6 * 2)); // set PA6 as GPIO
+//		GPIOA->BRR = GPIO_Pin_6; // PA6 to low
+//		//GPIO_ResetBits(GPIOA, GPIO_Pin_6);
+//
+//		TIM_Cmd(TIM3, DISABLE);
+//		TIM_Cmd(TIM2, DISABLE);
+//		TIM_ITConfig(TIM2, TIM_IT_Update, DISABLE);
+//
+//		irq_freq = 0;
+//		dispPutEv( DIS_MEASURE );
+//		break;
+//	}
+//}
 
 

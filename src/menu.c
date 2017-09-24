@@ -147,9 +147,9 @@ int dworkScreen(uint8_t ev) {
 		return 0;
 	}
 
-	uint16_t freq = getFreq();
-	uint16_t microValue;
-	int res;
+	//uint16_t freq = getFreq();
+	//uint16_t microValue;
+	//int res;
 
 	disClear();
 	if ( magGetStat() ) {
@@ -161,28 +161,35 @@ int dworkScreen(uint8_t ev) {
 		disPrint(0, 0, "Фикс.");
 	}
 
-	//disPrint(0, 60, adcGetBattary() );
-	disUINT32_to_str( 1, 60, adcVbat() );
+	adcFind_t aval;
+	adcGetLC( &aval );
+	disPrint( 3, 0, "freq=" );
+	disUINT32_to_str( 3, 0xFF, aval.freq );
+	disPrint( 4, 0, "volt=" );
+	disUINT32_to_str( 4, 0xFF, aval.volt );
 
-	res = micro( freq, &microValue );
-	if ( res == 0 ) { // Ferrum
-		disUINT16_4digit_to_strFONT2(1,0, microValue);
-		disPrint(3, 48, " um");
-		disPrint(3, 72, "Fe");
-	} else if ( res == 1 ) { // Air
-		disPrintFONT2(1,0," Air");
-	} else if ( res == 2 ) { // Aluminum
-		disUINT16_4digit_to_strFONT2(1,0, microValue);
-		disPrint(3, 48, " um");
-		disPrint(3, 72, "Al");
-	} else if ( res == 3 ) { // No Fe calib data
-		disPrint(2, 0, "No Fe calibr.");
-	} else if ( res == 4 ) { // No Al calib data
-		disPrint(2, 0, "No Al calibr.");
-	} else if ( res == 5 ) { // Freq is zero
-		disPrint(3, 0, "No Data");
-	}
-	disUINT32_to_str(4, 0, freq);
+	//disPrint(0, 60, adcGetBattary() );
+	//disUINT32_to_str( 1, 60, adcVbat() );
+
+//	res = micro( freq, &microValue );
+//	if ( res == 0 ) { // Ferrum
+//		disUINT16_4digit_to_strFONT2(1,0, microValue);
+//		disPrint(3, 48, " um");
+//		disPrint(3, 72, "Fe");
+//	} else if ( res == 1 ) { // Air
+//		disPrintFONT2(1,0," Air");
+//	} else if ( res == 2 ) { // Aluminum
+//		disUINT16_4digit_to_strFONT2(1,0, microValue);
+//		disPrint(3, 48, " um");
+//		disPrint(3, 72, "Al");
+//	} else if ( res == 3 ) { // No Fe calib data
+//		disPrint(2, 0, "No Fe calibr.");
+//	} else if ( res == 4 ) { // No Al calib data
+//		disPrint(2, 0, "No Al calibr.");
+//	} else if ( res == 5 ) { // Freq is zero
+//		disPrint(3, 0, "No Data");
+//	}
+//	disUINT32_to_str(4, 0, freq);
 	return 1;//надо перерисовать
 }
 
@@ -197,8 +204,8 @@ int dmainM(uint8_t ev) {
 			pdisp = dworkScreen;
 			curs = 0;
 		} else if ( curs == 1 ) { // Выбор калибровки
-			prev  = dmainM;
-			pdisp = adcTest; // dnotDone;//dflashDebug;
+			//prev  = dmainM;
+			//pdisp = adcTest; // dnotDone;//dflashDebug;
 		} else if ( curs == 2 ) { // Польз. калибр.
 			pdisp = duserCalib;
 		} else if ( curs == 3 ) { // Просмотр таб.
@@ -234,59 +241,45 @@ int dmainM(uint8_t ev) {
 	return 1;
 }
 
-int adcTest(uint8_t ev) {
-	static uint8_t measflag = 0;
-	switch (ev) {
-	case DIS_PUSH_OK:
-		pdisp = dmainM;
-		mgPutEv( MG_OFF );
-		return 0;
-	case DIS_PUSH_L:
-		mgPutEv( MG_ON );
-		return 0;
-	case DIS_PULL_L:
-		mgPutEv( MG_OFF );
-		return 0;
-	case DIS_ADC:
-		measflag ^= 1;
-		break;
-	case DIS_PUSH_R:
-	case DIS_LONGPUSH_OK:
-	case DIS_LONGPUSH_L:
-	case DIS_LONGPUSH_R:
-		return 0;
-	}
-	disClear();
-	disPrint(0,0,"ADC Test");
-	if ( measflag ) {
-		disPrin("*");
-	}
-
-	uint16_t avda = adcVda();
-	disPrint( 1, 0,"vda*100=");
-	disUINT32_to_str( 1, 0xFF, avda );
-
-	disPrint( 2, 0,"VBat=");
-	disUINT32_to_str( 2, 0xFF, adcVbat() );
-
-	disPrint( 3, 0,"T=");
-	disUINT32_to_str( 3, 0xFF, adcT() );
-
-	//disPrint(3,0,"vref=");
-	//disUINT32_to_str( 3, 0xFF, adcVref() );
-
-//	disPrint(1,0,"raw=");
-//	disUINT32_to_str( 1, 0xFF, adcRaw() );
-
-	//urtPrint("vda*100=");
-	//urt_uint32_to_str(avda);
-	//urtPrint("\n");
-
-	//disPrint(5,0,"vrcal=");
-	//disUINT32_to_str( 5, 0xFF, adcVcal() );
-
-	return 1;
-}
+//int adcTest(uint8_t ev) {
+//	static uint8_t measflag = 0;
+//	switch (ev) {
+//	case DIS_PUSH_OK:
+//		pdisp = dmainM;
+//		mgPutEv( MG_OFF );
+//		return 0;
+//	case DIS_PUSH_L:
+//		mgPutEv( MG_ON );
+//		return 0;
+//	case DIS_PULL_L:
+//		mgPutEv( MG_OFF );
+//		return 0;
+//	case DIS_ADC:
+//		measflag ^= 1;
+//		break;
+//	case DIS_PUSH_R:
+//	case DIS_LONGPUSH_OK:
+//	case DIS_LONGPUSH_L:
+//	case DIS_LONGPUSH_R:
+//		return 0;
+//	}
+//	disClear();
+//	disPrint(0,0,"ADC Test");
+//	if ( measflag ) {
+//		disPrin("*");
+//	}
+//
+//	uint16_t avda = adcVda();
+//	disPrint( 1, 0,"vda*100=");
+//	disUINT32_to_str( 1, 0xFF, avda );
+//
+//	disPrint( 2, 0,"VBat=");
+//	disUINT32_to_str( 2, 0xFF, adcVbat() );
+//
+//	disPrint( 3, 0,"T=");
+//	disUINT32_to_str( 3, 0xFF, adcT() );
+//	return 1;
+//}
 
 /*
  * Пользовательская калибровка

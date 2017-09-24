@@ -34,8 +34,8 @@ int main(void) {
 	mgPutEv( MG_OFF );
 	while (1) {
 		magnetic();
-		adc();
-		sound();
+		//adc();
+		//sound();
 		display();
 		buttons();
 		uart();
@@ -113,11 +113,11 @@ void init(void) {
 
 	//======================================================================
 	//timer17 for PWM Sound player =========================================
-	const uint16_t period = 500;
+	const uint16_t sndperiod = 500;
 	//
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 48;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = period;// 2 kHz
+	TIM_TimeBaseInitStruct.TIM_Period = sndperiod;// 2 kHz
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	//TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseInit(TIM17, &TIM_TimeBaseInitStruct);
@@ -128,7 +128,7 @@ void init(void) {
 	TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
 	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Disable;
 	TIM_OCInitStruct.TIM_OutputNState = TIM_OutputNState_Enable;
-	TIM_OCInitStruct.TIM_Pulse = period / 2;
+	TIM_OCInitStruct.TIM_Pulse = sndperiod / 2;
 	TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
 	TIM_OCInitStruct.TIM_OCNPolarity = TIM_OCNPolarity_Low;
 	TIM_OCInitStruct.TIM_OCIdleState = TIM_OCIdleState_Reset;//not used
@@ -175,93 +175,9 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
 
-	//15====================================================================
-	//COMP1 ================================================================
-	//COMP_DeInit();
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
-	COMP_InitTypeDef COMP_InitStruct;
-	COMP_InitStruct.COMP_InvertingInput = COMP_InvertingInput_IO;
-	COMP_InitStruct.COMP_Output = COMP_Output_TIM3IC1;
-	COMP_InitStruct.COMP_OutputPol = COMP_OutputPol_NonInverted;
-	COMP_InitStruct.COMP_Hysteresis = COMP_Hysteresis_No;
-	COMP_InitStruct.COMP_Mode = COMP_Mode_HighSpeed;
-	COMP_Init(COMP_Selection_COMP1, &COMP_InitStruct);
-
-	COMP_Cmd(COMP_Selection_COMP1, ENABLE);
-
 	//======================================================================
-	//PA6 COMP1_OUT ========================================================
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	GPIO_ResetBits(GPIOA,GPIO_Pin_6);
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_7);
-
-	//======================================================================
-	//PA0 COMP1_INM ========================================================
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	//======================================================================
-	//PA1 COMP1_INP ========================================================
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	//17====================================================================
-	//timer3 is 16 bit for count pulse magnetic (PA6 pin) ==================
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
-	TIM_DeInit(TIM3);
-	//
-	TIM_TimeBaseInitStruct.TIM_Prescaler = 1;
-	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = 0xFFFF;//not used may be
-	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
-	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
-	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStruct);
-	//
-	TIM_TIxExternalClockConfig(TIM3, TIM_TIxExternalCLK1Source_TI1, TIM_ICPolarity_Rising, 0x0);
-	TIM_SelectInputTrigger(TIM3, TIM_TS_TI1FP1);
-	//
-	TIM_SetCounter(TIM3, 0);
-	TIM_Cmd(TIM3, ENABLE);
-
-	//======================================================================
-	//timer2 is 32 bit for count time while t3 counts pulse ================
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-	TIM_DeInit(TIM2);
-	//
-	TIM_TimeBaseInitStruct.TIM_Prescaler = 0;
-	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseInitStruct.TIM_Period = 24000000L;
-	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
-	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
-	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
-	//
-	TIM_ClearFlag(TIM2, TIM_FLAG_Update);
-	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
-	//
-	TIM_SetCounter(TIM2, 0);
-	TIM_Cmd(TIM2, ENABLE);
-	//
-	NVIC_InitStruct.NVIC_IRQChannel = TIM2_IRQn;
-	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;//main priority
-	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStruct);
-
-	//======================================================================
-	//ADC for battary measure ==============================================
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+	//ADC for battary PA3, LC PA0 ==========================================
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3 | GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -270,33 +186,88 @@ void init(void) {
 
 	ADC_DeInit(ADC1);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-
-	adcSaveCalibData( ADC_GetCalibrationFactor( ADC1 ) );
-
+	ADC_GetCalibrationFactor( ADC1 );
+	//adcSaveCalibData(  );
 	ADC_VrefintCmd( ENABLE );
-	ADC_TempSensorCmd( ENABLE );
+	//ADC_TempSensorCmd( ENABLE );
 	ADC_Cmd(ADC1, ENABLE);
 	while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY) );
 	ADC_JitterCmd( ADC1, ADC_JitterOff_PCLKDiv4, ENABLE );
 
 	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
 	ADC_InitStruct.ADC_ContinuousConvMode = DISABLE;
-	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
-	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T1_TRGO;
+	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;//ADC_ExternalTrigConvEdge_Falling;
+	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T3_TRGO;
 	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
 	ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
 	ADC_Init( ADC1, &ADC_InitStruct );
 
 	// Channel_3 - battary, Channel_16 - temperature (4 mks), Channel_17 - vrefint (4 mks)
+	// Channel_0 - LC
 	ADC1->CHSELR = 0;
-	ADC1->CHSELR |= ADC_Channel_3 | ADC_Channel_16 | ADC_Channel_17;
-	ADC1->SMPR = ADC_SampleTime_71_5Cycles; //  (4 mks)
+	ADC1->CHSELR |= ADC_Channel_0; // ADC_Channel_3 | ADC_Channel_16 | ADC_Channel_17;
+	ADC1->SMPR = ADC_SampleTime_55_5Cycles;//ADC_SampleTime_71_5Cycles; //  (4 mks)
 
 	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
 	ADC_ITConfig( ADC1, ADC_IT_EOC, ENABLE );
 
 	NVIC_InitStruct.NVIC_IRQChannel = ADC1_COMP_IRQn;
-	NVIC_InitStruct.NVIC_IRQChannelPriority = 2;
+	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;
+	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStruct);
+
+
+	//PA6 LC resonator ==============================================
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_ResetBits(GPIOA,GPIO_Pin_6);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1); // Tim3
+
+	//timer3 is 16 bit for LC frequency (PA6 pin) ==================
+	const uint16_t lcperiod = 480; // 100 kHz
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+	TIM_DeInit(TIM3);
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 0;
+	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
+	TIM_TimeBaseInitStruct.TIM_Period = lcperiod;
+	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
+	TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
+	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStruct);
+	//
+	TIM_SetCounter(TIM3, 0);
+	//
+	TIM_OCStructInit( &TIM_OCInitStruct ); // todo: delete
+	TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
+	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
+	TIM_OCInitStruct.TIM_OutputNState = TIM_OutputNState_Disable;
+	TIM_OCInitStruct.TIM_Pulse = lcperiod / 2;
+	TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_High;
+	TIM_OCInitStruct.TIM_OCNPolarity = TIM_OCNPolarity_Low;
+	TIM_OCInitStruct.TIM_OCIdleState = TIM_OCIdleState_Reset;//not used
+	TIM_OCInitStruct.TIM_OCNIdleState = TIM_OCNIdleState_Reset;//not used
+	TIM_OC1Init( TIM3, &TIM_OCInitStruct );
+	//
+	TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
+	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Disable;
+	TIM_OCInitStruct.TIM_OutputNState = TIM_OutputNState_Disable;
+	TIM_OCInitStruct.TIM_Pulse = lcperiod / 4;
+	TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
+	TIM_OCInitStruct.TIM_OCNPolarity = TIM_OCNPolarity_Low;
+	TIM_OCInitStruct.TIM_OCIdleState = TIM_OCIdleState_Reset;//not used
+	TIM_OCInitStruct.TIM_OCNIdleState = TIM_OCNIdleState_Reset;//not used
+	TIM_OC2Init( TIM3, &TIM_OCInitStruct );
+	//
+	//TIM_SelectOutputTrigger( TIM3, TIM_TRGOSource_OC1Ref );
+	//TIM_SelectMasterSlaveMode( TIM3, TIM_MasterSlaveMode_Enable );
+	TIM_Cmd(TIM3, ENABLE);
+	TIM_ITConfig( TIM3, TIM_IT_CC2, ENABLE );
+	//
+	NVIC_InitStruct.NVIC_IRQChannel = TIM3_IRQn;
+	NVIC_InitStruct.NVIC_IRQChannelPriority = 0;
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
 }

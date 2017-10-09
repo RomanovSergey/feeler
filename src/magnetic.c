@@ -76,14 +76,6 @@ void TIM3_IRQHandler(void) {
 		TIM_ClearFlag(TIM3, TIM_FLAG_CC2);
 	}
 }
-//void TIM2_IRQHandler(void) {
-//	if ( SET == TIM_GetITStatus(TIM2, TIM_IT_Update) ) {
-//		irq_freq = (uint16_t)TIM_GetCounter( TIM3 );
-//		TIM_SetCounter(TIM3, 0);
-//		measureDone = 1; // флаг - данные измерения готовы
-//		TIM_ClearFlag(TIM2, TIM_FLAG_Update);
-//	}
-//}
 
 /*
  * выдает текущую частоту
@@ -105,19 +97,32 @@ int magGetStat(void) {
 	return magstat;
 }
 
-static const uint32_t minPeriod = 480;   // 100 kHz
-static const uint32_t maxPeriod = 12000; // 4 kHz
+//static const uint32_t minHz = 1000;
+//static const uint32_t maxHz = 50000;
 void magnetic(void)
 {
-	static uint32_t period = maxPeriod;
+	static uint32_t debugCnt = 0;
+	static uint32_t period;// = maxPeriod;
+//	static uint32_t f = minHz;
+//
+//	if ( f < maxHz ) {
+//		f += 5;//37;
+//	} else {
+//		f = minHz;
+//		adcReset();
+//		dispPutEv( DIS_MEASURE ); //событие - данные измерения готовы
+//	}
+//
+//	period = 48000000L / f;
 
-	if ( period > minPeriod) {
-		period -= 2;
-	} else {
-		period = maxPeriod;
+	debugCnt++;
+	if ( debugCnt > 500 ) {
+		debugCnt = 0;
+		dispPutEv( DIS_MEASURE ); // событие - данные измерения готовы
 		adcReset();
-		dispPutEv( DIS_MEASURE ); //событие - данные измерения готовы
 	}
+
+	period = 48000000L / 28400;
 
 	TIM_SetCompare1( TIM3, period / 2 );
 	TIM_SetCompare2( TIM3, period / 4 );

@@ -96,16 +96,12 @@ int dmessageError1(uint8_t ev) {
  * просит замерить частоту на воздухе
  */
 int dPowerOn(uint8_t ev) {
-	adcFind_t val;
-
-	adcGetLC( &val );
-
 	switch (ev) {
 	case DIS_REPAINT:
 		mgPutEv( MG_ON );
 		break;
 	case DIS_PUSH_OK:
-		if ( microSetAir( val.freq ) != 0 ) {
+		if ( microSetAir( getFreq() ) != 0 ) {
 			mgPutEv( MG_OFF );
 			pdisp = dmessageError1;
 			return 0;
@@ -118,7 +114,7 @@ int dPowerOn(uint8_t ev) {
 	disPrint(0,0,"Замерте воздух");
 	disPrint(1,0,"  нажмите OK");
 	disPrint(3,0,"F = ");
-	disUINT32_to_str(3,0xFF, val.freq );
+	disUINT32_to_str(3,0xFF, getFreq() );
 	disPrin(" Гц");
 	disPrint(5, 36, "OK");
 	return 1;
@@ -136,11 +132,10 @@ int dworkScreen(uint8_t ev) {
 		mgPutEv( MG_OFF );
 		return 0;
 	case DIS_PUSH_L:
-		//mgPutEv( MG_ON );
-		//return 0;
-		break;
+		mgPutEv( MG_ON );
+		return 0;
 	case DIS_PULL_L:
-		//mgPutEv( MG_OFF );
+		mgPutEv( MG_OFF );
 		return 0;
 	case DIS_MEASURE:
 		measflag ^= 1;
@@ -152,9 +147,9 @@ int dworkScreen(uint8_t ev) {
 		return 0;
 	}
 
-	//uint16_t freq = getFreq();
+	uint16_t freq = getFreq();
 	uint16_t microValue;
-	//int res;
+	int res;
 
 	disClear();
 	if ( magGetStat() ) {
@@ -166,40 +161,31 @@ int dworkScreen(uint8_t ev) {
 		disPrint(0, 0, "Фикс.");
 	}
 
-	adcFind_t aval;
-	adcGetLC( &aval );
-	disPrint( 2, 0, "freq=" );
-	disUINT32_to_str( 2, 0xFF, aval.freq );
-	disPrint( 3, 0, "volt=" );
-	disUINT32_to_str( 3, 0xFF, aval.volt );
-	/*res =*/ micro( aval.freq, &microValue );
-	disPrint( 4, 0, "micro=" );
-	disUINT32_to_str( 4, 0xFF, microValue );
-
 	//disPrint(0, 60, adcGetBattary() );
 	//disUINT32_to_str( 1, 60, adcVbat() );
 
-//	res = micro( freq, &microValue );
-//	if ( res == 0 ) { // Ferrum
-//		disUINT16_4digit_to_strFONT2(1,0, microValue);
-//		disPrint(3, 48, " um");
-//		disPrint(3, 72, "Fe");
-//	} else if ( res == 1 ) { // Air
-//		disPrintFONT2(1,0," Air");
-//	} else if ( res == 2 ) { // Aluminum
-//		disUINT16_4digit_to_strFONT2(1,0, microValue);
-//		disPrint(3, 48, " um");
-//		disPrint(3, 72, "Al");
-//	} else if ( res == 3 ) { // No Fe calib data
-//		disPrint(2, 0, "No Fe calibr.");
-//	} else if ( res == 4 ) { // No Al calib data
-//		disPrint(2, 0, "No Al calibr.");
-//	} else if ( res == 5 ) { // Freq is zero
-//		disPrint(3, 0, "No Data");
-//	}
-//	disUINT32_to_str(4, 0, freq);
+	res = micro( freq, &microValue );
+	if ( res == 0 ) { // Ferrum
+		disUINT16_4digit_to_strFONT2(1,0, microValue);
+		disPrint(3, 48, " um");
+		disPrint(3, 72, "Fe");
+	} else if ( res == 1 ) { // Air
+		disPrintFONT2(1,0," Air");
+	} else if ( res == 2 ) { // Aluminum
+		disUINT16_4digit_to_strFONT2(1,0, microValue);
+		disPrint(3, 48, " um");
+		disPrint(3, 72, "Al");
+	} else if ( res == 3 ) { // No Fe calib data
+		disPrint(2, 0, "No Fe calibr.");
+	} else if ( res == 4 ) { // No Al calib data
+		disPrint(2, 0, "No Al calibr.");
+	} else if ( res == 5 ) { // Freq is zero
+		disPrint(3, 0, "No Data");
+	}
+	disUINT32_to_str(4, 0, freq);
 	return 1;//надо перерисовать
 }
+
 
 /*
  * Главное меню
@@ -417,9 +403,7 @@ int calib(uint8_t ev, int metall) {
 	static const uint16_t thickness[] = {0,100,200,300,500,1000,2000,3000};
 	static int index = 0;
 	int res = 0;
-	adcFind_t val;
 
-	adcGetLC( &val );
 	if ( metall != 0 && metall != 1 ) {
 		mgPutEv( MG_OFF );
 		pdisp = dmessageError1;
@@ -435,7 +419,7 @@ int calib(uint8_t ev, int metall) {
 		index = 0;
 		break;
 	case DIS_PUSH_OK: //Eb1Click:
-		res = addCalibPoint( val.freq, thickness[index], index, metall );
+		res = addCalibPoint( getFreq(), thickness[index], index, metall );
 		if ( res != 0 ) {
 			mgPutEv( MG_OFF );
 			pdisp = dmessageError1;
@@ -466,8 +450,8 @@ int calib(uint8_t ev, int metall) {
 	disPrin(" мкм"); //toPrint(" мкм, кликните.\r\n");
 
 	disPrint(3,0,"F=");
-	//uint32_t val = getFreq();
-	disUINT32_to_str(3, 0xFF, val.freq);
+	uint32_t val = getFreq();
+	disUINT32_to_str(3, 0xFF, val); //uint32_to_str( val );
 	//toPrint(" y.e. \r\n");
 	return 1;
 }

@@ -181,14 +181,14 @@ int micro( uint16_t F, uint16_t *micro )
 	return 1; // Air
 }
 
-int microSetAir( uint16_t air )
+/*int microSetAir( uint16_t air )
 {
 	Air = air;
 	if ( ( Air < 8000 ) || ( Air > 17000 ) ) {
 		return 1; // Error
 	}
 	return 0; // Ok
-}
+}*/
 
 /*
  * This function is used during the calibration of Ferrum or Aluminum

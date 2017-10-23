@@ -85,61 +85,12 @@ uint16_t getFreq(void) {
 }
 
 /*
- * interrupt handler
- */
-//void TIM3_IRQHandler(void) {
-//	if ( SET == TIM_GetITStatus(TIM3, TIM_IT_CC2) ) {
-//		ADC_StartOfConversion( ADC1 );
-//		TIM_ClearFlag(TIM3, TIM_FLAG_CC2);
-//	}
-//}
-
-/*
- * выдает текущую частоту
- */
-//uint16_t getFreq(void)
-//{
-//	if ( selFreq == 0 ) {
-//		return freq[0];
-//	} else {
-//		return freq[1];
-//	}
-//}
-
-/*
  * magGetStat() получить состояние магнита
  * Return: 0 - magnit is off; 1 - magnit is on.
  */
 int magGetStat(void) {
 	return magstat;
 }
-
-//void magnetic(void)
-//{
-//	static uint32_t debugCnt = 0;
-//	static uint32_t period;// = maxPeriod;
-//
-//	debugCnt++;
-//	if ( debugCnt > 500 ) {
-//		debugCnt = 0;
-//		dispPutEv( DIS_MEASURE ); // событие - данные измерения готовы
-//		adcReset();
-//	}
-//
-//	period = 48000000L / 28400;
-//
-//	TIM_SetCompare1( TIM3, period / 2 );
-//	TIM_SetCompare2( TIM3, period / 4 );
-//	TIM_SetAutoreload( TIM3, period );
-//
-//	if ( selFreq == 0 ) {
-//		freq[1] = 48000000 / period;
-//		selFreq = 1;
-//	} else {
-//		freq[0] = 48000000 / period;
-//		selFreq = 0;
-//	}
-//}
 
 /*
  * Вызывается из main()

@@ -34,7 +34,7 @@ int main(void) {
 	mgPutEv( MG_OFF );
 	while (1) {
 		magnetic();
-		//adc();
+		adc();
 		//sound();
 		display();
 		buttons();
@@ -57,7 +57,7 @@ void init(void) {
 	TIM_OCInitTypeDef        TIM_OCInitStruct;
 	USART_InitTypeDef        USART_InitStruct;
 	NVIC_InitTypeDef         NVIC_InitStruct;
-	//ADC_InitTypeDef          ADC_InitStruct;
+	ADC_InitTypeDef          ADC_InitStruct;
 
 	SysTick_Config((uint32_t)48000);//запускаем системный таймер 1мс
 
@@ -174,10 +174,6 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
 
-	//======================================================================
-	//ADC for battary PA3; LC PA0 ==========================================
-
-
 	//COMP1 ================================================================
 	//COMP_DeInit();
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
@@ -261,6 +257,46 @@ void init(void) {
 	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStruct);
 
+	//======================================================================
+	//ADC for battary measure ==============================================
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	ADC_DeInit(ADC1);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
+
+	adcSaveCalibData( ADC_GetCalibrationFactor( ADC1 ) );
+
+	ADC_VrefintCmd( ENABLE );
+	ADC_TempSensorCmd( ENABLE );
+	ADC_Cmd(ADC1, ENABLE);
+	while ( RESET == ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY) );
+	ADC_JitterCmd( ADC1, ADC_JitterOff_PCLKDiv4, ENABLE );
+
+	ADC_InitStruct.ADC_Resolution = ADC_Resolution_12b;
+	ADC_InitStruct.ADC_ContinuousConvMode = DISABLE;
+	ADC_InitStruct.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
+	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_T1_TRGO;
+	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
+	ADC_InitStruct.ADC_ScanDirection = ADC_ScanDirection_Upward;
+	ADC_Init( ADC1, &ADC_InitStruct );
+
+	// Channel_3 - battary, Channel_16 - temperature (4 mks), Channel_17 - vrefint (4 mks)
+	ADC1->CHSELR = 0;
+	ADC1->CHSELR |= ADC_Channel_3 | ADC_Channel_16 | ADC_Channel_17;
+	ADC1->SMPR = ADC_SampleTime_71_5Cycles; //  (4 mks)
+
+	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
+	ADC_ITConfig( ADC1, ADC_IT_EOC, ENABLE );
+
+	NVIC_InitStruct.NVIC_IRQChannel = ADC1_COMP_IRQn;
+	NVIC_InitStruct.NVIC_IRQChannelPriority = 2;
+	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStruct);
 }
 
 #ifdef  USE_FULL_ASSERT

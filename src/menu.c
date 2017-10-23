@@ -26,7 +26,7 @@ static pdisp_t prev = NULL;
  */
 int emptyDisplay(uint8_t event) {
 	if ( event == DIS_PAINT ) {
-		pdisp = dPowerOn;
+		pdisp = dworkScreen;
 		sndPutEv( SND_PERMIT );
 		return 0;
 	}
@@ -94,7 +94,6 @@ int dmessageError1(uint8_t ev) {
 /*
  * Отображается при включении питания
  * просит замерить частоту на воздухе
- */
 int dPowerOn(uint8_t ev) {
 	switch (ev) {
 	case DIS_REPAINT:
@@ -119,6 +118,7 @@ int dPowerOn(uint8_t ev) {
 	disPrint(5, 36, "OK");
 	return 1;
 }
+ */
 
 /*
  * Рабочий - отображает измеренное значение толщины
@@ -161,8 +161,8 @@ int dworkScreen(uint8_t ev) {
 		disPrint(0, 0, "Фикс.");
 	}
 
-	//disPrint(0, 60, adcGetBattary() );
-	//disUINT32_to_str( 1, 60, adcVbat() );
+	disPrint(0, 60, adcGetBattary() );
+	disUINT32_to_str( 1, 60, adcVbat() );
 
 	res = micro( freq, &microValue );
 	if ( res == 0 ) { // Ferrum

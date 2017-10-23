@@ -27,15 +27,15 @@ static uint8_t dispBusy = 0; //display busy
 static uint8_t Xcoor = 0;//текущая координата Х для разных функций печати на дисплей
 static uint8_t Ycoor = 0;//текущая координата Y для разных функций печати на дисплей
 
-void display_cmd(uint8_t data) {
+/*static void display_cmd(uint8_t data) {
 	CMD_MODE; // Низкий уровень на линии DC: инструкция
 	CE_LOW; // Низкий уровень на линии SCE
 	SPI_SendData8(SPI1, data);
 	while ( (SPI1->SR & SPI_I2S_FLAG_BSY) );
 	CE_HI; // Высокий уровень на линии SCE
-}
+}*/
 
-void disp_cmds(uint8_t *arr, uint8_t len) {
+static void disp_cmds(uint8_t *arr, uint8_t len) {
 	CMD_MODE;
 	CE_LOW;
 	for (int i=0; i<len; i++) {
@@ -53,8 +53,6 @@ void initDisplay(void) {
 
 	//================================================================
 	// SPI1 init for graphic display =================================
-	//RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
-	//GPIO_DeInit(GPIOB);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;//display Reset
 	GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_6;//display Chip Enable
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
@@ -157,14 +155,14 @@ void disClear(void) {
 }
 
 // Выбирает страницу и горизонтальную позицию для вывода
-void disSetPos(uint8_t page, uint8_t x) {
+static void disSetPos(uint8_t page, uint8_t x) {
 	uint8_t setPos[2];
 	setPos[0] = 0x40 | (page & 7);
 	setPos[1] = 0x80 | x;
 	disp_cmds(setPos, 2);
 }
 
-void disDMAsend() {
+static void disDMAsend() {
 	disSetPos(0, 0);
 	DATA_MODE; // Высокий уровень на линии DC: данные
 	CE_LOW; // Низкий уровень на линии SCE
@@ -185,7 +183,7 @@ void setPixel(int x, int y) {
  * x, y - координаты верхнего левого пикселя
  * code - код utf-8 выводимого символа 5 байт
  */
-void wrChar_5_8(uint8_t x, uint8_t y, uint16_t code) {
+static void wrChar_5_8(uint8_t x, uint8_t y, uint16_t code) {
 	const char* img = getFont5x8( code );
 	if ( (y%8) == 0 ) {//условие быстрой печати
 		y >>= 3;

@@ -162,7 +162,7 @@ int dworkScreen(uint8_t ev) {
 	}
 
 	disPrint(0, 60, adcGetBattary() );
-	disUINT32_to_str( 1, 60, adcVbat() );
+	//disUINT32_to_str( 1, 60, adcVbat() );
 
 	res = micro( freq, &microValue );
 	if ( res == 0 ) { // Ferrum

@@ -10,6 +10,8 @@
 #include "uart.h"
 #include "displayDrv.h"
 #include "pwr.h"
+#include "helpers.h"
+#include <string.h>
 
 static volatile int      irq_stat = 0;
 
@@ -92,11 +94,6 @@ void adcSaveCalibData(uint32_t cal)
 	urtPrint("\n");
 }
 
-uint16_t adcVbat(void)
-{
-	return (uint32_t)vbat * vda_v / 4096;
-}
-
 int32_t adcT(void)
 {
 #define VDD_CALIB ((uint16_t) (330))
@@ -116,7 +113,7 @@ int32_t adcT(void)
  * VDDA = 3.3 V x VREFINT_CAL / VREFINT_DATA
  * Return:
  *   VDDA * 100
- */
+
 uint16_t adcVda( void )
 {
 	const uint16_t vrefint_cal = *(__I uint16_t*)0x1FFFF7BA;
@@ -125,15 +122,25 @@ uint16_t adcVda( void )
 	var = ( 330 * (uint32_t)vrefint_cal ) / vref;
 	vda_v = var;
 	return (uint16_t)var;
+} */
+
+uint16_t adcVbat(void)
+{
+	return (uint32_t)vbat * vda_v / 4096;
 }
 
 char* adcGetBattary( void )
 {
-	static char battaryStr[5];
-	battaryStr[0] = '0';
-	battaryStr[1] = '.';
-	battaryStr[2] = '9';
-	battaryStr[3] = '5';
-	battaryStr[4] = 0;
-	return battaryStr;
+	static char str[16] = {0};
+	uint16_t vbat = adcVbat();
+
+	if ( vbat > 999 ) {
+		strcpy( str, "err" );
+		return str;
+	}
+	itoa( vbat, str );
+	memmove( &str[2], &str[1], 2 );
+	str[1] = '.';
+	str[4] = 0;
+	return str;
 }

@@ -503,20 +503,16 @@ void disUINT16_4digit_to_strFONT2 (uint8_t numstr, uint8_t X, uint16_t nmb)
 /**
  * Convert char to hex string
  */
-void char_to_strHex(uint8_t V, uint8_t *d)
+void char_to_strHex( uint8_t V, uint8_t *d )
 {
-	if ((V >> 4) < 10)
-	{
+	if ( (V >> 4) < 10 ) {
 		*d++ = '0' + (V >> 4);
-	}else
-	{
+	} else {
 		*d++ = (V >> 4) - 10 + 'A';
 	}
-	if ((V & 0x0F) < 10)
-	{
+	if ( (V & 0x0F) < 10 ) {
 		*d++ = '0' + (V & 0x0F);
-	}else
-	{
+	} else {
 		*d++ = (V & 0x0F) - 10 + 'A';
 	}
 }

@@ -146,7 +146,6 @@ int dworkScreen(uint8_t ev) {
 	case DIS_LONGPUSH_R:
 		return 0;
 	}
-
 	uint16_t freq = getFreq();
 	uint16_t microValue;
 	int res;
@@ -160,29 +159,28 @@ int dworkScreen(uint8_t ev) {
 	} else {
 		disPrint(0, 0, "Фикс.");
 	}
-
 	disPrint(0, 60, adcGetBattary() );
-	//disUINT32_to_str( 1, 60, adcVbat() );
 
 	res = micro( freq, &microValue );
 	if ( res == 0 ) { // Ferrum
-		disUINT16_4digit_to_strFONT2(1,0, microValue);
-		disPrint(3, 48, " um");
-		disPrint(3, 72, "Fe");
+		disUINT16_4digit_to_strFONT2( 1, 18, microValue );
+		disPrint( 2, 0, "Fe" );
+		disPrint( 3, 72, "um" );
 	} else if ( res == 1 ) { // Air
-		disPrintFONT2(1,0," Air");
+		disPrintFONT2( 1, 26, "Air" );
 	} else if ( res == 2 ) { // Aluminum
-		disUINT16_4digit_to_strFONT2(1,0, microValue);
-		disPrint(3, 48, " um");
-		disPrint(3, 72, "Al");
+		disUINT16_4digit_to_strFONT2(1, 18, microValue);
+		disPrint( 2, 0, "Al" );
+		disPrint( 3, 72, "um" );
 	} else if ( res == 3 ) { // No Fe calib data
 		disPrint(2, 0, "No Fe calibr.");
 	} else if ( res == 4 ) { // No Al calib data
-		disPrint(2, 0, "No Al calibr.");
+		disPrint( 2, 0, "No Al calibr.");
 	} else if ( res == 5 ) { // Freq is zero
-		disPrint(3, 0, "No Data");
+		//disPrint( 2, 6*6, "???" ); //No Data");
+		disPrintFONT2( 1, 26, "???" );
 	}
-	disUINT32_to_str(4, 0, freq);
+	disUINT32_to_str( 5, 42, freq );
 	return 1;//надо перерисовать
 }
 

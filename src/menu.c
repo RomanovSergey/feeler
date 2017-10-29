@@ -16,8 +16,9 @@
 #include "sound.h"
 #include "flash2.h"
 #include "fonts/img.h"
-#include <string.h>
 #include "adc.h"
+#include "helpers.h"
+#include <string.h>
 
 static pdisp_t prev = NULL;
 
@@ -55,7 +56,6 @@ int dnotDone(uint8_t ev) {
 		pwrPutEv( PWR_ALARM_3000 ); //заведем будильник отображения данного сообщения
 		break;
 	}
-
 	disClear();
 	disPrint(0, 27, "Sorry");
 	disPrint(1, 6,  "Данный пункт");
@@ -159,7 +159,7 @@ int dworkScreen(uint8_t ev) {
 	} else {
 		disPrint(0, 0, "Фикс.");
 	}
-	disPrint(0, 60, adcGetBattary() );
+	disPrint3x5(0, 68, adcGetBattary() );
 
 	res = micro( freq, &microValue );
 	if ( res == 0 ) { // Ferrum
@@ -177,10 +177,10 @@ int dworkScreen(uint8_t ev) {
 	} else if ( res == 4 ) { // No Al calib data
 		disPrint( 2, 0, "No Al calibr.");
 	} else if ( res == 5 ) { // Freq is zero
-		//disPrint( 2, 6*6, "???" ); //No Data");
 		disPrintFONT2( 1, 26, "???" );
 	}
-	disUINT32_to_str( 5, 42, freq );
+	disPrint3x5( 5, 50, itostr( freq ) );
+
 	return 1;//надо перерисовать
 }
 
@@ -232,46 +232,6 @@ int dmainM(uint8_t ev) {
 	disPrint( curs + 1, 0, "→");
 	return 1;
 }
-
-//int adcTest(uint8_t ev) {
-//	static uint8_t measflag = 0;
-//	switch (ev) {
-//	case DIS_PUSH_OK:
-//		pdisp = dmainM;
-//		mgPutEv( MG_OFF );
-//		return 0;
-//	case DIS_PUSH_L:
-//		mgPutEv( MG_ON );
-//		return 0;
-//	case DIS_PULL_L:
-//		mgPutEv( MG_OFF );
-//		return 0;
-//	case DIS_ADC:
-//		measflag ^= 1;
-//		break;
-//	case DIS_PUSH_R:
-//	case DIS_LONGPUSH_OK:
-//	case DIS_LONGPUSH_L:
-//	case DIS_LONGPUSH_R:
-//		return 0;
-//	}
-//	disClear();
-//	disPrint(0,0,"ADC Test");
-//	if ( measflag ) {
-//		disPrin("*");
-//	}
-//
-//	uint16_t avda = adcVda();
-//	disPrint( 1, 0,"vda*100=");
-//	disUINT32_to_str( 1, 0xFF, avda );
-//
-//	disPrint( 2, 0,"VBat=");
-//	disUINT32_to_str( 2, 0xFF, adcVbat() );
-//
-//	disPrint( 3, 0,"T=");
-//	disUINT32_to_str( 3, 0xFF, adcT() );
-//	return 1;
-//}
 
 /*
  * Пользовательская калибровка
@@ -443,14 +403,12 @@ int calib(uint8_t ev, int metall) {
 	} else {
 		disPrint(0,0,"Клаибровка Al");
 	}
-	disPrint(1,0,"Измерте зазор:");
-	disUINT32_to_str(2,0, thickness[index] ); //uint32_to_str( thickness[index] );
-	disPrin(" мкм"); //toPrint(" мкм, кликните.\r\n");
-
-	disPrint(3,0,"F=");
+	disPrint( 1, 0, "Измерте зазор:" );
+	disPrint( 2, 0, itostr( thickness[index] ) );
+	disPrin(" мкм");
+	disPrint( 3, 0, "F=" );
 	uint32_t val = getFreq();
-	disUINT32_to_str(3, 0xFF, val); //uint32_to_str( val );
-	//toPrint(" y.e. \r\n");
+	disPrin( itostr( val ) );
 	return 1;
 }
 

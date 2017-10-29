@@ -131,6 +131,23 @@ void urt_uint16_to_bin(uint16_t n)
 	//urtPut( 0 ); //null terminator
 }
 
+/**
+ * Convert char to hex string
+ */
+void char_to_strHex( uint8_t V, uint8_t *d )
+{
+	if ( (V >> 4) < 10 ) {
+		*d++ = '0' + (V >> 4);
+	} else {
+		*d++ = (V >> 4) - 10 + 'A';
+	}
+	if ( (V & 0x0F) < 10 ) {
+		*d++ = '0' + (V & 0x0F);
+	} else {
+		*d++ = (V & 0x0F) - 10 + 'A';
+	}
+}
+
 void urt_uint32_to_hex(uint32_t nmb)
 {
 	uint8_t str[10];

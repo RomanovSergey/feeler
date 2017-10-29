@@ -34,16 +34,15 @@ void display(void);//вызывается из main
 void disClear(void);
 void disPrint(uint8_t numstr, uint8_t X, const char* s);
 void disPrin(const char* s);
-void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb);
-void disHexHalfWord (uint8_t numstr, uint8_t X, uint16_t nmb);
+
+void disPrint3x5(uint8_t numstr, uint8_t X, const char* s);
 
 void disPrintFONT2(uint8_t numstr, uint8_t X, const char* s);
-void disUINT32_to_strFONT2 (uint8_t numstr, uint8_t X, uint32_t nmb);
 void disUINT16_4digit_to_strFONT2 (uint8_t numstr, uint8_t X, uint16_t nmb);
 
 void disShowImg( const uint8_t *img );
 
-void char_to_strHex(uint8_t V, uint8_t *d);
+//void char_to_strHex(uint8_t V, uint8_t *d);
 
 int dispPutEv(uint8_t event);
 

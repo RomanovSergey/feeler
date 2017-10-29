@@ -6,6 +6,7 @@
  */
 
 #include "stm32f0xx.h"
+#include "fonts/font_3x5.h"
 #include "fonts/fontA.h"
 #include "fonts/font_10x16.h"
 #include "displayDrv.h"
@@ -187,8 +188,19 @@ static void wrChar_5_8(uint8_t x, uint8_t y, uint16_t code) {
 	const char* img = getFont5x8( code );
 	if ( (y%8) == 0 ) {//условие быстрой печати
 		y >>= 3;
-		for ( int dy = 0;  dy < 5;  dy++ ) {
-			coor[x][y] = img[dy];
+		for ( int dx = 0;  dx < 5;  dx++ ) {
+			coor[x][y] = img[dx];
+			x++;
+		}
+	}
+}
+
+static void wrChar_3_5(uint8_t x, uint8_t y, uint16_t code) {
+	const char* img = getFont3x5( code );
+	if ( (y%8) == 0 ) {//условие быстрой печати
+		y >>= 3;
+		for ( int dx = 0;  dx < 3;  dx++ ) {
+			coor[x][y] = img[dx];
 			x++;
 		}
 	}
@@ -198,9 +210,9 @@ void wrChar_10_16(uint8_t x, uint8_t y, uint16_t code) {
 	const uint16_t* f = getFont10x16( code );
 
 	y >>= 3;
-	for ( int dy = 0;  dy < 10;  dy++ ) {
-		coor[x][y] = 0xff & f[dy];
-		coor[x][y+1] = f[dy] >> 8;
+	for ( int dx = 0;  dx < 10;  dx++ ) {
+		coor[x][y] = 0xff & f[dx];
+		coor[x][y+1] = f[dx] >> 8;
 		x++;
 	}
 }
@@ -326,22 +338,11 @@ void disPrin(const char* s) {
 	}
 }
 
-/**
- * Преобразует 32 битное число в строку и выводит на дисплей
- * Параметры:
- *   numstr - номер строки 0..5
- *   X - горизонтальная координата 0..84 (до 13 символов)
- *       если x == 0xFF, то берется сохраненная (предыдущая) координата
- *   nmb - число для вывода
- */
-void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
+void disPrint3x5(uint8_t numstr, uint8_t X, const char* s)
 {
-	char tmp_str [11] = {0,};
-	int i = 0, j;
+	uint16_t code;
 
-	if ( X != 0xFF ) {
-		Xcoor = X;
-	}
+	Xcoor = X;
 	if ( Xcoor > 77 ) {
 		return;
 	} else if ( numstr > 5 ) {
@@ -349,44 +350,16 @@ void disUINT32_to_str (uint8_t numstr, uint8_t X, uint32_t nmb)
 	}
 	Ycoor = numstr * 8;
 
-	if (nmb == 0){//если ноль
-		wrChar_5_8( Xcoor, Ycoor, '0');
-		Xcoor += 6;
-	}else{
-		while (nmb > 0) {
-			tmp_str[i++] = (nmb % 10) + '0';
-			nmb /=10;
+	while (1) {
+		s += getUCode( s, &code );
+		if ( code == 0 ) { // если конец строки
+			break;
 		}
-		for (j = 0; j < i; ++j) {
-			wrChar_5_8( Xcoor, Ycoor, tmp_str [i-j-1]);//перевернем
-			Xcoor += 6;
-			if ( Xcoor >= 84 ) {
-				break;
-			}
+		wrChar_3_5( Xcoor, Ycoor, code);
+		Xcoor += 4;
+		if ( Xcoor >= 84 ) {
+			break;
 		}
-	}
-}
-
-void disHexHalfWord (uint8_t numstr, uint8_t X, uint16_t nmb)
-{
-	uint8_t str[10];
-
-	if ( X != 0xFF ) {
-		Xcoor = X;
-	}
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( numstr > 5 ) {
-		return;
-	}
-	Ycoor = numstr * 8;
-
-	char_to_strHex(nmb >> 8,   &str[0]);
-	char_to_strHex(nmb & 0xFF, &str[2]);
-
-	for ( int i = 0; i < 4; i++ ) {
-		wrChar_5_8( Xcoor, Ycoor, str[i] );
-		Xcoor += 6;
 	}
 }
 
@@ -411,40 +384,6 @@ void disPrintFONT2(uint8_t numstr, uint8_t X, const char* s)
 		Xcoor += 12;
 		if ( Xcoor >= 84 ) {
 			break;
-		}
-	}
-}
-
-void disUINT32_to_strFONT2 (uint8_t numstr, uint8_t X, uint32_t nmb)
-{
-	char tmp_str [11] = {0,};
-	int i = 0, j;
-	uint8_t y;
-
-	if ( X != 0xFF ) {
-		Xcoor = X;
-	}
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( numstr > 2 ) {
-		return;
-	}
-	y = numstr * 16;
-
-	if (nmb == 0){//если ноль
-		wrChar_10_16( Xcoor, y, '0');
-		Xcoor += 12;
-	}else{
-		while (nmb > 0) {
-			tmp_str[i++] = (nmb % 10) + '0';
-			nmb /=10;
-		}
-		for (j = 0; j < i; ++j) {
-			wrChar_10_16( Xcoor, y, tmp_str [i-j-1]);//перевернем
-			Xcoor += 12;
-			if ( Xcoor >= 84 ) {
-				break;
-			}
 		}
 	}
 }
@@ -497,23 +436,6 @@ void disUINT16_4digit_to_strFONT2 (uint8_t numstr, uint8_t X, uint16_t nmb)
 				break;
 			}
 		}
-	}
-}
-
-/**
- * Convert char to hex string
- */
-void char_to_strHex( uint8_t V, uint8_t *d )
-{
-	if ( (V >> 4) < 10 ) {
-		*d++ = '0' + (V >> 4);
-	} else {
-		*d++ = (V >> 4) - 10 + 'A';
-	}
-	if ( (V & 0x0F) < 10 ) {
-		*d++ = '0' + (V & 0x0F);
-	} else {
-		*d++ = (V & 0x0F) - 10 + 'A';
 	}
 }
 
@@ -578,7 +500,7 @@ void display(void) {
 	static pdisp_t pdold = emptyDisplay; //указатель на предыдущую функцию меню
 	int res = 0;
 
-	if ( dispBusy == 1 ) { // SPI1->SR & SPI_I2S_FLAG_BSY ) {
+	if ( dispBusy == 1 ) {
 		return;
 	}
 	if ( dmaEnd == 1 ) {

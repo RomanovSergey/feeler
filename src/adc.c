@@ -131,10 +131,10 @@ uint16_t adcVbat(void)
 
 char* adcGetBattary( void )
 {
-	static char str[16] = {0};
+	static char str[5] = {0};
 	uint16_t vbat = adcVbat();
 
-	if ( vbat > 999 ) {
+	if ( vbat > 500 ) {
 		strcpy( str, "err" );
 		return str;
 	}

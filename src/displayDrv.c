@@ -28,6 +28,8 @@ static uint8_t dispBusy = 0; //display busy
 static uint8_t Xcoor = 0;//текущая координата Х для разных функций печати на дисплей
 static uint8_t Ycoor = 0;//текущая координата Y для разных функций печати на дисплей
 
+static font_e font = f_5x8;
+
 /*static void display_cmd(uint8_t data) {
 	CMD_MODE; // Низкий уровень на линии DC: инструкция
 	CE_LOW; // Низкий уровень на линии SCE
@@ -363,7 +365,7 @@ void disPrint3x5(uint8_t numstr, uint8_t X, const char* s)
 	}
 }
 
-void disPrintFONT2(uint8_t numstr, uint8_t X, const char* s)
+/*void disPrintFONT2(uint8_t numstr, uint8_t X, const char* s)
 {
 	uint16_t code;
 
@@ -386,56 +388,78 @@ void disPrintFONT2(uint8_t numstr, uint8_t X, const char* s)
 			break;
 		}
 	}
+}*/
+
+//88888888888888888888888888888888888888888888888888888888888888888888888888
+
+int disSet( uint8_t numstr, uint8_t X )
+{
+	if ( numstr > 5 ) { return -1; }
+	if ( X > 83 ) { return -1; }
+	Ycoor = numstr;
+	Xcoor = X;
+	return 0;
 }
 
-void disUINT16_4digit_to_strFONT2 (uint8_t numstr, uint8_t X, uint16_t nmb)
+void disSetF( uint8_t numstr, uint8_t X, font_e fnt )
 {
-	char tmp_str [6] = {0,};
-	int i = 0, j;
-	uint8_t y;
+	if ( disSet( numstr, X ) != 0 ) { return; }
+	font = fnt;
+}
 
-	if ( X != 0xFF ) {
-		Xcoor = X;
+static void disChar_3x5( uint16_t code )
+{
+	const char* img = getFont3x5( code );
+	for ( int dx = 0;  dx < 3;  dx++ ) {
+		coor[Xcoor][Ycoor] = img[dx];
+		Xcoor++;
 	}
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( numstr > 2 ) {
-		return;
-	}
-	y = numstr * 16;
+	Xcoor++;
+}
 
-	if ( nmb > 10000 ) { // only 4 digits allow
-		strcpy(tmp_str, " Err");
-		for ( int i = 0; i < 4; i++ ) {
-			wrChar_10_16( Xcoor, y, tmp_str [i]); //перевернем
-			Xcoor += 12;
-			if ( Xcoor >= 84 ) {
-				break;
-			}
-		}
-		return;
+static void disChar_5x8( uint16_t code )
+{
+	const char* img = getFont5x8( code );
+	for ( int dx = 0;  dx < 5;  dx++ ) {
+		coor[Xcoor][Ycoor] = img[dx];
+		Xcoor++;
 	}
+	Xcoor++;
+}
 
-	if ( nmb == 0 ) { // если ноль
-		for ( int k = 0; k < 4; k++ ) {
-			wrChar_10_16( Xcoor, y, '0');
-			Xcoor += 12;
+static void disChar_10x16( uint16_t code )
+{
+	const uint16_t* f = getFont10x16( code );
+
+	for ( int dx = 0;  dx < 10;  dx++ ) {
+		coor[Xcoor][Ycoor] = 0xff & f[dx];
+		coor[Xcoor][Ycoor+1] = f[dx] >> 8;
+		Xcoor++;
+	}
+	Xcoor += 2;
+}
+
+void disPr( const char* str )
+{
+	uint16_t code;
+
+	while (1) {
+		str += getUCode( str, &code );
+		if ( code == 0 ) { // если конец строки
+			break;
 		}
-	} else {
-		while (nmb > 0) {
-			tmp_str[i++] = (nmb % 10) + '0';
-			nmb /= 10;
+		switch ( font ) {
+		case f_5x8:
+			disChar_5x8( code );
+			break;
+		case f_3x5:
+			disChar_3x5( code );
+			break;
+		case f_10x16:
+			disChar_10x16( code );
+			break;
 		}
-		while ( i < 4 ) {
-			tmp_str[i++] = '0';
-		}
-		for (j = 0; j < i; ++j) {
-			wrChar_10_16( Xcoor, y, tmp_str [i-j-1]); //перевернем
-			Xcoor += 12;
-			if ( Xcoor >= 84 ) {
-				break;
-			}
-		}
+		if ( Xcoor >= 84 ) { break; }
 	}
 }
 

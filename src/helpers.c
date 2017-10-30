@@ -5,6 +5,7 @@
  *      Author: se
  */
 
+#include "stm32f0xx.h"
 #include <string.h>
 
 /* reverse:  переворачиваем строку s на месте */
@@ -25,36 +26,44 @@ void itoa(int n, char s[])
 {
 	int i, sign;
 
-	if ((sign = n) < 0)  /* записываем знак */
-		n = -n;          /* делаем n положительным числом */
+	if ( (sign = n) < 0 ) { n = -n; }
 	i = 0;
-	do {       /* генерируем цифры в обратном порядке */
-		s[i++] = n % 10 + '0';   /* берем следующую цифру */
-	} while ((n /= 10) > 0);     /* удаляем */
-	if (sign < 0)
-		s[i++] = '-';
+	do {
+		s[i++] = n % 10 + '0';
+	} while ( (n /= 10) > 0 );
+	if ( sign < 0 ) { s[i++] = '-'; }
 	s[i] = '\0';
-	reverse(s);
+	reverse( s );
 }
 
 char* itostr( int n )
 {
 	static char s[11] = {0};
-	int i, sign;
 
-	if ((sign = n) < 0)  /* записываем знак */
-		n = -n;          /* делаем n положительным числом */
-	i = 0;
-	do {       /* генерируем цифры в обратном порядке */
-		s[i++] = n % 10 + '0';   /* берем следующую цифру */
-	} while ((n /= 10) > 0);     /* удаляем */
-	if (sign < 0)
-		s[i++] = '-';
-	s[i] = '\0';
-	reverse(s);
+	itoa( n, s );
 	return s;
 }
 
+char* u16to4str( uint16_t n )
+{
+	static char s[11] = {0};
+	int i = 0;
+
+	if ( n > 9999 ) { // only 4 digits allow
+		strcpy( s, " Err");
+		return s;
+	}
+	do {
+		s[i++] = n % 10 + '0';
+	} while ( (n /= 10) > 0 );
+
+	while ( i < 4 ) {
+		s[i++] = '0'; // дополним спереди нули
+	}
+	s[i] = '\0';
+	reverse( s );
+	return s;
+}
 
 /*void disHexHalfWord (uint8_t numstr, uint8_t X, uint16_t nmb)
 {

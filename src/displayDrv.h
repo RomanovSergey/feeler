@@ -28,6 +28,12 @@
 typedef int (*pdisp_t)(uint8_t event);
 extern pdisp_t pdisp;
 
+typedef enum {
+	f_5x8 = 0,
+	f_3x5,
+	f_10x16,
+} font_e;
+
 void initDisplay(void);
 void display(void);//вызывается из main
 
@@ -37,12 +43,14 @@ void disPrin(const char* s);
 
 void disPrint3x5(uint8_t numstr, uint8_t X, const char* s);
 
-void disPrintFONT2(uint8_t numstr, uint8_t X, const char* s);
-void disUINT16_4digit_to_strFONT2 (uint8_t numstr, uint8_t X, uint16_t nmb);
+//void disPrintFONT2(uint8_t numstr, uint8_t X, const char* s);
+//void disUINT16_4digit_to_strFONT2 (uint8_t numstr, uint8_t X, uint16_t nmb);
 
 void disShowImg( const uint8_t *img );
 
-//void char_to_strHex(uint8_t V, uint8_t *d);
+int  disSet( uint8_t numstr, uint8_t X );
+void disSetF( uint8_t numstr, uint8_t X, font_e fnt );
+void disPr( const char* str );
 
 int dispPutEv(uint8_t event);
 

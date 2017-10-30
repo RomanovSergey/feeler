@@ -10,5 +10,6 @@
 
 void itoa( int n, char s[] );
 char* itostr( int n );
+char* u16to4str( uint16_t n );
 
 #endif /* SRC_HELPERS_H_ */

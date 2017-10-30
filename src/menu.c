@@ -151,35 +151,38 @@ int dworkScreen(uint8_t ev) {
 	int res;
 
 	disClear();
+	disSetF( 0, 0, f_5x8 );
 	if ( magGetStat() ) {
-		disPrint(0, 0, "Измер.");
+		disPr( "Измер." );
 		if ( measflag ) {
-			disPrin("*");
+			disPr( "*" );
 		}
 	} else {
-		disPrint(0, 0, "Фикс.");
+		disPr( "Фикс." );
 	}
-	disPrint3x5(0, 68, adcGetBattary() );
+	disSetF( 0, 68, f_3x5 ); disPr( adcGetBattary() );
 
 	res = micro( freq, &microValue );
 	if ( res == 0 ) { // Ferrum
-		disUINT16_4digit_to_strFONT2( 1, 18, microValue );
-		disPrint( 2, 0, "Fe" );
-		disPrint( 3, 72, "um" );
+		disSetF( 2, 18, f_10x16 ); disPr( u16to4str( microValue ) );
+		disSetF( 2,  0, f_5x8 );   disPr( "Fe" );
+		disSetF( 3, 72, f_5x8 );   disPr( "um" );
 	} else if ( res == 1 ) { // Air
-		disPrintFONT2( 1, 26, "Air" );
+		disSetF( 2, 18, f_10x16 ); disPr( " Air" );
+		//disPrintFONT2( 1, 26, "Air" );
 	} else if ( res == 2 ) { // Aluminum
-		disUINT16_4digit_to_strFONT2(1, 18, microValue);
-		disPrint( 2, 0, "Al" );
-		disPrint( 3, 72, "um" );
+		disSetF( 2, 18, f_10x16 ); disPr( u16to4str( microValue ) );
+		disSetF( 2,  0, f_5x8 );   disPr( "Al" );
+		disSetF( 3, 72, f_5x8 );   disPr( "um" );
 	} else if ( res == 3 ) { // No Fe calib data
 		disPrint(2, 0, "No Fe calibr.");
 	} else if ( res == 4 ) { // No Al calib data
 		disPrint( 2, 0, "No Al calibr.");
 	} else if ( res == 5 ) { // Freq is zero
-		disPrintFONT2( 1, 26, "???" );
+		disSetF( 2, 18, f_10x16 ); disPr( "????" );
+		//disPrintFONT2( 1, 26, "???" );
 	}
-	disPrint3x5( 5, 50, itostr( freq ) );
+	disSetF( 5, 50, f_3x5 ); disPr( itostr( freq ) );
 
 	return 1;//надо перерисовать
 }

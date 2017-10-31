@@ -173,51 +173,13 @@ static void disDMAsend() {
 	DMA_Cmd(DMA1_Channel3, ENABLE);
 }
 
-void setPixel(int x, int y) {
+/*void setPixel(int x, int y) {
 	int yb = y / 8;
 	int yo = y % 8;
 	uint8_t val = coor[x][yb];
 	val |= (1 << yo);
 	coor[x][yb] = val;
-}
-
-/*
- * Печать символа шириной width высотой 8 p.
- * x, y - координаты верхнего левого пикселя
- * code - код utf-8 выводимого символа 5 байт
- */
-static void wrChar_5_8(uint8_t x, uint8_t y, uint16_t code) {
-	const char* img = getFont5x8( code );
-	if ( (y%8) == 0 ) {//условие быстрой печати
-		y >>= 3;
-		for ( int dx = 0;  dx < 5;  dx++ ) {
-			coor[x][y] = img[dx];
-			x++;
-		}
-	}
-}
-
-static void wrChar_3_5(uint8_t x, uint8_t y, uint16_t code) {
-	const char* img = getFont3x5( code );
-	if ( (y%8) == 0 ) {//условие быстрой печати
-		y >>= 3;
-		for ( int dx = 0;  dx < 3;  dx++ ) {
-			coor[x][y] = img[dx];
-			x++;
-		}
-	}
-}
-
-void wrChar_10_16(uint8_t x, uint8_t y, uint16_t code) {
-	const uint16_t* f = getFont10x16( code );
-
-	y >>= 3;
-	for ( int dx = 0;  dx < 10;  dx++ ) {
-		coor[x][y] = 0xff & f[dx];
-		coor[x][y+1] = f[dx] >> 8;
-		x++;
-	}
-}
+}*/
 
 /*
  * getUCode() получает код unicode из строки формата UTF-8
@@ -286,109 +248,6 @@ int getUCode( const char* str, uint16_t *code ) {
 	*code = 0;
 	return 0;
 }
-
-/*
- * disPrint() печать строки на дисплей
- * Параметры:
- *   numstr - номер строки 0..5
- *   X - горизонтальная координата 0..84 (до 13 символов)
- *   *s  - указатель на строку
- */
-void disPrint(uint8_t numstr, uint8_t X, const char* s)
-{
-	uint16_t code;
-
-	Xcoor = X;
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( numstr > 5 ) {
-		return;
-	}
-	Ycoor = numstr * 8;
-
-	while (1) {
-		s += getUCode( s, &code );
-		if ( code == 0 ) { // если конец строки
-			break;
-		}
-		wrChar_5_8( Xcoor, Ycoor, code);
-		Xcoor += 6;
-		if ( Xcoor >= 84 ) {
-			break;
-		}
-	}
-}
-
-void disPrin(const char* s) {
-	uint16_t code;
-
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( Ycoor > 47 ) {
-		return;
-	}
-	while (1) {
-		s += getUCode( s, &code );
-		if ( code == 0 ) { // если конец строки
-			break;
-		}
-		wrChar_5_8( Xcoor, Ycoor, code);
-		Xcoor += 6;
-		if ( Xcoor >= 84 ) {
-			break;
-		}
-	}
-}
-
-void disPrint3x5(uint8_t numstr, uint8_t X, const char* s)
-{
-	uint16_t code;
-
-	Xcoor = X;
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( numstr > 5 ) {
-		return;
-	}
-	Ycoor = numstr * 8;
-
-	while (1) {
-		s += getUCode( s, &code );
-		if ( code == 0 ) { // если конец строки
-			break;
-		}
-		wrChar_3_5( Xcoor, Ycoor, code);
-		Xcoor += 4;
-		if ( Xcoor >= 84 ) {
-			break;
-		}
-	}
-}
-
-/*void disPrintFONT2(uint8_t numstr, uint8_t X, const char* s)
-{
-	uint16_t code;
-
-	Xcoor = X;
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( numstr > 2 ) {
-		return;
-	}
-	Ycoor = numstr * 16;
-
-	while (1) {
-		s += getUCode( s, &code );
-		if ( code == 0 ) { // если конец строки
-			break;
-		}
-		wrChar_10_16( Xcoor, Ycoor, code);
-		Xcoor += 12;
-		if ( Xcoor >= 84 ) {
-			break;
-		}
-	}
-}*/
 
 //88888888888888888888888888888888888888888888888888888888888888888888888888
 

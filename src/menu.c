@@ -57,10 +57,10 @@ int dnotDone(uint8_t ev) {
 		break;
 	}
 	disClear();
-	disPrint(0, 27, "Sorry");
-	disPrint(1, 6,  "Данный пункт");
-	disPrint(2, 9,  "меню еще не");
-	disPrint(3, 12, "существует");
+	disSetF( 0, 27, f_5x8 ); disPr( "Sorry" );
+	disSet( 1, 6 );  disPr( "Данный пункт" );
+	disSet( 2, 9 );  disPr(  "меню еще не" );
+	disSet( 3, 12);  disPr(  "существует"  );
 	return 1;
 }
 
@@ -86,8 +86,8 @@ int dmessageError1(uint8_t ev) {
 		break;
 	}
 	disClear();
-	disPrint(0,18,"Error!");
-	disPrint(3,12,"Ошибка!");
+	disSetF( 0, 18, f_5x8 ); disPr( "Error!" );
+	disSet( 3, 12 ); disPr( "Ошибка!" );
 	return 1;
 }
 
@@ -169,18 +169,16 @@ int dworkScreen(uint8_t ev) {
 		disSetF( 3, 72, f_5x8 );   disPr( "um" );
 	} else if ( res == 1 ) { // Air
 		disSetF( 2, 18, f_10x16 ); disPr( " Air" );
-		//disPrintFONT2( 1, 26, "Air" );
 	} else if ( res == 2 ) { // Aluminum
 		disSetF( 2, 18, f_10x16 ); disPr( u16to4str( microValue ) );
 		disSetF( 2,  0, f_5x8 );   disPr( "Al" );
 		disSetF( 3, 72, f_5x8 );   disPr( "um" );
 	} else if ( res == 3 ) { // No Fe calib data
-		disPrint(2, 0, "No Fe calibr.");
+		disSetF( 2, 0, f_5x8 ); disPr( "No Fe calibr.");
 	} else if ( res == 4 ) { // No Al calib data
-		disPrint( 2, 0, "No Al calibr.");
+		disSetF( 2, 0, f_5x8 ); disPr( "No Al calibr." );
 	} else if ( res == 5 ) { // Freq is zero
 		disSetF( 2, 18, f_10x16 ); disPr( "????" );
-		//disPrintFONT2( 1, 26, "???" );
 	}
 	disSetF( 5, 50, f_3x5 ); disPr( itostr( freq ) );
 
@@ -227,12 +225,12 @@ int dmainM(uint8_t ev) {
 		return 0;
 	}
 	disClear();
-	disPrint(0,0,"Главное меню");
-	disPrint(1,6, "Наверх");
-	disPrint(2,6, "ADC test");
-	disPrint(3,6, "Польз.калибр.");
-	disPrint(4,6, "Просмотр карт"); // look at table
-	disPrint( curs + 1, 0, "→");
+	disSetF( 0, 0, f_5x8 ); disPr( "Главное меню" );
+	disSet( 1, 6 ); disPr( "Наверх" );
+	disSet( 2, 6 ); disPr( "ADC test");
+	disSet( 3, 6 ); disPr( "Польз.калибр.");
+	disSet( 4, 6 ); disPr( "Просмотр карт"); // look at table
+	disSet( curs + 1, 0 ); disPr( "→");
 	return 1;
 }
 
@@ -270,11 +268,11 @@ int duserCalib(uint8_t ev) {
 		return 0;
 	}
 	disClear();
-	disPrint(0,0,"Клаибровка");
-	disPrint(1,6,  "Наверх");
-	disPrint(2,6,  "Железо");
-	disPrint(3,6,  "Алюминий");
-	disPrint( curs + 1, 0, "→");
+	disSetF( 0, 0, f_5x8 ); disPr( "Клаибровка" );
+	disSet( 1, 6 ); disPr( "Наверх" );
+	disSet( 2, 6 ); disPr( "Железо" );
+	disSet( 3, 6 ); disPr( "Алюминий" );
+	disSet( curs + 1, 0 ); disPr( "→" );
 	return 1;
 }
 
@@ -295,10 +293,10 @@ int dcalibDone(uint8_t ev) {
 		return 0;
 	}
 	disClear();
-	disPrint(0,0,"Клаибровка:");
-	disPrint(1,12,"Процесс");
-	disPrint(2,12,"завершен");
-	disPrint(3,12,"успешно.");
+	disSetF( 0, 0, f_5x8 ); disPr( "Клаибровка:" );
+	disSet( 1, 12 ); disPr( "Процесс" );
+	disSet( 2, 12 ); disPr( "завершен" );
+	disSet( 3, 12 ); disPr( "успешно." );
 	return 1;
 }
 
@@ -323,11 +321,11 @@ int dcalibFeDone(uint8_t ev) {
 		return 0;
 	}
 	disClear();
-	disPrint(0,0, "Клаибровка Fe:");
-	disPrint(1,12, "Сохранить");
-	disPrint(2,0, "калибровочные");
-	disPrint(3,18,  "данные?");
-	disPrint(5,0, "L-Отм 0k-Сохр");
+	disSetF( 0, 0, f_5x8 ); disPr( "Клаибровка Fe:" );
+	disSet( 1, 12 ); disPr( "Сохранить" );
+	disSet( 2, 0  ); disPr( "калибровочные" );
+	disSet( 3, 18 ); disPr( "данные?" );
+	disSet( 5, 0  ); disPr( "L-Отм 0k-Сохр" );
 	return 1;
 }
 
@@ -352,11 +350,11 @@ int dcalibAlDone(uint8_t ev) {
 		return 0;
 	}
 	disClear();
-	disPrint(0,0, "Клаибровка Al:");
-	disPrint(1,12, "Сохранить");
-	disPrint(2,0, "калибровочные");
-	disPrint(3,18,  "данные?");
-	disPrint(5,0, "L-Отм 0k-Сохр");
+	disSetF( 0, 0, f_5x8 ); disPr( "Клаибровка Al:" );
+	disSet( 1, 12 ); disPr( "Сохранить" );
+	disSet( 2,  0 ); disPr( "калибровочные" );
+	disSet( 3, 18 ); disPr( "данные?" );
+	disSet( 5,  0 ); disPr( "L-Отм 0k-Сохр" );
 	return 1;
 }
 
@@ -402,16 +400,15 @@ int calib(uint8_t ev, int metall) {
 	}
 	disClear();
 	if ( metall == 0 ) {
-		disPrint(0,0,"Клаибровка Fe");
+		disSetF( 0, 0, f_5x8 ); disPr( "Клаибровка Fe" );
 	} else {
-		disPrint(0,0,"Клаибровка Al");
+		disSetF( 0, 0, f_5x8 ); disPr( "Клаибровка Al" );
 	}
-	disPrint( 1, 0, "Измерте зазор:" );
-	disPrint( 2, 0, itostr( thickness[index] ) );
-	disPrin(" мкм");
-	disPrint( 3, 0, "F=" );
-	uint32_t val = getFreq();
-	disPrin( itostr( val ) );
+	disSet( 1, 0 ); disPr( "Измерте зазор:" );
+	disSet( 2, 0 ); disPr( itostr( thickness[index] ) );
+	disPr( " мкм" );
+	disSet( 3, 0 ); disPr( "F=" );
+	disPr( itostr( getFreq() ) );
 	return 1;
 }
 

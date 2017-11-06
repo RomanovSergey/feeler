@@ -38,7 +38,6 @@ void initDisplay(void);
 void display(void);//вызывается из main
 
 void disClear(void);
-//void disPrint(uint8_t numstr, uint8_t X, const char* s);
 
 void disShowImg( const uint8_t *img );
 

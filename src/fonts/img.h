@@ -10,5 +10,6 @@
 
 extern const uint8_t imgShtrih[84][6];
 extern const uint8_t imgCar[84][6];
+extern const uint8_t gifCar[84][6];
 
 #endif /* SRC_FONTS_IMG_SHTRIH_H_ */

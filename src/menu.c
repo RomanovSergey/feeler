@@ -180,7 +180,7 @@ int dworkScreen(uint8_t ev) {
 	} else if ( res == 5 ) { // Freq is zero
 		disSetF( 2, 18, f_10x16 ); disPr( "????" );
 	}
-	disSetF( 5, 50, f_3x5 ); disPr( itostr( freq ) );
+	disSetF( 5, 64, f_3x5 ); disPr( u32to5str( freq ) );
 
 	return 1;//надо перерисовать
 }
@@ -569,7 +569,7 @@ int dimageShtrih(uint8_t ev)
 		break;
 	case DIS_PUSH_OK:
 		count++;
-		if ( count > 1 ) {
+		if ( count > 2 ) {
 			count = 0;
 		}
 		break;
@@ -577,8 +577,10 @@ int dimageShtrih(uint8_t ev)
 	disClear();
 	if ( count == 0 ) {
 		disShowImg( (const uint8_t*)imgShtrih );
-	} else {
+	} else if ( count == 1) {
 		disShowImg( (const uint8_t*)imgCar );
+	} else {
+		disShowImg( (const uint8_t*)gifCar );
 	}
 	return 1;
 }

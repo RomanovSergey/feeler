@@ -132,15 +132,16 @@ uint16_t adcVbat(void)
 char* adcGetBattary( void )
 {
 	static char str[5] = {0};
+	char* ps;
 	uint16_t vbat = adcVbat();
 
 	if ( vbat > 500 ) {
 		strcpy( str, "err" );
 		return str;
 	}
-	itoa( vbat, str );
-	memmove( &str[2], &str[1], 2 );
-	str[1] = '.';
-	str[4] = 0;
-	return str;
+	ps = u16to4str( vbat );
+	memmove( &ps[3], &ps[2], 2 );
+	ps[2] = '.';
+	ps[5] = 0;
+	return &ps[1];
 }

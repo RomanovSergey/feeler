@@ -270,7 +270,7 @@ static void disChar_3x5( uint16_t code )
 {
 	const char* img = getFont3x5( code );
 	for ( int dx = 0;  dx < 3;  dx++ ) {
-		coor[Xcoor][Ycoor] = img[dx];
+		coor[Xcoor][Ycoor] = img[dx] << 2;
 		Xcoor++;
 	}
 	Xcoor++;

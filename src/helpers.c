@@ -65,60 +65,40 @@ char* u16to4str( uint16_t n )
 	return s;
 }
 
-/*void disHexHalfWord (uint8_t numstr, uint8_t X, uint16_t nmb)
+char* u32to5str( uint32_t n )
 {
-	uint8_t str[10];
+	static char s[11] = {0};
+	int i = 0;
 
-	if ( X != 0xFF ) {
-		Xcoor = X;
+	if ( n > 99999 ) { // only 5 digits allow
+		strcpy( s, " Err");
+		return s;
 	}
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( numstr > 5 ) {
-		return;
-	}
-	Ycoor = numstr * 8;
+	do {
+		s[i++] = n % 10 + '0';
+	} while ( (n /= 10) > 0 );
 
-	char_to_strHex(nmb >> 8,   &str[0]);
-	char_to_strHex(nmb & 0xFF, &str[2]);
-
-	for ( int i = 0; i < 4; i++ ) {
-		wrChar_5_8( Xcoor, Ycoor, str[i] );
-		Xcoor += 6;
+	while ( i < 5 ) {
+		s[i++] = '0'; // дополним спереди нули
 	}
+	s[i] = '\0';
+	reverse( s );
+	return s;
+}
+
+
+/*int iDecoder( uint8_t* dst, uint8_t* src )
+{
+	//enum mode_e { m_cmd, m_data } mode;
+	uint8_t offset = 0; // from 0 to 504
+	uint8_t isrc = 0; // index of source
+	uint8_t idst = 0; // index of destination
+
+	while ( idst < 504 ) {
+		uint8_t cmd = src[isrc];
+
+	}
+
+	return 0;
 }*/
 
-/*void disUINT32_to_strFONT2 (uint8_t numstr, uint8_t X, uint32_t nmb)
-{
-	char tmp_str [11] = {0,};
-	int i = 0, j;
-	uint8_t y;
-
-	if ( X != 0xFF ) {
-		Xcoor = X;
-	}
-	if ( Xcoor > 77 ) {
-		return;
-	} else if ( numstr > 2 ) {
-		return;
-	}
-	y = numstr * 16;
-
-	if (nmb == 0){//если ноль
-		wrChar_10_16( Xcoor, y, '0');
-		Xcoor += 12;
-	}else{
-		while (nmb > 0) {
-			tmp_str[i++] = (nmb % 10) + '0';
-			nmb /=10;
-		}
-		for (j = 0; j < i; ++j) {
-			wrChar_10_16( Xcoor, y, tmp_str [i-j-1]);//перевернем
-			Xcoor += 12;
-			if ( Xcoor >= 84 ) {
-				break;
-			}
-		}
-	}
-}
-*/

@@ -87,18 +87,63 @@ char* u32to5str( uint32_t n )
 }
 
 
-/*int iDecoder( uint8_t* dst, uint8_t* src )
+#define CMD_ZER   0x40
+#define CMD_ONE   0x80
+#define CMD_FOL   0xc0
+
+#define PICSIZE  504
+/*
+ * Decompress compressed image 84x48
+ * Params:
+ *   ipic - pointer to compressed input array of image
+ *   opic - pointer ot output array of decompressed image
+ *   OMAX - size of input array of image
+ * Return:
+ *   0 - good
+ *  <0 - error
+ */
+int decompressImg84x48( const uint8_t *ipic, uint8_t *opic, int iMAX )
 {
-	//enum mode_e { m_cmd, m_data } mode;
-	uint8_t offset = 0; // from 0 to 504
-	uint8_t isrc = 0; // index of source
-	uint8_t idst = 0; // index of destination
+    int      iind = 0; // input index array
+    int      oind = 0; // output index array
+    int      cnt;      // intermediate helper counter
 
-	while ( idst < 504 ) {
-		uint8_t cmd = src[isrc];
+    if ( (ipic == NULL) || (opic == NULL) ) { return -1; }
 
-	}
+    while ( (iind < iMAX) && (oind < PICSIZE) ) {
+        if ( (ipic[iind] & 0xC0) == CMD_ZER ) { // reduce 0x00, max 64 bytes
+            cnt = ( ipic[iind] & 0x3F ) + 1;
+            for ( int n = 0; n < cnt; n++ ) {
+                if ( oind >= PICSIZE ) { return -2; }
+                opic[oind++] = 0x00;
+            }
+            iind++;
+        } else if ( (ipic[iind] & 0xC0) == CMD_ONE ) { // reduce 0xFF, max 64 bytes
+            cnt = ( ipic[iind] & 0x3F ) + 1;
+            for ( int n = 0; n < cnt; n++ ) {
+                if ( oind >= PICSIZE ) { return -3; }
+                opic[oind++] = 0xFF;
+            }
+            iind++;
+        } else if ( (ipic[iind] & 0xC0) == CMD_FOL ) { // follows other bytes - not reduces
+            cnt = ( ipic[iind] & 0x3F ) + 1;
+            if ( (iind + cnt + 1) > iMAX ) { return -4; }
+            for ( int n = 0; n < cnt; n++ ) {
+                if ( oind >= PICSIZE ) { return -5; }
+                opic[oind++] = ipic[iind + n + 1];
+            }
+            iind += (cnt + 1);
+        } else { // error: no cmd found
+            return -6;
+        }
+    }
 
-	return 0;
-}*/
+    if ( iind == iMAX ) {
+        return 0;
+    } else {
+        return 10;
+    }
+    return 11;
+}
+
 

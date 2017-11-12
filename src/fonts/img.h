@@ -8,8 +8,8 @@
 #ifndef SRC_FONTS_IMG_
 #define SRC_FONTS_IMG_
 
-extern const uint8_t imgShtrih[84][6];
-extern const uint8_t imgCar[84][6];
-extern const uint8_t gifCar[84][6];
+extern const uint8_t cImgShtrih[299];
+extern const uint8_t imgCar[418];
+extern const uint8_t gifCar[399];
 
 #endif /* SRC_FONTS_IMG_SHTRIH_H_ */

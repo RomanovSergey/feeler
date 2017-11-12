@@ -13,6 +13,7 @@
 #include "menu.h"
 #include "main.h"
 #include "uart.h"
+#include "helpers.h"
 #include <string.h>
 
 #define CMD_MODE     GPIO_ResetBits(GPIOA,GPIO_Pin_15)  //command mode
@@ -325,6 +326,13 @@ void disPr( const char* str )
 void disShowImg( const uint8_t *img )
 {
 	memcpy( coor, img, DISP_X * DISP_Y / 8);
+}
+
+int disDImg( const uint8_t *img, int iMAX )
+{
+	int res;
+	res = decompressImg84x48( img, (uint8_t*)coor, iMAX );
+	return res;
 }
 
 //===========================================================================

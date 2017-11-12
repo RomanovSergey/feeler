@@ -576,11 +576,11 @@ int dimageShtrih(uint8_t ev)
 	}
 	disClear();
 	if ( count == 0 ) {
-		disShowImg( (const uint8_t*)imgShtrih );
+		disDImg( (const uint8_t*)cImgShtrih, sizeof(cImgShtrih) );
 	} else if ( count == 1) {
-		disShowImg( (const uint8_t*)imgCar );
+		disDImg( (const uint8_t*)imgCar, sizeof(imgCar) );
 	} else {
-		disShowImg( (const uint8_t*)gifCar );
+		disDImg( (const uint8_t*)gifCar, sizeof(gifCar) );
 	}
 	return 1;
 }

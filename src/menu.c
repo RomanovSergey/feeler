@@ -563,6 +563,8 @@ int dstatusFlash(uint8_t ev)
 int dimageShtrih(uint8_t ev)
 {
 	static int count = 0;
+	int res;
+
 	switch (ev) {
 	case DIS_PUSH_L:
 		pdisp = dmainM;
@@ -576,11 +578,17 @@ int dimageShtrih(uint8_t ev)
 	}
 	disClear();
 	if ( count == 0 ) {
-		disDImg( (const uint8_t*)cImgShtrih, sizeof(cImgShtrih) );
+		res = disDImg( (const uint8_t*)cImgShtrih );
 	} else if ( count == 1) {
-		disDImg( (const uint8_t*)imgCar, sizeof(imgCar) );
+		res = disDImg( (const uint8_t*)imgCar );
 	} else {
-		disDImg( (const uint8_t*)gifCar, sizeof(gifCar) );
+		res = disDImg( (const uint8_t*)gifCar );
+	}
+
+	if ( res != 0 ) {
+		disSetF( 2, 24, f_5x8 );
+		disPr("res=");
+		disPr( itostr(res) );
 	}
 	return 1;
 }

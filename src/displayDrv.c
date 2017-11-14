@@ -21,9 +21,11 @@
 #define CE_LOW       GPIO_ResetBits(GPIOB,GPIO_Pin_6)   //chip enable on
 #define CE_HI        GPIO_SetBits(GPIOB,GPIO_Pin_6)     //chip enable off
 
-#define DISP_X  84
-#define DISP_Y  48
+#define PICSIZE  504
+#define DISP_X   84
+#define DISP_Y   48
 static uint8_t coor[DISP_X][DISP_Y / 8];//буфер дисплея 84x48 пикселей (1 бит на пиксель)
+static uint8_t *crd = (uint8_t*)coor;
 static uint8_t dmaEnd = 0;   //dma status
 static uint8_t dispBusy = 0; //display busy
 static uint8_t Xcoor = 0;//текущая координата Х для разных функций печати на дисплей
@@ -271,7 +273,8 @@ static void disChar_3x5( uint16_t code )
 {
 	const char* img = getFont3x5( code );
 	for ( int dx = 0;  dx < 3;  dx++ ) {
-		coor[Xcoor][Ycoor] = img[dx] << 2;
+		//coor[Xcoor][Ycoor] = img[dx] << 2;
+		crd[Xcoor*6 + Ycoor] = img[dx] << 2;
 		Xcoor++;
 	}
 	Xcoor++;
@@ -328,11 +331,90 @@ void disShowImg( const uint8_t *img )
 	memcpy( coor, img, DISP_X * DISP_Y / 8);
 }
 
-int disDImg( const uint8_t *img, int iMAX )
+/*
+ * Decompress compressed image 84x48 and show on dsplay
+ * Params:
+ *   img - pointer to compressed input array of image
+ * Return:
+ *   0 - good
+ *  <0 - error
+
+int disDImg( const uint8_t *img )
 {
 	int res;
-	res = decompressImg84x48( img, (uint8_t*)coor, iMAX );
+	int iMAX = (img[0] << 8) + img[1];
+	res = decompressImg84x48( img + 2, (uint8_t*)coor, iMAX );
 	return res;
+} */
+
+/*
+ * Decompress compressed image 84x48
+ * Params:
+ *   img - pointer to compressed input array of image
+ * Return:
+ *   0 - good
+ *  <0 - error
+ */
+//int decompressImg84x48( const uint8_t *ipic, uint8_t *crd, int iMAX )
+int disDImg( const uint8_t *img )
+{
+	static const uint8_t CMD_ZER = 0x40;
+	static const uint8_t CMD_ONE = 0x80;
+	static const uint8_t CMD_FOL = 0xC0;
+
+    int      iind = 2; // input index array
+    int      oind = 0; // output index array
+    int      cnt;      // intermediate helper counter
+    int      iMAX;
+
+    if ( img == NULL ) { return -1; }
+    iMAX = (img[0] << 8) + img[1] + 2;
+
+    while ( (iind < iMAX) && (oind < PICSIZE) ) {
+        if ( (img[iind] & 0xC0) == CMD_ZER ) { // reduce 0x00, max 64 bytes
+            cnt = ( img[iind] & 0x3F ) + 1;
+            for ( int n = 0; n < cnt; n++ ) {
+                if ( oind >= PICSIZE ) { return -2; }
+                crd[oind++] = 0x00;
+            }
+            iind++;
+        } else if ( (img[iind] & 0xC0) == CMD_ONE ) { // reduce 0xFF, max 64 bytes
+            cnt = ( img[iind] & 0x3F ) + 1;
+            for ( int n = 0; n < cnt; n++ ) {
+                if ( oind >= PICSIZE ) { return -3; }
+                crd[oind++] = 0xFF;
+            }
+            iind++;
+        } else if ( (img[iind] & 0xC0) == CMD_FOL ) { // follows other bytes - not reduces
+            cnt = ( img[iind] & 0x3F ) + 1;
+            if ( (iind + cnt + 1) > iMAX ) { return -4; }
+            for ( int n = 0; n < cnt; n++ ) {
+                if ( oind >= PICSIZE ) { return -5; }
+                crd[oind++] = img[iind + n + 1];
+            }
+            iind += (cnt + 1);
+        } else { // error: no cmd found
+            return -6;
+        }
+    }
+
+    if ( iind == iMAX ) {
+        return 0;
+    } else {
+        return 10;
+    }
+    return 11;
+}
+
+/*
+ * Move image on display to right on pix pixels
+ */
+void disMoveR( uint8_t pix )
+{
+	if ( pix > 84 ) return;
+	for ( int x = 0; x < 84; x++ ) {
+
+	}
 }
 
 //===========================================================================

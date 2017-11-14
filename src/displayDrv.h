@@ -40,7 +40,7 @@ void display(void);//вызывается из main
 void disClear(void);
 
 void disShowImg( const uint8_t *img );
-int disDImg( const uint8_t *img, int iMAX );
+int disDImg( const uint8_t *img );
 
 int  disSet( uint8_t numstr, uint8_t X );
 void disSetF( uint8_t numstr, uint8_t X, font_e fnt );

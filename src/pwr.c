@@ -64,55 +64,58 @@ uint8_t pwrGetEv(void) {
 #define CNTINAKT  27
 void power(void)
 {
-	static const uint16_t CTIM = 1000; // const for startTime
+	static const uint16_t CTIM = 2000; // const for startTime
 	static int startTime = 0;
 	static int Inactivity = 0;
+	static uint32_t alarm = 0;
+	uint8_t event;
+
+	event = pwrGetEv();
+
+	switch ( event ) {
+	case PWR_POWEROFF:
+		BL1_OFF;
+		BL2_OFF;
+		PWR_OFF;
+		DISRESET_LOW;
+		pdisp = emptyDisplay;
+		break;
+	case PWR_INACTIVE: // событие простоя кнопок
+		Inactivity++;
+		if ( Inactivity == CNTINAKT ) {
+			BL2_OFF;
+		} else if ( Inactivity > CNTINAKT ) {
+			pwrPutEv( PWR_POWEROFF );
+		}
+		break;
+	case PWR_BUTACTIV: // нажали какую то кнопку
+		Inactivity = 0;
+		if ( pdisp != emptyDisplay ) {
+			BL2_ON;
+		}
+		break;
+	case PWR_ALARM_1000:
+		alarm = 1000;
+		break;
+	case PWR_ALARM_3000:
+		alarm = 3000;
+		break;
+	case PWR_RESET_ALARM:
+		alarm = 0;
+		break;
+	case PWR_ALARM_84:
+		alarm = 100;
+		break;
+	}
+
+	if ( alarm != 0 ) {
+		alarm--;
+		if ( alarm == 0 ) {
+			dispPutEv( DIS_ALARM );
+		}
+	}
 
 	if ( startTime > CTIM ) { // working mode
-		static uint32_t alarm = 0;
-		uint8_t event;
-
-		event = pwrGetEv();
-
-		switch ( event ) {
-		case PWR_POWEROFF:
-			BL1_OFF;
-			BL2_OFF;
-			PWR_OFF;
-			DISRESET_LOW;
-			pdisp = emptyDisplay;
-			break;
-		case PWR_INACTIVE: // событие простоя кнопок
-			Inactivity++;
-			if ( Inactivity == CNTINAKT ) {
-				BL2_OFF;
-			} else if ( Inactivity > CNTINAKT ) {
-				pwrPutEv( PWR_POWEROFF );
-			}
-			break;
-		case PWR_BUTACTIV: // нажали какую то кнопку
-			Inactivity = 0;
-			if ( pdisp != emptyDisplay ) {
-				BL2_ON;
-			}
-			break;
-		case PWR_ALARM_1000:
-			alarm = 1000;
-			break;
-		case PWR_ALARM_3000:
-			alarm = 3000;
-			break;
-		case PWR_RESET_ALARM:
-			alarm = 0;
-			break;
-		}
-
-		if ( alarm != 0 ) {
-			alarm--;
-			if ( alarm == 0 ) {
-				dispPutEv( DIS_ALARM );
-			}
-		}
 	} else if ( startTime < CTIM ) { // waiting mode
 		startTime++;
 	} else if ( startTime == CTIM ) { // switch on mode

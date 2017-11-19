@@ -12,6 +12,7 @@
 #define PWR_INACTIVE    2
 #define PWR_BUTACTIV    3
 #define PWR_RESET_ALARM 10
+#define PWR_ALARM_84    11
 #define PWR_ALARM_1000  20
 #define PWR_ALARM_3000  30
 

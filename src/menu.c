@@ -25,13 +25,34 @@ static pdisp_t prev = NULL;
 /*
  * Start menu function on Power On
  */
-int emptyDisplay(uint8_t event) {
-	if ( event == DIS_PAINT ) {
+int emptyDisplay( uint8_t ev )
+{
+	static int cols;
+
+	if ( ev == DIS_PAINT ) {
 		pdisp = dworkScreen;
 		sndPutEv( SND_PERMIT );
+		pwrPutEv( PWR_RESET_ALARM );
 		return 0;
 	}
-	disClear();
+
+	switch (ev) {
+	case DIS_ALARM:
+		if ( cols < 0 ) {
+			cols += 12;
+		}
+		break;
+	case DIS_REPAINT:
+		cols = -72;
+		break;
+	default:
+		return 0;
+	}
+
+	disShowImg( (const uint8_t*)car45 );
+	disMove( cols );
+
+	pwrPutEv( PWR_ALARM_84 );
 	return 1;
 }
 
@@ -563,33 +584,54 @@ int dstatusFlash(uint8_t ev)
 int dimageShtrih(uint8_t ev)
 {
 	static int count = 0;
-	int res;
+	static uint32_t offset = 504;
+	int res = 0;
+	int npic = 0;
 
 	switch (ev) {
 	case DIS_PUSH_L:
 		pdisp = dmainM;
+		pwrPutEv( PWR_RESET_ALARM );
 		break;
 	case DIS_PUSH_OK:
 		count++;
-		if ( count > 2 ) {
+		if ( count > 1 ) {
 			count = 0;
 		}
+		npic = 1;
 		break;
+	case DIS_ALARM:
+		if ( offset > 0 ) {
+			offset -= 6;
+		}
+		break;
+	case DIS_REPAINT:
+		npic = 1;
+		break;
+	default:
+		return 0;
 	}
-	disClear();
-	if ( count == 0 ) {
-		res = disDImg( (const uint8_t*)cImgShtrih );
-	} else if ( count == 1) {
-		res = disDImg( (const uint8_t*)imgCar );
-	} else {
-		res = disDImg( (const uint8_t*)gifCar );
+	if ( npic ) {
+		npic = 0;
+		offset = 504;
+		disClear();
+		//disOff( 0 );
+		if ( count == 0 ) {
+			disShowImg( (const uint8_t*)imgCar );
+		} else if (count ==1) {
+			disShowImg( (const uint8_t*)car45 );
+		}
+		//disOff( 504 );
+		if ( res != 0 ) {
+			disSetF( 2, 24, f_5x8 );
+			disPr("res=");
+			disPr( itostr(res) );
+		}
 	}
 
-	if ( res != 0 ) {
-		disSetF( 2, 24, f_5x8 );
-		disPr("res=");
-		disPr( itostr(res) );
-	}
+	//disAddrDMA( offset );
+	pwrPutEv( PWR_ALARM_84 );
+
 	return 1;
 }
 

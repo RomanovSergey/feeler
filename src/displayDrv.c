@@ -22,14 +22,15 @@
 #define CE_HI        GPIO_SetBits(GPIOB,GPIO_Pin_6)     //chip enable off
 
 #define PICSIZE  504
-#define DISP_X   84
-#define DISP_Y   48
-static uint8_t coor[DISP_X][DISP_Y / 8];//буфер дисплея 84x48 пикселей (1 бит на пиксель)
-static uint8_t *crd = (uint8_t*)coor;
-static uint8_t dmaEnd = 0;   //dma status
-static uint8_t dispBusy = 0; //display busy
-static uint8_t Xcoor = 0;//текущая координата Х для разных функций печати на дисплей
-static uint8_t Ycoor = 0;//текущая координата Y для разных функций печати на дисплей
+#define DIS_X   84
+#define DIS_Y   48
+//static int offset = 504;
+static uint8_t coor[PICSIZE * 2]; // буфер дисплея 84x48 пикселей (1 бит на пиксель)
+static uint8_t *crd = coor; // &coor[PICSIZE];
+static uint8_t dmaEnd = 0;   // dma status
+static uint8_t dispBusy = 0; // display busy
+static uint8_t Xcoor = 0; // текущая координата Х для разных функций печати на дисплей
+static uint8_t Ycoor = 0; // текущая координата Y для разных функций печати на дисплей
 
 static font_e font = f_5x8;
 
@@ -121,9 +122,9 @@ void initDisplay(void) {
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 	DMA_DeInit(DMA1_Channel3);
 	DMA_InitStruct.DMA_PeripheralBaseAddr = SPI1_BASE + 0x0c;
-	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)coor;
+	DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)crd;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralDST;
-	DMA_InitStruct.DMA_BufferSize = (uint32_t)(DISP_X * DISP_Y / 8);
+	DMA_InitStruct.DMA_BufferSize = (uint32_t)(PICSIZE);
 	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
 	DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
 	DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
@@ -157,7 +158,7 @@ void DMA1_Channel2_3_IRQHandler (void) {
 }
 
 void disClear(void) {
-	memset( coor, 0, DISP_X * DISP_Y / 8);
+	memset( crd, 0, PICSIZE);
 }
 
 // Выбирает страницу и горизонтальную позицию для вывода
@@ -168,21 +169,19 @@ static void disSetPos(uint8_t page, uint8_t x) {
 	disp_cmds(setPos, 2);
 }
 
+/*void disAddrDMA( uint32_t offs )
+{
+	offset = offs;
+}*/
+
 static void disDMAsend() {
 	disSetPos(0, 0);
 	DATA_MODE; // Высокий уровень на линии DC: данные
 	CE_LOW; // Низкий уровень на линии SCE
-	DMA_SetCurrDataCounter( DMA1_Channel3, (uint16_t)(DISP_X * DISP_Y / 8) );
+	DMA1_Channel3->CMAR = (uint32_t)coor; //(&coor[offset]);
+	DMA_SetCurrDataCounter( DMA1_Channel3, (uint16_t)(PICSIZE) );
 	DMA_Cmd(DMA1_Channel3, ENABLE);
 }
-
-/*void setPixel(int x, int y) {
-	int yb = y / 8;
-	int yo = y % 8;
-	uint8_t val = coor[x][yb];
-	val |= (1 << yo);
-	coor[x][yb] = val;
-}*/
 
 /*
  * getUCode() получает код unicode из строки формата UTF-8
@@ -273,7 +272,6 @@ static void disChar_3x5( uint16_t code )
 {
 	const char* img = getFont3x5( code );
 	for ( int dx = 0;  dx < 3;  dx++ ) {
-		//coor[Xcoor][Ycoor] = img[dx] << 2;
 		crd[Xcoor*6 + Ycoor] = img[dx] << 2;
 		Xcoor++;
 	}
@@ -284,7 +282,7 @@ static void disChar_5x8( uint16_t code )
 {
 	const char* img = getFont5x8( code );
 	for ( int dx = 0;  dx < 5;  dx++ ) {
-		coor[Xcoor][Ycoor] = img[dx];
+		crd[Xcoor * 6 + Ycoor] = img[dx];
 		Xcoor++;
 	}
 	Xcoor++;
@@ -293,10 +291,12 @@ static void disChar_5x8( uint16_t code )
 static void disChar_10x16( uint16_t code )
 {
 	const uint16_t* f = getFont10x16( code );
+	int   ind;
 
 	for ( int dx = 0;  dx < 10;  dx++ ) {
-		coor[Xcoor][Ycoor] = 0xff & f[dx];
-		coor[Xcoor][Ycoor+1] = f[dx] >> 8;
+		ind = Xcoor * 6 + Ycoor;
+		crd[ind] = 0xff & f[dx];
+		crd[ind+1] = f[dx] >> 8;
 		Xcoor++;
 	}
 	Xcoor += 2;
@@ -322,30 +322,40 @@ void disPr( const char* str )
 			disChar_10x16( code );
 			break;
 		}
-		if ( Xcoor >= 84 ) { break; }
+		if ( Xcoor >= DIS_X ) { break; }
 	}
 }
 
 void disShowImg( const uint8_t *img )
 {
-	memcpy( coor, img, DISP_X * DISP_Y / 8);
+	memcpy( crd, img, PICSIZE);
 }
 
-/*
- * Decompress compressed image 84x48 and show on dsplay
- * Params:
- *   img - pointer to compressed input array of image
- * Return:
- *   0 - good
- *  <0 - error
-
-int disDImg( const uint8_t *img )
+void disMove( int cols )
 {
-	int res;
-	int iMAX = (img[0] << 8) + img[1];
-	res = decompressImg84x48( img + 2, (uint8_t*)coor, iMAX );
-	return res;
-} */
+	if ( cols > 0 ) {
+		int cnt = cols * (DIS_Y / 8);
+		int dst = PICSIZE;
+		int src = PICSIZE - cnt;
+		while ( src != 0 ) {
+			crd[--dst] = crd[--src];
+		}
+		memset( crd, 0, cnt );
+	} else if ( cols < 0 ) {
+		int cnt = -cols * (DIS_Y / 8);
+		int dst = 0;
+		int src = cnt;
+		while ( src != PICSIZE ) {
+			crd[dst++] = crd[src++];
+		}
+		memset( &crd[PICSIZE-cnt], 0, cnt );
+	}
+}
+
+/*void disOff( int ofs )
+{
+	crd = &coor[ofs];
+}*/
 
 /*
  * Decompress compressed image 84x48
@@ -355,8 +365,7 @@ int disDImg( const uint8_t *img )
  *   0 - good
  *  <0 - error
  */
-//int decompressImg84x48( const uint8_t *ipic, uint8_t *crd, int iMAX )
-int disDImg( const uint8_t *img )
+/*int disDImg( const uint8_t *img )
 {
 	static const uint8_t CMD_ZER = 0x40;
 	static const uint8_t CMD_ONE = 0x80;
@@ -404,18 +413,7 @@ int disDImg( const uint8_t *img )
         return 10;
     }
     return 11;
-}
-
-/*
- * Move image on display to right on pix pixels
- */
-void disMoveR( uint8_t pix )
-{
-	if ( pix > 84 ) return;
-	for ( int x = 0; x < 84; x++ ) {
-
-	}
-}
+}*/
 
 //===========================================================================
 //===========================================================================

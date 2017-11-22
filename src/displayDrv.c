@@ -328,7 +328,22 @@ void disPr( const char* str )
 
 void disShowImg( const uint8_t *img )
 {
-	memcpy( crd, img, PICSIZE);
+	memcpy( coor, img, PICSIZE);
+}
+
+void disShowMove( const uint8_t *img, int cols )
+{
+	if ( cols > 0 ) {
+		int cnt = cols * (DIS_Y / 8);
+		memcpy( &crd[cnt], img, PICSIZE - cnt - 1 );
+		//memset( crd, 0, cnt );
+	} else if ( cols < 0 ) {
+//		int cnt = -cols * (DIS_Y / 8);
+//		memcpy( crd, &img[cnt], PICSIZE - cnt );
+//		memset( &crd[PICSIZE-cnt], 0, cnt );
+	} else {
+		memset( crd, 0, PICSIZE );
+	}
 }
 
 void disMove( int cols )

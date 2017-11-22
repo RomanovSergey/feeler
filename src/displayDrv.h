@@ -35,15 +35,13 @@ typedef enum {
 } font_e;
 
 void initDisplay(void);
-//void disAddrDMA( uint32_t offs );
 void display(void);//вызывается из main
 
 void disClear(void);
 
 void disShowImg( const uint8_t *img );
+void disShowMove( const uint8_t *img, int cols );
 void disMove( int cols );
-//void disOff( int ofs );
-//int disDImg( const uint8_t *img );
 
 int  disSet( uint8_t numstr, uint8_t X );
 void disSetF( uint8_t numstr, uint8_t X, font_e fnt );

@@ -50,9 +50,10 @@ int emptyDisplay( uint8_t ev )
 	}
 
 	disShowImg( (const uint8_t*)car45 );
-	disMove( cols );
+	//disMove( cols );
+	//disShowImg( (const uint8_t*)car45 );//, 0 );
 
-	pwrPutEv( PWR_ALARM_84 );
+	//pwrPutEv( PWR_ALARM_84 );
 	return 1;
 }
 

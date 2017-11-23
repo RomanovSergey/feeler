@@ -49,11 +49,11 @@ int emptyDisplay( uint8_t ev )
 		return 0;
 	}
 
-	disShowImg( (const uint8_t*)car45 );
+	disShowMove( (const uint8_t*)car45, cols );
 	//disMove( cols );
 	//disShowImg( (const uint8_t*)car45 );//, 0 );
 
-	//pwrPutEv( PWR_ALARM_84 );
+	pwrPutEv( PWR_ALARM_84 );
 	return 1;
 }
 

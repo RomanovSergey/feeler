@@ -25,7 +25,7 @@
 #define DIS_X   84
 #define DIS_Y   48
 //static int offset = 504;
-static uint8_t coor[PICSIZE * 2]; // буфер дисплея 84x48 пикселей (1 бит на пиксель)
+static uint8_t coor[PICSIZE]; // буфер дисплея 84x48 пикселей (1 бит на пиксель)
 static uint8_t *crd = coor; // &coor[PICSIZE];
 static uint8_t dmaEnd = 0;   // dma status
 static uint8_t dispBusy = 0; // display busy
@@ -328,21 +328,21 @@ void disPr( const char* str )
 
 void disShowImg( const uint8_t *img )
 {
-	memcpy( coor, img, PICSIZE);
+	memcpy( crd, img, PICSIZE);
 }
 
 void disShowMove( const uint8_t *img, int cols )
 {
 	if ( cols > 0 ) {
 		int cnt = cols * (DIS_Y / 8);
-		memcpy( &crd[cnt], img, PICSIZE - cnt - 1 );
-		//memset( crd, 0, cnt );
+		memcpy( &crd[cnt], img, PICSIZE - cnt );
+		memset( crd, 0, cnt );
 	} else if ( cols < 0 ) {
-//		int cnt = -cols * (DIS_Y / 8);
-//		memcpy( crd, &img[cnt], PICSIZE - cnt );
-//		memset( &crd[PICSIZE-cnt], 0, cnt );
+		int cnt = -cols * (DIS_Y / 8);
+		memcpy( crd, &img[cnt], PICSIZE - cnt );
+		memset( &crd[PICSIZE-cnt], 0, cnt );
 	} else {
-		memset( crd, 0, PICSIZE );
+		memcpy( crd, img, PICSIZE );
 	}
 }
 
@@ -507,5 +507,4 @@ void display(void) {
 		disDMAsend();
 	}
 }
-
 

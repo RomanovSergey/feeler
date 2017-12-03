@@ -35,7 +35,7 @@ int main(void) {
 	while (1) {
 		magnetic();
 		adc();
-		//sound();
+		sound();
 		display();
 		buttons();
 		uart();

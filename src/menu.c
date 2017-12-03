@@ -48,11 +48,7 @@ int emptyDisplay( uint8_t ev )
 	default:
 		return 0;
 	}
-
 	disShowMove( (const uint8_t*)car45, cols );
-	//disMove( cols );
-	//disShowImg( (const uint8_t*)car45 );//, 0 );
-
 	pwrPutEv( PWR_ALARM_84 );
 	return 1;
 }

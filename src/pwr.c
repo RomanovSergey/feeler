@@ -62,7 +62,7 @@ uint8_t pwrGetEv(void) {
 //===========================================================================
 //===========================================================================
 #define CNTINAKT  27
-void power(void)
+void power(void) // calls from main() 1ms
 {
 	static const uint16_t CTIM = 2000; // const for startTime
 	static int startTime = 0;

@@ -8,10 +8,14 @@
 #ifndef SRC_SOUND_H_
 #define SRC_SOUND_H_
 
-#define SND_BEEP      1
-#define SND_PERMIT   10
-#define SND_peek     11
-#define SND_Xfiles   12
+#define SND_BEEP          1
+#define SND_STOP          2
+#define SND_PERMIT       10
+#define SND_peek         11
+#define SND_Xfiles       12
+#define SND_Eternally    13
+#define SND_Batman       14
+#define SND_Simpsons     15
 
 int sndPutEv(uint8_t event);
 

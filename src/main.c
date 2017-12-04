@@ -134,7 +134,7 @@ void init(void) {
 	TIM_OCInitStruct.TIM_OCNIdleState = TIM_OCNIdleState_Reset;//not used
 	TIM_OC1Init( TIM17, &TIM_OCInitStruct );
 	//
-	TIM_CtrlPWMOutputs(TIM17, DISABLE);
+	TIM_CtrlPWMOutputs(TIM17, ENABLE);
 	TIM_Cmd(TIM17, DISABLE);
 
 	//================================================================

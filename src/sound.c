@@ -181,7 +181,7 @@ void sound(void)
 	static char duration;
 	static char octave;
 	uint8_t temp_duration, temp_octave, current_note, dot_flag;
-	uint16_t calc_duration;
+	static uint16_t calc_duration = 0; // in ms
 	//=======================================
 
 	event = sndGetEv();
@@ -189,14 +189,42 @@ void sound(void)
 	case SND_PERMIT:
 		//canSound = 1;
 		break;
+	case SND_STOP:
+		song = NULL;
+		TIM_SetAutoreload(TIM17, 0xFFFF);
+		TIM_SetCompare1(TIM17, 0);
+		TIM_Cmd(TIM17, DISABLE);
+		break;
 	case SND_BEEP:
 	case SND_peek:
-		rInit = 1;
 		song = r_peek;
+		rInit = 1;
+		calc_duration = 0;
+		TIM_Cmd( TIM17, ENABLE );
 		break;
 	case SND_Xfiles:
-		rInit = 1;
 		song = r_Xfiles;
+		rInit = 1;
+		calc_duration = 0;
+		TIM_Cmd( TIM17, ENABLE );
+		break;
+	case SND_Eternally:
+		song = r_Eternally;
+		rInit = 1;
+		calc_duration = 0;
+		TIM_Cmd( TIM17, ENABLE );
+		break;
+	case SND_Batman:
+		song = r_Batman;
+		rInit = 1;
+		calc_duration = 0;
+		TIM_Cmd( TIM17, ENABLE );
+		break;
+	case SND_Simpsons:
+		song = r_Simpsons;
+		rInit = 1;
+		calc_duration = 0;
+		TIM_Cmd( TIM17, ENABLE );
 		break;
 	}
 
@@ -266,11 +294,18 @@ void sound(void)
 		}
 		song++;                       // Перейти к следующему символу
 	}
-	// read the musical notes
-	TIM_Cmd(TIM17, ENABLE);
 
-	//while (*song)                 // Повторять, пока символы не пустые
-	{
+	// read the musical notes
+	//TIM_Cmd(TIM17, ENABLE);
+
+	if ( calc_duration == 0 ) {
+		if ( *song == 0 ) {
+			song = NULL;
+			TIM_SetAutoreload(TIM17, 0xFFFF);
+			TIM_SetCompare1(TIM17, 0);
+			TIM_Cmd(TIM17, DISABLE);
+			return;
+		}
 		current_note = 255;         // Текущая нота - пауза
 		temp_octave = octave;       // Установить октаву по умолчанию
 		temp_duration = duration;   // Установить длительность по умолчанию
@@ -331,8 +366,8 @@ void sound(void)
 		// функции sound
 		if ( current_note < 255 ) {
 			uint32_t x = (uint32_t)1000000 / note[temp_octave-4][current_note];
-			TIM_SetAutoreload(TIM17, x);
-			TIM_SetCompare1(TIM17, x >> 1);
+			TIM_SetAutoreload( TIM17, x );
+			TIM_SetCompare1( TIM17, 30 );
 		}
 		else
 		{ // Если текущая нота = 255 (пауза), то реализовать задержку
@@ -342,11 +377,7 @@ void sound(void)
 
 		// перейти к следующей мелодии
 		//vTaskDelay(calc_duration / portTICK_RATE_MS);
+	} else {
+		calc_duration--;
 	}
-
-
-
-	TIM_SetAutoreload(TIM17, 0xFFFF);
-	TIM_SetCompare1(TIM17, 0);
-	TIM_Cmd(TIM17, DISABLE);
 }

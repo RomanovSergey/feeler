@@ -31,7 +31,7 @@ int emptyDisplay( uint8_t ev )
 
 	if ( ev == DIS_PAINT ) {
 		pdisp = dworkScreen;
-		sndPutEv( SND_PERMIT );
+		sndPutEv( SND_peek ); // SND_PERMIT );
 		pwrPutEv( PWR_RESET_ALARM );
 		return 0;
 	}
@@ -589,6 +589,7 @@ int dimageShtrih(uint8_t ev)
 	case DIS_PUSH_L:
 		pdisp = dmainM;
 		pwrPutEv( PWR_RESET_ALARM );
+		sndPutEv( SND_STOP );
 		break;
 	case DIS_PUSH_OK:
 		count++;
@@ -615,8 +616,10 @@ int dimageShtrih(uint8_t ev)
 		//disOff( 0 );
 		if ( count == 0 ) {
 			disShowImg( (const uint8_t*)imgCar );
+			sndPutEv( SND_Batman );
 		} else if (count ==1) {
 			disShowImg( (const uint8_t*)car45 );
+			sndPutEv( SND_Simpsons );
 		}
 		//disOff( 504 );
 		if ( res != 0 ) {

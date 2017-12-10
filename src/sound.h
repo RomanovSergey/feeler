@@ -11,11 +11,11 @@
 #define SND_BEEP          1
 #define SND_STOP          2
 #define SND_PERMIT       10
-#define SND_peek         11
-#define SND_Xfiles       12
-#define SND_Eternally    13
-#define SND_Batman       14
-#define SND_Simpsons     15
+#define SND_peek         0x81
+#define SND_Xfiles       0x82
+#define SND_Eternally    0x83
+#define SND_Batman       0x84
+#define SND_Simpsons     0x85
 
 int sndPutEv(uint8_t event);
 

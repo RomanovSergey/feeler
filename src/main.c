@@ -68,6 +68,8 @@ void init(void) {
 	GPIO_DeInit(GPIOB);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM17, ENABLE);
 	TIM_DeInit(TIM17);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM6, ENABLE);
+	TIM_DeInit(TIM6);
 
 	initDisplay();
 
@@ -114,7 +116,7 @@ void init(void) {
 	//timer17 for PWM Sound player =========================================
 	const uint16_t sndperiod = 500;
 	//
-	TIM_TimeBaseInitStruct.TIM_Prescaler = 48;
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 47;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInitStruct.TIM_Period = sndperiod;// 2 kHz
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -134,8 +136,25 @@ void init(void) {
 	TIM_OCInitStruct.TIM_OCNIdleState = TIM_OCNIdleState_Reset;//not used
 	TIM_OC1Init( TIM17, &TIM_OCInitStruct );
 	//
-	TIM_CtrlPWMOutputs(TIM17, ENABLE);
-	TIM_Cmd(TIM17, DISABLE);
+	TIM_CtrlPWMOutputs( TIM17, ENABLE );
+	TIM_Cmd( TIM17, DISABLE );
+	//
+	TIM_TimeBaseInitStruct.TIM_Prescaler = 48000 - 1;
+	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
+	TIM_TimeBaseInitStruct.TIM_Period = 100; // dummy
+	TIM_TimeBaseInitStruct.TIM_ClockDivision = TIM_CKD_DIV1; // dummy
+	//TIM_TimeBaseInitStruct.TIM_RepetitionCounter = 0;
+	TIM_TimeBaseInit(TIM6, &TIM_TimeBaseInitStruct);
+	//
+	TIM_SetCounter( TIM6, 0 );
+	TIM_Cmd( TIM6, DISABLE );
+	TIM_ClearFlag(TIM6, TIM_FLAG_Update);
+	TIM_ITConfig( TIM6, TIM_IT_Update, DISABLE );
+	//
+	NVIC_InitStruct.NVIC_IRQChannel = TIM6_DAC_IRQn;
+	NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
+	NVIC_InitStruct.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init( &NVIC_InitStruct );
 
 	//================================================================
 	//uart1 on PA9 (tx) and PA10 (rx) pins ============================

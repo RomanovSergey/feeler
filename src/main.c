@@ -129,9 +129,9 @@ void init(void) {
 	TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
 	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Disable;
 	TIM_OCInitStruct.TIM_OutputNState = TIM_OutputNState_Enable;
-	TIM_OCInitStruct.TIM_Pulse = sndperiod / 2;
+	TIM_OCInitStruct.TIM_Pulse = 0;
 	TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
-	TIM_OCInitStruct.TIM_OCNPolarity = TIM_OCNPolarity_Low;
+	TIM_OCInitStruct.TIM_OCNPolarity = TIM_OCNPolarity_High;
 	TIM_OCInitStruct.TIM_OCIdleState = TIM_OCIdleState_Reset;//not used
 	TIM_OCInitStruct.TIM_OCNIdleState = TIM_OCNIdleState_Reset;//not used
 	TIM_OC1Init( TIM17, &TIM_OCInitStruct );

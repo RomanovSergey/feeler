@@ -221,6 +221,8 @@ int dmainM(uint8_t ev) {
 			pdisp = duserCalib;
 		} else if ( curs == 3 ) { // Просмотр таб.
 			pdisp = dimageShtrih;
+		} else if ( curs == 4 ) { // Звуки
+
 		} else {
 			prev  = dmainM;
 			pdisp = dnotDone;
@@ -233,7 +235,7 @@ int dmainM(uint8_t ev) {
 		break;
 	case DIS_PUSH_R:
 		curs++;
-		if ( curs == 4 ) {
+		if ( curs == 5 ) {
 			curs = 0;
 		}
 		break;
@@ -245,9 +247,10 @@ int dmainM(uint8_t ev) {
 	disClear();
 	disSetF( 0, 0, f_5x8 ); disPr( "Главное меню" );
 	disSet( 1, 6 ); disPr( "Наверх" );
-	disSet( 2, 6 ); disPr( "ADC test");
-	disSet( 3, 6 ); disPr( "Польз.калибр.");
-	disSet( 4, 6 ); disPr( "Просмотр карт"); // look at table
+	disSet( 2, 6 ); disPr( "ADC test" );
+	disSet( 3, 6 ); disPr( "Польз.калибр." );
+	disSet( 4, 6 ); disPr( "Просмотр карт" ); // look at table
+	disSet( 5, 6 ); disPr( "Звуки" );
 	disSet( curs + 1, 0 ); disPr( "→");
 	return 1;
 }
@@ -616,10 +619,10 @@ int dimageShtrih(uint8_t ev)
 		//disOff( 0 );
 		if ( count == 0 ) {
 			disShowImg( (const uint8_t*)imgCar );
-			sndPutEv( SND_Batman );
+			sndPutEv( SND_TheSimpsons );
 		} else if (count ==1) {
 			disShowImg( (const uint8_t*)car45 );
-			sndPutEv( SND_Simpsons );
+			sndPutEv( SND_DasBoot );
 		}
 		//disOff( 504 );
 		if ( res != 0 ) {

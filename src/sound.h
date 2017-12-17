@@ -16,6 +16,8 @@
 #define SND_Eternally    0x83
 #define SND_Batman       0x84
 #define SND_Simpsons     0x85
+#define SND_TheSimpsons  0x86
+#define SND_DasBoot      0x87
 
 int sndPutEv(uint8_t event);
 

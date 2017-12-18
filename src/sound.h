@@ -18,6 +18,8 @@
 #define SND_Simpsons     0x85
 #define SND_TheSimpsons  0x86
 #define SND_DasBoot      0x87
+#define SND_TakeOnMe     0x88
+#define SND_MissionImp   0x89
 
 int sndPutEv(uint8_t event);
 

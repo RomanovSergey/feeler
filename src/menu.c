@@ -619,10 +619,10 @@ int dimageShtrih(uint8_t ev)
 		//disOff( 0 );
 		if ( count == 0 ) {
 			disShowImg( (const uint8_t*)imgCar );
-			sndPutEv( SND_TheSimpsons );
+			sndPutEv( SND_TakeOnMe );
 		} else if (count ==1) {
 			disShowImg( (const uint8_t*)car45 );
-			sndPutEv( SND_DasBoot );
+			sndPutEv( SND_MissionImp );
 		}
 		//disOff( 504 );
 		if ( res != 0 ) {

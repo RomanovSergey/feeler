@@ -71,7 +71,7 @@ typedef struct {
 } srec_t;
 
 srec_t r_Peek = { .name = "Peek", .mel = {
-  {1432, 124},{1432, 124},{   0,   0}}
+  {1432, 124},{1432, 124},{1432, 124},{   0,   0}}
 };
 srec_t r_XFiles = { .name = "XFiles", .mel = {
   {1517, 480},{1012, 480},{1136, 480},{1012, 480},{ 851, 480},{1012,1440},{   0,1920},
@@ -290,12 +290,25 @@ srec_t *collect[] = {
   &r_KnightRider, // 26
 };
 
+int sndGetSize()
+{
+	return ( sizeof( collect ) / sizeof( collect[0] ) );
+}
+
+char* sndGetName( uint8_t ind )
+{
+	if ( ind >= sndGetSize() ) {
+		return NULL;
+	}
+	return collect[ind]->name;
+}
+
 // ************************************************************************************
 
 melody_t *song = NULL;
 volatile int ind_song = 0; // song index
 
-#define COMPARE 7
+#define COMPARE 10
 
 /*
  * вызывается из main раз в 1 мс
@@ -309,36 +322,11 @@ void sound(void)
 		return;
 	}
 	if ( event & 0x80 ) {
-		switch ( event ) {
-		case SND_BEEP:
-		case SND_peek:
-			song = r_Peek.mel;
-			break;
-		case SND_Xfiles:
-			song = r_XFiles.mel;
-			break;
-		case SND_Eternally:
-			song = r_Eternally.mel;
-			break;
-		case SND_Batman:
-			song = r_Batman.mel;
-			break;
-		case SND_Simpsons:
-			song = r_Simpsons.mel;
-			break;
-		case SND_TheSimpsons:
-			song = r_TheSimpsons.mel;
-			break;
-		case SND_DasBoot:
-			song = r_DasBoot.mel;
-			break;
-		case SND_TakeOnMe:
-			song = r_TakeOnMe.mel;
-			break;
-		case SND_MissionImp:
-			song = r_MissionImp.mel;
-			break;
+		int numS = event & 0x07F;
+		if ( numS >= sndGetSize() ) {
+			return;
 		}
+		song = collect[numS]->mel;
 		ind_song = 0;
 		TIM_SetCounter( TIM17, 0 );
 		TIM_SetCounter( TIM6, 0 );

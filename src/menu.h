@@ -28,5 +28,6 @@ int dflashShow(uint8_t ev);
 int dstatusFlash(uint8_t ev);
 
 int dimageShtrih(uint8_t ev);
+int dsounds(uint8_t ev);
 
 #endif /* SRC_MENU_H_ */

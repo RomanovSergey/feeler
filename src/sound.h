@@ -23,6 +23,8 @@
 
 int sndPutEv(uint8_t event);
 
+int sndGetSize();
+char* sndGetName( uint8_t ind );
 void sound(void);
 
 #endif /* SRC_SOUND_H_ */

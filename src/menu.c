@@ -31,7 +31,7 @@ int emptyDisplay( uint8_t ev )
 
 	if ( ev == DIS_PAINT ) {
 		pdisp = dworkScreen;
-		sndPutEv( SND_peek ); // SND_PERMIT );
+		sndPutEv( 0x80 ); // SND_PERMIT );
 		pwrPutEv( PWR_RESET_ALARM );
 		return 0;
 	}
@@ -222,7 +222,7 @@ int dmainM(uint8_t ev) {
 		} else if ( curs == 3 ) { // Просмотр таб.
 			pdisp = dimageShtrih;
 		} else if ( curs == 4 ) { // Звуки
-
+			pdisp = dsounds;
 		} else {
 			prev  = dmainM;
 			pdisp = dnotDone;
@@ -448,6 +448,91 @@ int dcalibAl(uint8_t ev) {
 }
 
 /*
+ * Рисует картирку
+ */
+int dimageShtrih(uint8_t ev)
+{
+	static int count = 0;
+
+	switch (ev) {
+	case DIS_PUSH_L:
+		pdisp = dmainM;
+		sndPutEv( SND_STOP );
+		return 0;
+	case DIS_PUSH_OK:
+		count++;
+		if ( count > 1 ) {
+			count = 0;
+		}
+		break;
+	case DIS_REPAINT:
+		break;
+	default:
+		return 0;
+	}
+
+	//disClear();
+	if ( count == 0 ) {
+		disShowImg( (const uint8_t*)imgCar );
+		sndPutEv( SND_TakeOnMe );
+	} else if (count ==1) {
+		disShowImg( (const uint8_t*)car45 );
+		sndPutEv( SND_MissionImp );
+	}
+
+	return 1;
+}
+
+/*
+ * играет музыку
+ */
+int dsounds(uint8_t ev)
+{
+	static uint8_t cur = 0;
+	char*  name;
+	int max;
+
+	switch (ev) {
+	case DIS_PUSH_L:
+		pdisp = dmainM;
+		sndPutEv( SND_STOP );
+		return 0;
+	case DIS_PUSH_R:
+		sndPutEv( SND_STOP );
+		return 0;
+	case DIS_PUSH_OK:
+		cur++;
+		max = sndGetSize();
+		if ( cur >= max ) {
+			cur = 0;
+		}
+		sndPutEv( 0x80 | cur );
+		break;
+	case DIS_REPAINT:
+		sndPutEv( 0x80 | cur );
+		break;
+	default:
+		return 0;
+	}
+	disClear();
+	disSetF( 0, 0, f_5x8 ); disPr( "Слушать звуки" );
+
+	int page = cur / 5;
+	int offs = cur % 5;
+	for ( int i = 0; i < 5; i++ ) {
+		name = sndGetName( page * 5 + i );
+		if ( name == NULL ) {
+			break;
+		}
+		disSet( i + 1, 6 ); disPr( name );
+	}
+
+	disSet( offs + 1, 0 ); disPr( "→");
+	return 1;
+}
+
+
+/*
  * Эксперименты с флэш памятью
 
 int dflashDebug(uint8_t ev)
@@ -577,64 +662,3 @@ int dstatusFlash(uint8_t ev)
 	disPrint(2,0, str);
 	return 1;
 } */
-
-/*
- * Рисует картирку
- */
-int dimageShtrih(uint8_t ev)
-{
-	static int count = 0;
-	static uint32_t offset = 504;
-	int res = 0;
-	int npic = 0;
-
-	switch (ev) {
-	case DIS_PUSH_L:
-		pdisp = dmainM;
-		pwrPutEv( PWR_RESET_ALARM );
-		sndPutEv( SND_STOP );
-		break;
-	case DIS_PUSH_OK:
-		count++;
-		if ( count > 1 ) {
-			count = 0;
-		}
-		npic = 1;
-		break;
-	case DIS_ALARM:
-		if ( offset > 0 ) {
-			offset -= 6;
-		}
-		break;
-	case DIS_REPAINT:
-		npic = 1;
-		break;
-	default:
-		return 0;
-	}
-	if ( npic ) {
-		npic = 0;
-		offset = 504;
-		disClear();
-		//disOff( 0 );
-		if ( count == 0 ) {
-			disShowImg( (const uint8_t*)imgCar );
-			sndPutEv( SND_TakeOnMe );
-		} else if (count ==1) {
-			disShowImg( (const uint8_t*)car45 );
-			sndPutEv( SND_MissionImp );
-		}
-		//disOff( 504 );
-		if ( res != 0 ) {
-			disSetF( 2, 24, f_5x8 );
-			disPr("res=");
-			disPr( itostr(res) );
-		}
-	}
-
-	//disAddrDMA( offset );
-	pwrPutEv( PWR_ALARM_84 );
-
-	return 1;
-}
-

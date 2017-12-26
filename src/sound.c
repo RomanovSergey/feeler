@@ -11,49 +11,25 @@
 
 //===========================================================================
 //===========================================================================
-//для кругового буфера событий
-#define SND_LEN_BITS   4
-#define SND_LEN_BUF    (1<<SND_LEN_BITS) // 8 или 2^3 или (1<<3)
-#define SND_LEN_MASK   (SND_LEN_BUF-1)   // bits: 0000 0111
-static uint8_t sndbufEv[SND_LEN_BUF] = {0};
-static uint8_t sndtail = 0;
-static uint8_t sndhead = 0;
+static uint8_t ev = 0;
+
 /*
- * возвращает 1 если в кольцевом буфере есть свободное место для элемента, иначе 0
- */
-static int sndHasFree(void) {
-	if ( ((sndhead + 1) & SND_LEN_MASK) == sndtail ) {
-		return 0;//свободного места нет
-	}
-	return 1;//есть свободное место
-}
-/*
- * помещает событие в круговой буфер
+ * помещает событие в буфер
  * return 1 - успешно; 0 - нет места в буфере
  */
 int sndPutEv(uint8_t event) {
-	if (event == 0) {
-		return 1;//событие с нулевым кодом пусть не будет для удобства
-	}
-	if ( sndHasFree() ) {
-		sndbufEv[sndhead] = event;
-		sndhead = (1 + sndhead) & SND_LEN_MASK;//инкремент кругового индекса
-		return 1;
-	} else {
-		return 0;//нет места в буфере
-	}
+	ev = event;
+	return 1;
 }
 /*
- *  извлекает событие из кругового буфера
+ *  извлекает событие из буфера
  *  если 0 - нет событий
  */
 uint8_t sndGetEv(void) {
-	uint8_t event = 0;
-	if (sndhead != sndtail) {//если в буфере есть данные
-		event = sndbufEv[sndtail];
-		sndtail = (1 + sndtail) & SND_LEN_MASK;//инкремент кругового индекса
-	}
-	return event;
+	uint8_t res;
+	res = ev;
+	ev = 0;
+	return res;
 }
 //===========================================================================
 //===========================================================================
@@ -358,6 +334,14 @@ void sound(void)
 			break;
 		}
 	}
+}
+
+int isPlaying( void )
+{
+	if ( song != NULL )
+		return 1;
+	else
+		return 0;
 }
 
 /*

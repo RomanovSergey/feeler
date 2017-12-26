@@ -4,8 +4,8 @@
 # Date: august, 2016
 ################################################################################
 # SHELL := /bin/bash
-PATH := /home/abc/tester/toolchain/gcc-arm-none-eabi-5_3-2016q1/bin:$(PATH)
-PATH := /home/abc/tester/toolchain/stlink-master:$(PATH)
+PATH := /abc/tester/toolchain/gcc-arm-none-eabi-5_3-2016q1/bin:$(PATH)
+PATH := /abc/tester/toolchain/stlink-master:$(PATH)
 
 CPU := cortex-m0
 INSTRUCTION_MODE := thumb

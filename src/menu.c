@@ -495,21 +495,26 @@ int dsounds(uint8_t ev)
 	switch (ev) {
 	case DIS_PUSH_L:
 		pdisp = dmainM;
+		cur = 0;
 		sndPutEv( SND_STOP );
 		return 0;
 	case DIS_PUSH_R:
-		sndPutEv( SND_STOP );
-		return 0;
-	case DIS_PUSH_OK:
 		cur++;
 		max = sndGetSize();
 		if ( cur >= max ) {
 			cur = 0;
 		}
-		sndPutEv( 0x80 | cur );
+		sndPutEv( SND_STOP );
+		break;
+	case DIS_PUSH_OK:
+		if ( isPlaying() ) {
+			sndPutEv( SND_STOP );
+		} else {
+			sndPutEv( 0x80 | cur );
+		}
 		break;
 	case DIS_REPAINT:
-		sndPutEv( 0x80 | cur );
+		//sndPutEv( 0x80 | cur );
 		break;
 	default:
 		return 0;
